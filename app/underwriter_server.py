@@ -7,7 +7,7 @@ without it, /ask returns retrieval-only results with a note.
 import json
 import pathlib
 import sys
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
 import llm
@@ -22,7 +22,7 @@ USERS = {
     "auditor": {"id": "auditor", "groups": ["compliance", "banking", "audit"]},
 }
 
-rag = PermissionRAG()
+rag = PermissionRAG(audit_path=pathlib.Path(__file__).with_name("audit_log.jsonl"))
 rag.add_document("policy-10023", "Policy 10023 status: ACTIVE. Homeowners, insured Maria Chen, coverage 450000 dollars, premium paid through December 2026. Prior carrier lapse of 30 days in 2023.", {"group:underwriting"})
 rag.add_document("policy-10088", "Policy 10088 status: PENDING RENEWAL. Commercial property, insured Delgado Logistics LLC, coverage 2.1 million dollars. Renewal blocked pending updated roof inspection report.", {"group:underwriting"})
 rag.add_document("claims-10023", "Claims history for policy 10023: one water damage claim in March 2024, paid 12400 dollars, subrogation recovered 8000 dollars. No open claims.", {"group:underwriting"})
@@ -92,4 +92,4 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8421
     print(f"http://127.0.0.1:{port}")
-    HTTPServer(("127.0.0.1", port), Handler).serve_forever()
+    ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()

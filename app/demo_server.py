@@ -1,7 +1,7 @@
 """Demo UI: same query, different users, different answers. Run: python3 demo_server.py [port]"""
 import json
 import sys
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
 from permission_rag import PermissionRAG
@@ -71,4 +71,4 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8420
     print(f"http://127.0.0.1:{port}")
-    HTTPServer(("127.0.0.1", port), Handler).serve_forever()
+    ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()
