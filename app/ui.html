@@ -70,6 +70,10 @@ td{font-variant-numeric:tabular-nums}
 .fade{animation:fi .2s ease-out}
 @keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .err{color:var(--danger)}
+.cite{text-decoration:none;font-family:"IBM Plex Mono",monospace;font-size:.85em}
+.cite:hover{text-decoration:underline}
+.flash{animation:fl 1.2s ease-out}
+@keyframes fl{0%{border-color:var(--primary);background:var(--muted)}100%{border-color:var(--border);background:var(--surface)}}
 details summary{cursor:pointer;color:var(--fg2);font-size:.85rem;min-height:44px;display:flex;align-items:center}
 </style>
 </head>
@@ -144,6 +148,7 @@ $('presets').addEventListener('click',e=>{
 $('f').addEventListener('submit',async e=>{
   e.preventDefault();
   const q=$('q').value.trim(); if(!q)return;
+  history.replaceState(null,'','?user='+role+'&q='+encodeURIComponent(q));  // shareable deep link
   $('go').disabled=true;
   $('out').innerHTML='<div class="skel" role="status" aria-label="Loading"></div>';
   try{
@@ -158,19 +163,51 @@ $('f').addEventListener('submit',async e=>{
 });
 
 function render(d){
+  const docIds=new Set(d.results.map(r=>r.doc_id));
+  // [doc-id] citations in the answer become links to their source card
+  const linkify=t=>esc(t).replace(/\[([\w#.-]+)\]/g,(m,id)=>
+    docIds.has(id)?'<a href="#src-'+esc(id)+'" class="cite">'+m+'</a>':m);
   let h='<div class="fade">';
   h+='<p class="meta"><span class="badge ok">'+d.results.length+' accessible source(s)</span>'
     +'<span class="badge deny">'+d.denied_chunks+' hidden by permissions</span>';
   if(d.usage&&d.usage.cache_read_input_tokens!==undefined)
     h+='<span>in '+d.usage.input_tokens+' &middot; cached '+d.usage.cache_read_input_tokens+' &middot; out '+d.usage.output_tokens+'</span>';
   h+='</p>';
-  if(d.answer)h+='<div class="card answer">'+esc(d.answer)+'</div>';
+  if(d.answer)h+='<div class="card answer">'+linkify(d.answer)
+    +'<div style="margin-top:8px"><button type="button" class="chip" id="copy">Copy as file note</button></div></div>';
   else if(d.note)h+='<p class="meta">'+esc(d.note)+'</p>';
   if(d.results.length)
-    h+=d.results.map(r=>'<div class="card src"><b>['+esc(r.doc_id)+']</b> <span class="score">relevance '
+    h+=d.results.map(r=>'<div class="card src" id="src-'+esc(r.doc_id)+'"><b>['+esc(r.doc_id)+']</b> <span class="score">relevance '
       +r.score+'</span><br>'+esc(r.text)+'</div>').join('');
   else h+='<div class="card">No documents you can access match this question. Try another phrasing, or a role with wider access.</div>';
   $('out').innerHTML=h+'</div>';
+  document.querySelectorAll('.cite').forEach(a=>a.addEventListener('click',e=>{
+    e.preventDefault();
+    const c=$(a.getAttribute('href').slice(1)); if(!c)return;
+    c.scrollIntoView({behavior:'smooth',block:'center'});
+    c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash');
+  }));
+  const cp=$('copy');
+  if(cp)cp.addEventListener('click',async()=>{
+    const note='FILE NOTE — draft findings (verify before acting)\n'
+      +'Date: '+new Date().toISOString()+'\nRole: '+role+'\nQuestion: '+$('q').value.trim()
+      +'\n\n'+d.answer+'\n\nSources:\n'
+      +d.results.map(r=>'['+r.doc_id+'] '+r.text).join('\n');
+    try{await navigator.clipboard.writeText(note);cp.textContent='Copied ✓';}
+    catch(_){cp.textContent='Copy failed — select manually';}
+    setTimeout(()=>cp.textContent='Copy as file note',2000);
+  });
+}
+
+// deep links: ?user=&q= auto-selects the role and submits
+{
+  const p=new URLSearchParams(location.search);
+  const u=p.get('user'),q=p.get('q');
+  if(u&&ROLES.some(([id])=>id===u)){
+    role=u;
+    document.querySelectorAll('.role').forEach(x=>x.setAttribute('aria-pressed',x.dataset.r===u));
+  }
+  if(q){$('q').value=q;$('f').requestSubmit();}
 }
 
 async function refreshAudit(){
