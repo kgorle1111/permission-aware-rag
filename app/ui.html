@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Underwriter Workbench</title>
+<style>
+:root{
+  --bg:#0F172A; --surface:#1E293B; --muted:#272F42; --border:#334155;
+  --fg:#F8FAFC; --fg2:#94A3B8; --primary:#F59E0B; --on-primary:#0F172A;
+  --accent:#8B5CF6; --danger:#EF4444; --ok:#34D399;
+  --r:10px; --s1:8px; --s2:12px; --s3:16px; --s4:24px;
+  font-size:16px;
+}
+@media (prefers-color-scheme: light){
+  :root{--bg:#F8FAFC;--surface:#FFFFFF;--muted:#F1F5F9;--border:#CBD5E1;
+        --fg:#0F172A;--fg2:#475569}
+}
+*{box-sizing:border-box;margin:0}
+body{font-family:"IBM Plex Sans",system-ui,sans-serif;background:var(--bg);color:var(--fg);
+     line-height:1.5;min-height:100dvh}
+a{color:var(--primary)}
+.app{display:grid;grid-template-columns:250px 1fr;min-height:100dvh}
+@media(max-width:768px){.app{grid-template-columns:1fr}.rail{border-right:none;border-bottom:1px solid var(--border)}}
+.rail{border-right:1px solid var(--border);padding:var(--s4) var(--s3);display:flex;flex-direction:column;gap:var(--s4)}
+.brand{display:flex;align-items:center;gap:var(--s2);font-weight:600}
+.brand svg{flex:none}
+h2{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--fg2);margin-bottom:var(--s1);font-weight:600}
+.roles{display:flex;flex-direction:column;gap:6px}
+.role{display:flex;align-items:center;gap:var(--s2);padding:10px var(--s2);border:1px solid transparent;
+      border-radius:var(--r);background:none;color:var(--fg);cursor:pointer;text-align:left;
+      font:inherit;font-size:.9rem;min-height:44px;transition:background .15s,border-color .15s}
+.role:hover{background:var(--muted)}
+.role[aria-pressed="true"]{background:var(--muted);border-color:var(--primary)}
+.role .dot{width:8px;height:8px;border-radius:50%;background:var(--fg2);flex:none}
+.role[aria-pressed="true"] .dot{background:var(--primary)}
+.role small{display:block;color:var(--fg2);font-size:.75rem}
+.presets{display:flex;flex-direction:column;gap:6px}
+.chip{padding:8px var(--s2);border:1px solid var(--border);border-radius:var(--r);background:none;
+      color:var(--fg2);cursor:pointer;font:inherit;font-size:.82rem;text-align:left;min-height:40px;
+      transition:color .15s,border-color .15s}
+.chip:hover{color:var(--fg);border-color:var(--primary)}
+main{padding:var(--s4);max-width:860px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:var(--s3)}
+form{display:flex;gap:var(--s2)}
+input[type=text]{flex:1;padding:12px var(--s3);border:1px solid var(--border);border-radius:var(--r);
+      background:var(--surface);color:var(--fg);font:inherit;min-height:48px}
+input[type=text]:focus,button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.btn{padding:12px var(--s4);border:none;border-radius:var(--r);background:var(--primary);
+     color:var(--on-primary);font:inherit;font-weight:600;cursor:pointer;min-height:48px;min-width:92px;
+     transition:opacity .15s}
+.btn:hover{opacity:.9}.btn:disabled{opacity:.5;cursor:default}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:var(--s3)}
+.answer{white-space:pre-wrap;border-left:3px solid var(--primary)}
+.meta{color:var(--fg2);font-size:.82rem;display:flex;gap:var(--s3);flex-wrap:wrap;align-items:center}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;
+       font-size:.75rem;font-weight:500;border:1px solid var(--border)}
+.badge.deny{color:var(--danger);border-color:var(--danger)}
+.badge.ok{color:var(--ok);border-color:var(--ok)}
+.src{margin-top:var(--s2)}
+.src b{font-family:"IBM Plex Mono",monospace;font-size:.85rem;color:var(--primary)}
+.score{color:var(--fg2);font-size:.78rem;font-variant-numeric:tabular-nums}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th,td{text-align:left;padding:8px var(--s1);border-bottom:1px solid var(--border)}
+th{color:var(--fg2);font-weight:500}
+td{font-variant-numeric:tabular-nums}
+.skel{height:72px;border-radius:var(--r);background:linear-gradient(90deg,var(--muted) 25%,var(--surface) 50%,var(--muted) 75%);
+      background-size:200% 100%;animation:sh 1.2s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion: reduce){.skel{animation:none}*{transition:none!important}}
+.fade{animation:fi .2s ease-out}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.err{color:var(--danger)}
+details summary{cursor:pointer;color:var(--fg2);font-size:.85rem;min-height:44px;display:flex;align-items:center}
+</style>
+</head>
+<body>
+<div class="app">
+<nav class="rail" aria-label="Workbench controls">
+  <div class="brand">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" aria-hidden="true">
+      <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/>
+    </svg>
+    Underwriter Workbench
+  </div>
+  <section>
+    <h2>Acting as</h2>
+    <div class="roles" id="roles" role="group" aria-label="Select role"></div>
+  </section>
+  <section>
+    <h2>Workflows</h2>
+    <div class="presets" id="presets"></div>
+  </section>
+  <section class="meta" style="margin-top:auto">
+    <span>AI drafts &middot; you decide</span>
+  </section>
+</nav>
+<main>
+  <form id="f">
+    <label for="q" class="visually-hidden" style="position:absolute;left:-9999px">Question</label>
+    <input type="text" id="q" placeholder="Ask about a policy, claim, or account…" required autocomplete="off">
+    <button class="btn" id="go" type="submit">Ask</button>
+  </form>
+  <div id="out" aria-live="polite"></div>
+  <details>
+    <summary>Audit trail (this session)</summary>
+    <div class="card" id="audit" style="margin-top:8px">
+      <p class="meta">No queries yet.</p>
+    </div>
+  </details>
+</main>
+</div>
+<script>
+const ROLES=[
+ ["junior","Junior UW","policy + claims files"],
+ ["senior","Senior UW","+ banking, credit memos"],
+ ["compliance","Compliance","+ watchlist"],
+ ["auditor","Auditor","banking + compliance only"]];
+const PRESETS=[
+ ["New submission review","what does the guideline require for commercial risks above 2 million?"],
+ ["Renewal check","what is blocking the renewal of policy 10088?"],
+ ["Claims history pull","claims history for policy 10023"],
+ ["Bind decision prep","can we bind Delgado Logistics above 1 million?"],
+ ["Compliance screen","any compliance flags on Delgado Logistics?"]];
+let role="junior";
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $=id=>document.getElementById(id);
+
+$('roles').innerHTML=ROLES.map(([id,name,d])=>
+ `<button type="button" class="role" data-r="${id}" aria-pressed="${id===role}" aria-label="Act as ${name}, sees ${d}">
+   <span class="dot" aria-hidden="true"></span><span>${name}<small>${d}</small></span></button>`).join('');
+$('roles').addEventListener('click',e=>{
+  const b=e.target.closest('.role'); if(!b)return;
+  role=b.dataset.r;
+  document.querySelectorAll('.role').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  if($('q').value) $('f').requestSubmit();   // re-ask same question as new role
+});
+$('presets').innerHTML=PRESETS.map(([n,q],i)=>
+ `<button type="button" class="chip" data-q="${esc(q)}">${n}</button>`).join('');
+$('presets').addEventListener('click',e=>{
+  const b=e.target.closest('.chip'); if(!b)return;
+  $('q').value=b.dataset.q; $('f').requestSubmit();
+});
+
+$('f').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const q=$('q').value.trim(); if(!q)return;
+  $('go').disabled=true;
+  $('out').innerHTML='<div class="skel" role="status" aria-label="Loading"></div>';
+  try{
+    const r=await fetch('/ask?user='+role+'&q='+encodeURIComponent(q));
+    if(!r.ok) throw new Error('server returned '+r.status);
+    render(await r.json());
+  }catch(err){
+    $('out').innerHTML='<div class="card err fade">Request failed: '+esc(err.message)+'. Check the server is running, then retry.</div>';
+  }finally{
+    $('go').disabled=false; refreshAudit();
+  }
+});
+
+function render(d){
+  let h='<div class="fade">';
+  h+='<p class="meta"><span class="badge ok">'+d.results.length+' accessible source(s)</span>'
+    +'<span class="badge deny">'+d.denied_chunks+' hidden by permissions</span>';
+  if(d.usage&&d.usage.cache_read_input_tokens!==undefined)
+    h+='<span>in '+d.usage.input_tokens+' &middot; cached '+d.usage.cache_read_input_tokens+' &middot; out '+d.usage.output_tokens+'</span>';
+  h+='</p>';
+  if(d.answer)h+='<div class="card answer">'+esc(d.answer)+'</div>';
+  else if(d.note)h+='<p class="meta">'+esc(d.note)+'</p>';
+  if(d.results.length)
+    h+=d.results.map(r=>'<div class="card src"><b>['+esc(r.doc_id)+']</b> <span class="score">relevance '
+      +r.score+'</span><br>'+esc(r.text)+'</div>').join('');
+  else h+='<div class="card">No documents you can access match this question. Try another phrasing, or a role with wider access.</div>';
+  $('out').innerHTML=h+'</div>';
+}
+
+async function refreshAudit(){
+  try{
+    const d=await(await fetch('/audit')).json();
+    if(!d.entries.length)return;
+    $('audit').innerHTML='<table><thead><tr><th>Role</th><th>Query</th><th>Returned</th><th>Hidden</th></tr></thead><tbody>'
+     +d.entries.slice(-8).reverse().map(a=>'<tr><td>'+esc(a.user)+'</td><td>'+esc(a.query)
+       +'</td><td>'+a.returned.length+'</td><td>'+a.denied_chunks+'</td></tr>').join('')+'</tbody></table>';
+  }catch(_){}
+}
+</script>
+</body>
+</html>
