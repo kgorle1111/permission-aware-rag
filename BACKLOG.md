@@ -8,8 +8,8 @@ implemented yet — pick, then we execute per the file-partition rule.
 
 | # | Sev | Finding | Fix sketch |
 |---|-----|---------|-----------|
-| S1 | HIGH | **IDF side channel:** `df`/`n` computed over full corpus (`permission_rag.py:54-56`), so ACL-hidden docs measurably shift visible scores (reproduced: 0.7071→0.3356). The docstring's core claim is false today. | Compute df/n over the caller-visible set at query time. |
-| S2 | HIGH | **/audit leaks cross-user:** any role reads every user's queries + returned doc ids (`underwriter_server.py`), bypassing the ACL story. | Filter entries to the caller; gate full view to an audit group. |
+| S1 | HIGH | ~~**IDF side channel:** ACL-hidden docs measurably shift visible scores.~~ **FIXED 2026-07-28:** df/n now computed over the caller-visible set at query time; regression test asserts identical scores with/without a hidden doc. | — |
+| S2 | HIGH | ~~**/audit leaks cross-user:** any role reads every user's queries.~~ **FIXED 2026-07-28:** `/audit` requires `user`, entries filtered to the caller; full view gated to the `audit` group (auditor role). | — |
 | S3 | MED | **Prompt injection:** doc text spliced into the LLM prompt with no data/instruction boundary — dangerous once docs come from source-system pulls. | Delimit chunks as data + system-prompt rule + injection leak test. |
 | S4 | LOW | demo_server renders doc text via unescaped innerHTML (workbench ui.html escapes correctly). | Mirror `esc()` or use textContent. |
 | S5 | LOW | /ask = unthrottled paid API call (bounded by localhost today). | Per-IP token bucket before binding beyond loopback. |

@@ -61,9 +61,9 @@ role before any prompt iteration.
 - **Aggregation risk:** a senior sees banking + credit docs individually fine, but the
   LLM synthesizing across them may produce conclusions no single doc supports. Mitigated
   by citation-required prompting; needs eval coverage.
-- **IDF side channel (CONFIRMED 2026-07-20, open):** `df`/`n` are global, so hidden
-  docs shift visible scores (reproduced: 0.7071→0.3356 from ACL-hidden term overlap).
-  Fix: compute df/n over the caller-visible set. Tracked as BACKLOG.md S1.
+- **IDF side channel (FIXED 2026-07-28):** df/n are now computed over the
+  caller-visible set at query time, so hidden docs cannot shift visible scores.
+  Regression-tested in `test_permission_rag.py`. Was BACKLOG.md S1.
 - **"N chunks hidden" side channel:** the denied count is shown in the UI. Deliberate for
   the demo (it sells the feature); consider hiding per-query counts in production.
 - **TF-IDF ceiling:** exact-word matching only; swap `_score` for embedding cosine when
