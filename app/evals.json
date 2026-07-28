@@ -1,0 +1,22 @@
+[
+  {"role": "junior",     "q": "what is the status of policy 10023?",                          "expect": ["policy-10023"],                        "must_not": ["bank-delgado", "credit-memo-delgado", "watchlist"]},
+  {"role": "junior",     "q": "claims history for policy 10023",                              "expect": ["claims-10023"],                        "must_not": ["bank-delgado", "credit-memo-delgado", "watchlist"]},
+  {"role": "junior",     "q": "what is blocking the renewal of policy 10088?",                "expect": ["policy-10088"],                        "must_not": ["bank-delgado", "credit-memo-delgado", "watchlist"]},
+  {"role": "junior",     "q": "guideline for commercial risks above 2 million",               "expect": ["guidelines"],                          "must_not": ["bank-delgado", "credit-memo-delgado", "watchlist"]},
+  {"role": "junior",     "q": "Delgado NSF events line of credit utilization",                "expect": [],                                      "must_not": ["bank-delgado", "credit-memo-delgado", "watchlist"]},
+  {"role": "junior",     "q": "misrepresentation flag compliance watchlist Robert Delgado",   "expect": [],                                      "must_not": ["bank-delgado", "credit-memo-delgado", "watchlist"]},
+  {"role": "junior",     "q": "debt service coverage ratio below threshold collateral",       "expect": [],                                      "must_not": ["bank-delgado", "credit-memo-delgado", "watchlist"]},
+  {"role": "senior",     "q": "Delgado bank balance and NSF events",                          "expect": ["bank-delgado"],                        "must_not": ["watchlist"]},
+  {"role": "senior",     "q": "can we bind Delgado above 1 million?",                         "expect": ["credit-memo-delgado"],                 "must_not": ["watchlist"]},
+  {"role": "senior",     "q": "debt service coverage ratio Delgado",                          "expect": ["credit-memo-delgado"],                 "must_not": ["watchlist"]},
+  {"role": "senior",     "q": "compliance watchlist misrepresentation Robert Delgado",        "expect": [],                                      "must_not": ["watchlist"]},
+  {"role": "senior",     "q": "prior coverage lapse senior review requirement",               "expect": ["guidelines"],                          "must_not": ["watchlist"]},
+  {"role": "senior",     "q": "Maria Chen policy coverage and premium",                       "expect": ["policy-10023"],                        "must_not": ["watchlist"]},
+  {"role": "compliance", "q": "any compliance flags on Delgado Logistics?",                   "expect": ["watchlist"],                           "must_not": ["bank-delgado", "credit-memo-delgado"]},
+  {"role": "compliance", "q": "Robert Delgado misrepresentation review",                      "expect": ["watchlist"],                           "must_not": ["bank-delgado", "credit-memo-delgado"]},
+  {"role": "compliance", "q": "Delgado operating account balance NSF",                        "expect": [],                                      "must_not": ["bank-delgado", "credit-memo-delgado"]},
+  {"role": "compliance", "q": "claims history for policy 10023",                              "expect": ["claims-10023"],                        "must_not": ["bank-delgado", "credit-memo-delgado"]},
+  {"role": "auditor",    "q": "Delgado bank profile line of credit",                          "expect": ["bank-delgado"],                        "must_not": ["policy-10023", "policy-10088", "claims-10023", "credit-memo-delgado"]},
+  {"role": "auditor",    "q": "watchlist compliance sign-off Delgado",                        "expect": ["watchlist"],                           "must_not": ["policy-10023", "policy-10088", "claims-10023", "credit-memo-delgado"]},
+  {"role": "auditor",    "q": "water damage claim paid subrogation policy 10023",             "expect": [],                                      "must_not": ["policy-10023", "policy-10088", "claims-10023", "credit-memo-delgado"]}
+]
