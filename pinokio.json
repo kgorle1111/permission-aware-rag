@@ -1,0 +1,4 @@
+{
+  "title": "Permission-Aware RAG",
+  "description": "RAG retrieval that enforces per-user document ACLs at query time — denied chunks are filtered before ranking, so they can never leak"
+}
