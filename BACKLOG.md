@@ -80,9 +80,9 @@ Clean: no secrets in tree or git history; `can_read` logic sound; empty-ACL refu
 
 ## Recommended first wave (if asked)
 
-Fix-now: **S1 (IDF side channel)** + **S2 (/audit scoping)** — they contradict the product's core claim.
-Then the convergence items (multiple lanes independently ranked them): deep links,
-copy-to-file-note, clickable citations, eval harness, audit persistence, ThreadingHTTPServer.
+**DONE 2026-07-28:** S1, S2, deep links, copy-to-file-note, clickable citations,
+eval harness (20 cases, recall@4 14/14, 0 leaks), audit persistence (JSONL),
+ThreadingHTTPServer. First wave complete.
 
 ## Execution notes (from the pipeline doc)
 
