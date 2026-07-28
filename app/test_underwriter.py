@@ -1,5 +1,5 @@
 """Underwriter corpus ACL tests. Run: python3 test_underwriter.py"""
-from underwriter_server import USERS, rag
+from underwriter_server import USERS, audit_for, rag
 
 
 def test():
@@ -25,6 +25,12 @@ def test():
     # auditor sees compliance + banking but no policy/claims files
     a = docs("auditor", "Delgado policy claims watchlist bank balance")
     assert {"watchlist", "bank-delgado"} <= a and a.isdisjoint({"policy-10088", "claims-10023"}), a
+
+    # S2: audit trail is scoped — non-audit roles see only their own queries
+    assert {e["user"] for e in audit_for(USERS["junior"])} == {"junior"}
+    assert {e["user"] for e in audit_for(USERS["senior"])} == {"senior"}
+    # the audit group sees everyone
+    assert {e["user"] for e in audit_for(USERS["auditor"])} == set(USERS)
 
     print("underwriter ACL tests passed")
 

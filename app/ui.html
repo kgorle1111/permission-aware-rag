@@ -175,7 +175,7 @@ function render(d){
 
 async function refreshAudit(){
   try{
-    const d=await(await fetch('/audit')).json();
+    const d=await(await fetch('/audit?user='+encodeURIComponent(role))).json();
     if(!d.entries.length)return;
     $('audit').innerHTML='<table><thead><tr><th>Role</th><th>Query</th><th>Returned</th><th>Hidden</th></tr></thead><tbody>'
      +d.entries.slice(-8).reverse().map(a=>'<tr><td>'+esc(a.user)+'</td><td>'+esc(a.query)
