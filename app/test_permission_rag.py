@@ -43,6 +43,15 @@ def test():
     entry = rag.audit[-1]
     assert entry["user"] == "carol" and entry["denied_chunks"] >= 1
 
+    # S1: IDF side channel — hidden docs must not shift visible scores.
+    # Same visible corpus, one extra hidden doc sharing query terms: scores identical.
+    base = build()
+    with_hidden = build()
+    with_hidden.add_document("hidden", "payments payments postgres redis cache architecture", {"group:hr"})
+    a = base.retrieve("payments postgres", ALICE)
+    b = with_hidden.retrieve("payments postgres", ALICE)
+    assert [(r["id"], r["score"]) for r in a] == [(r["id"], r["score"]) for r in b], (a, b)
+
     # empty ACL refused at ingest
     try:
         rag.add_document("bad", "text", set())

@@ -21,7 +21,6 @@ class PermissionRAG:
     # ponytail: in-memory TF-IDF ranking, swap _score for embedding cosine when quality matters
     def __init__(self):
         self.chunks = []      # {id, doc_id, text, acl:set, tf:Counter}
-        self.df = Counter()   # document frequency per term
         self.audit = []       # one entry per retrieve() call
 
     def add_document(self, doc_id, text, acl, chunk_words=80):
@@ -33,7 +32,6 @@ class PermissionRAG:
         for i in range(0, len(words), chunk_words):
             chunk_text = " ".join(words[i:i + chunk_words])
             tf = Counter(tokenize(chunk_text))
-            self.df.update(set(tf))
             self.chunks.append({
                 "id": f"{doc_id}#{i // chunk_words}",
                 "doc_id": doc_id,
@@ -51,12 +49,12 @@ class PermissionRAG:
             return True
         return any(f"group:{g}" in acl for g in user.get("groups", ()))
 
-    def _weights(self, tf):
-        n = len(self.chunks)
-        return {t: c * math.log(1 + n / self.df[t]) for t, c in tf.items() if t in self.df}
+    @staticmethod
+    def _weights(tf, df, n):
+        return {t: c * math.log(1 + n / df[t]) for t, c in tf.items() if t in df}
 
-    def _score(self, qw, qnorm, chunk):
-        cw = self._weights(chunk["tf"])
+    def _score(self, qw, qnorm, chunk, df, n):
+        cw = self._weights(chunk["tf"], df, n)
         dot = sum(w * cw.get(t, 0.0) for t, w in qw.items())
         norm = qnorm * math.sqrt(sum(w * w for w in cw.values()))
         return dot / norm if norm else 0.0
@@ -69,9 +67,14 @@ class PermissionRAG:
         """
         visible = [c for c in self.chunks if self.can_read(user, c["acl"])]
         denied = len(self.chunks) - len(visible)
-        qw = self._weights(Counter(tokenize(query)))
+        # IDF over the visible set only: a hidden doc must not shift visible scores
+        df = Counter()
+        for c in visible:
+            df.update(set(c["tf"]))
+        n = len(visible)
+        qw = self._weights(Counter(tokenize(query)), df, n)
         qnorm = math.sqrt(sum(w * w for w in qw.values()))
-        scored = sorted(((self._score(qw, qnorm, c), c) for c in visible),
+        scored = sorted(((self._score(qw, qnorm, c, df, n), c) for c in visible),
                         key=lambda sc: sc[0], reverse=True)
         results = [
             {"id": c["id"], "doc_id": c["doc_id"], "text": c["text"],
