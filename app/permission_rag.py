@@ -5,8 +5,11 @@ Core security property: a chunk the caller cannot read is excluded BEFORE rankin
 
 ACL entries: "user:<id>", "group:<name>", or "*" (public).
 """
+import json
 import math
+import pathlib
 import re
+import threading
 import time
 from collections import Counter
 
@@ -19,9 +22,16 @@ def tokenize(text):
 
 class PermissionRAG:
     # ponytail: in-memory TF-IDF ranking, swap _score for embedding cosine when quality matters
-    def __init__(self):
+    def __init__(self, audit_path=None):
+        """audit_path: optional JSONL file; entries append there and reload on start,
+        so the trail survives restarts (compliance requirement, not a nice-to-have)."""
         self.chunks = []      # {id, doc_id, text, acl:set, tf:Counter}
         self.audit = []       # one entry per retrieve() call
+        self.audit_path = pathlib.Path(audit_path) if audit_path else None
+        self._audit_lock = threading.Lock()  # servers run threaded; keep JSONL lines whole
+        if self.audit_path and self.audit_path.exists():
+            with self.audit_path.open() as f:
+                self.audit = [json.loads(line) for line in f if line.strip()]
 
     def add_document(self, doc_id, text, acl, chunk_words=80):
         """Ingest a document. `acl` is the set of principals allowed to read it."""
@@ -82,11 +92,16 @@ class PermissionRAG:
             for s, c in scored[:k]
             if s > 0
         ]
-        self.audit.append({
+        entry = {
             "ts": time.time(),
             "user": user["id"],
             "query": query,
             "returned": [r["id"] for r in results],
             "denied_chunks": denied,
-        })
+        }
+        with self._audit_lock:
+            self.audit.append(entry)
+            if self.audit_path:
+                with self.audit_path.open("a") as f:
+                    f.write(json.dumps(entry) + "\n")
         return results

@@ -3,3 +3,4 @@ __pycache__/
 .claude/
 .env*
 logs/
+app/audit_log.jsonl

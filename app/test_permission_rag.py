@@ -1,4 +1,7 @@
 """Leakage-focused tests. Run: python3 test_permission_rag.py"""
+import tempfile
+import pathlib
+
 from permission_rag import PermissionRAG
 
 ALICE = {"id": "alice", "groups": ["eng"]}          # engineer
@@ -58,6 +61,15 @@ def test():
         assert False, "empty acl accepted"
     except ValueError:
         pass
+
+    # audit persistence: entries survive a restart via JSONL
+    with tempfile.TemporaryDirectory() as tmp:
+        path = pathlib.Path(tmp) / "audit.jsonl"
+        r1 = PermissionRAG(audit_path=path)
+        r1.add_document("d", "vacation policy details", {"*"})
+        r1.retrieve("vacation", ALICE)
+        r2 = PermissionRAG(audit_path=path)  # fresh instance = restart
+        assert len(r2.audit) == 1 and r2.audit[0]["user"] == "alice"
 
     print(f"all tests passed ({len(rag.audit)} audited retrievals)")
 
