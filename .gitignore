@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+.env
+*.db
+*.db-shm
+*.db-wal
+qdrant_data/
+config/idp_private.pem
+config/idp_public.pem
+CLAUDE.md
