@@ -122,12 +122,6 @@ const ROLES=[
  ["senior","Senior UW","+ banking, credit memos"],
  ["compliance","Compliance","+ watchlist"],
  ["auditor","Auditor","banking + compliance only"]];
-const PRESETS=[
- ["New submission review","what does the guideline require for commercial risks above 2 million?"],
- ["Renewal check","what is blocking the renewal of policy 10088?"],
- ["Claims history pull","claims history for policy 10023"],
- ["Bind decision prep","can we bind Delgado Logistics above 1 million?"],
- ["Compliance screen","any compliance flags on Delgado Logistics?"]];
 let role="junior";
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const $=id=>document.getElementById(id);
@@ -141,8 +135,11 @@ $('roles').addEventListener('click',e=>{
   document.querySelectorAll('.role').forEach(x=>x.setAttribute('aria-pressed',x===b));
   if($('q').value) $('f').requestSubmit();   // re-ask same question as new role
 });
-$('presets').innerHTML=PRESETS.map(([n,q],i)=>
- `<button type="button" class="chip" data-q="${esc(q)}">${n}</button>`).join('');
+// workflows come from presets.json — shops edit JSON, not HTML
+fetch('/presets').then(r=>r.json()).then(ps=>{
+  $('presets').innerHTML=ps.map(([n,q])=>
+   `<button type="button" class="chip" data-q="${esc(q)}">${esc(n)}</button>`).join('');
+}).catch(()=>{});
 $('presets').addEventListener('click',e=>{
   const b=e.target.closest('.chip'); if(!b)return;
   $('q').value=b.dataset.q; $('f').requestSubmit();
@@ -155,7 +152,9 @@ $('f').addEventListener('submit',async e=>{
   $('go').disabled=true;
   $('out').innerHTML='<div class="skel" role="status" aria-label="Loading"></div>';
   try{
-    const r=await fetch(($('quick').checked?'/query':'/ask')+'?user='+role+'&q='+encodeURIComponent(q));
+    // POST keeps the question out of server/proxy logs (PII once data is real)
+    const r=await fetch($('quick').checked?'/query':'/ask',{method:'POST',
+      headers:{'content-type':'application/json'},body:JSON.stringify({user:role,q})});
     if(!r.ok) throw new Error('server returned '+r.status);
     render(await r.json());
   }catch(err){
@@ -171,8 +170,9 @@ function render(d){
   const linkify=t=>esc(t).replace(/\[([\w#.-]+)\]/g,(m,id)=>
     docIds.has(id)?'<a href="#src-'+esc(id)+'" class="cite">'+m+'</a>':m);
   let h='<div class="fade">';
-  h+='<p class="meta"><span class="badge ok">'+d.results.length+' accessible source(s)</span>'
-    +'<span class="badge deny">'+d.denied_chunks+' hidden by permissions</span>';
+  h+='<p class="meta"><span class="badge ok">'+d.results.length+' accessible source(s)</span>';
+  if(d.denied_chunks!==undefined)
+    h+='<span class="badge deny">'+d.denied_chunks+' hidden by permissions</span>';
   if(d.unverified_citations&&d.unverified_citations.length)
     h+='<span class="badge deny" title="Cited ids not in the retrieved sources — treat those claims as unverified">'
       +d.unverified_citations.length+' unverified citation(s): '+esc(d.unverified_citations.join(', '))+'</span>';
@@ -188,7 +188,7 @@ function render(d){
   if(d.results.length)
     h+=d.results.map(r=>'<div class="card src" id="src-'+esc(r.doc_id)+'"><b>['+esc(r.doc_id)+']</b> <span class="score">relevance '
       +r.score+'</span><br>'+hi(r.text)+'</div>').join('');
-  else if(d.denied_chunks>0)
+  else if((d.denied_chunks||0)>0)
     h+='<div class="card">No accessible documents match — but '+d.denied_chunks+' chunk(s) your role can\'t see exist in the corpus. If this question needs them, route it to a role with wider access (e.g. senior or compliance).</div>';
   else h+='<div class="card">No documents you can access match this question. Try another phrasing.</div>';
   $('out').innerHTML=h+'</div>';
