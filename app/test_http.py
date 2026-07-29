@@ -105,6 +105,17 @@ def test():
         finally:
             srv.JWT_SECRET = None
 
+        # cost observability: mocked LLM answer carries llm_ms + est_cost; /audit totals accrue
+        from unittest import mock
+        usage = {"input_tokens": 1000, "output_tokens": 300, "cache_read_input_tokens": 2000}
+        with mock.patch.object(srv.llm, "ask", return_value={
+                "answer": "ok [policy-10023]", "usage": usage, "unverified_citations": []}):
+            code, d = _post(base, "/ask", {"user": "junior", "q": "policy 10023 status"})
+        assert code == 200 and "llm_ms" in d
+        assert d["est_cost_usd"] == round((1000 * 1.00 + 300 * 5.00 + 2000 * 0.10) / 1e6, 6)
+        code, d = _get(base, "/audit?user=junior")
+        assert d["llm_summary"]["asks"] >= 1 and d["llm_summary"]["est_cost_usd"] > 0
+
         # /audit CSV export: header row + scoped to caller
         with urllib.request.urlopen(base + "/audit?user=junior&format=csv") as r:
             assert r.headers["Content-Type"] == "text/csv"

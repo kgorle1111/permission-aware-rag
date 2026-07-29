@@ -80,6 +80,19 @@ def test():
     r3.retrieve("w5", {"id": "e", "groups": ["eng"]})
     assert r3.audit[-1]["elapsed_ms"] >= 0
 
+    # sentence-boundary chunking: sentences stay whole, boundary sentence overlaps
+    r4 = PermissionRAG()
+    r4.add_document("s", "One two three four. Five six seven eight. Nine ten eleven twelve.",
+                    {"*"}, chunk_words=10)
+    texts = [c["text"] for c in r4.chunks]
+    assert texts[0] == "One two three four. Five six seven eight."
+    assert texts[1].startswith("Five six seven eight.")  # overlap carries the boundary sentence
+
+    # remove_document + re-ingest replaces content
+    assert r4.remove_document("s") == 2 and r4.chunks == []
+    r4.add_document("s", "Replacement text here.", {"*"})
+    assert len(r4.chunks) == 1 and r4.remove_document("missing") == 0
+
     # audit persistence: entries survive a restart via JSONL
     with tempfile.TemporaryDirectory() as tmp:
         path = pathlib.Path(tmp) / "audit.jsonl"
@@ -88,6 +101,14 @@ def test():
         r1.retrieve("vacation", ALICE)
         r2 = PermissionRAG(audit_path=path)  # fresh instance = restart
         assert len(r2.audit) == 1 and r2.audit[0]["user"] == "alice"
+
+        # hash chain: intact across restart; detects tampering
+        r2.retrieve("vacation", ALICE)
+        assert PermissionRAG.verify_audit_chain(path)
+        lines = path.read_text().splitlines()
+        lines[0] = lines[0].replace("vacation", "salaries")  # tamper first entry
+        path.write_text("\n".join(lines) + "\n")
+        assert not PermissionRAG.verify_audit_chain(path)
 
     print(f"all tests passed ({len(rag.audit)} audited retrievals)")
 
