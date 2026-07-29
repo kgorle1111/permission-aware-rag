@@ -30,6 +30,7 @@ PAGE = """<!doctype html><meta charset="utf-8"><title>Permission-Aware RAG</titl
 <input id="query" size="40" placeholder="try: salary bands / acquisition / vacation" required>
 <button>Search</button></form><div id="out"></div>
 <script>
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 async function q(e){e.preventDefault();
 const u=document.getElementById('u').value.split(' ')[0];
 const query=document.getElementById('query').value;
@@ -37,9 +38,11 @@ const res=await fetch('/query?user='+u+'&q='+encodeURIComponent(query));
 const data=await res.json();
 document.getElementById('out').innerHTML =
  '<p class="meta">'+data.results.length+' result(s), <span class="denied">'+data.denied_chunks+' chunk(s) hidden by ACL</span></p>'
- + data.results.map(r=>'<div class="r"><b>'+r.doc_id+'</b> <span class="meta">score '+r.score+'</span><br>'+r.text+'</div>').join('')
+ + data.results.map(r=>'<div class="r"><b>'+esc(r.doc_id)+'</b> <span class="meta">score '+r.score+'</span><br>'+esc(r.text)+'</div>').join('')
  || '<p>No accessible results.</p>';}
 </script>"""
+
+MAX_Q_LEN = 1000
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -49,18 +52,22 @@ class Handler(BaseHTTPRequestHandler):
             qs = parse_qs(url.query)
             user = USERS.get(qs.get("user", [""])[0])
             query = qs.get("q", [""])[0]
-            if not user or not query:
+            if not user or not query or len(query) > MAX_Q_LEN:
                 self.send_response(400); self.end_headers(); return
             results = rag.retrieve(query, user, k=3)
             body = json.dumps({"results": results,
                                "denied_chunks": rag.audit[-1]["denied_chunks"]}).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
+            self.send_header("X-Content-Type-Options", "nosniff")
             self.end_headers()
             self.wfile.write(body)
         else:
             self.send_response(200)
             self.send_header("Content-Type", "text/html")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Content-Security-Policy",
+                             "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'")
             self.end_headers()
             self.wfile.write(PAGE.encode())
 
