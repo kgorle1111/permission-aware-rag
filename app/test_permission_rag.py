@@ -62,6 +62,24 @@ def test():
     except ValueError:
         pass
 
+    # chunking: long docs split at chunk_words with sequential ids, ACL on every chunk
+    r3 = PermissionRAG()
+    r3.add_document("long", " ".join(f"w{i}" for i in range(200)), {"group:eng"}, chunk_words=80)
+    assert [c["id"] for c in r3.chunks] == ["long#0", "long#1", "long#2"]
+    assert [len(c["text"].split()) for c in r3.chunks] == [80, 80, 40]
+    assert all(c["acl"] == {"group:eng"} for c in r3.chunks)
+
+    # duplicate doc_id refused (nightly re-sync must not silently double-ingest)
+    try:
+        r3.add_document("long", "again", {"*"})
+        raise AssertionError("expected ValueError on duplicate doc_id")
+    except ValueError:
+        pass
+
+    # audit entries carry timing for value receipts
+    r3.retrieve("w5", {"id": "e", "groups": ["eng"]})
+    assert r3.audit[-1]["elapsed_ms"] >= 0
+
     # audit persistence: entries survive a restart via JSONL
     with tempfile.TemporaryDirectory() as tmp:
         path = pathlib.Path(tmp) / "audit.jsonl"
