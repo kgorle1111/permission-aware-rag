@@ -170,6 +170,9 @@ function render(d){
   let h='<div class="fade">';
   h+='<p class="meta"><span class="badge ok">'+d.results.length+' accessible source(s)</span>'
     +'<span class="badge deny">'+d.denied_chunks+' hidden by permissions</span>';
+  if(d.unverified_citations&&d.unverified_citations.length)
+    h+='<span class="badge deny" title="Cited ids not in the retrieved sources — treat those claims as unverified">'
+      +d.unverified_citations.length+' unverified citation(s): '+esc(d.unverified_citations.join(', '))+'</span>';
   if(d.usage&&d.usage.cache_read_input_tokens!==undefined)
     h+='<span>in '+d.usage.input_tokens+' &middot; cached '+d.usage.cache_read_input_tokens+' &middot; out '+d.usage.output_tokens+'</span>';
   h+='</p>';
