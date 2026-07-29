@@ -1,21 +1,34 @@
 """Leakage-focused tests. Run: python3 test_permission_rag.py"""
-import tempfile
+
 import pathlib
+import tempfile
 
 from permission_rag import PermissionRAG
 
-ALICE = {"id": "alice", "groups": ["eng"]}          # engineer
-BOB = {"id": "bob", "groups": ["hr"]}               # HR
+ALICE = {"id": "alice", "groups": ["eng"]}  # engineer
+BOB = {"id": "bob", "groups": ["hr"]}  # HR
 CAROL = {"id": "carol", "groups": ["eng", "exec"]}  # exec + eng
 GUEST = {"id": "guest", "groups": []}
 
 
 def build():
     rag = PermissionRAG()
-    rag.add_document("handbook", "Company handbook: vacation policy is twenty days per year for all employees.", {"*"})
-    rag.add_document("arch", "Engineering architecture: the payments service uses Postgres and a Redis cache.", {"group:eng"})
-    rag.add_document("salaries", "HR confidential: salary bands range from 90k to 250k across levels.", {"group:hr"})
-    rag.add_document("merger", "Executive memo: the acquisition of Acme Corp closes next quarter, keep confidential.", {"group:exec", "user:dana"})
+    rag.add_document(
+        "handbook", "Company handbook: vacation policy is twenty days per year for all employees.", {"*"}
+    )
+    rag.add_document(
+        "arch",
+        "Engineering architecture: the payments service uses Postgres and a Redis cache.",
+        {"group:eng"},
+    )
+    rag.add_document(
+        "salaries", "HR confidential: salary bands range from 90k to 250k across levels.", {"group:hr"}
+    )
+    rag.add_document(
+        "merger",
+        "Executive memo: the acquisition of Acme Corp closes next quarter, keep confidential.",
+        {"group:exec", "user:dana"},
+    )
     return rag
 
 
@@ -36,7 +49,9 @@ def test():
     assert rag.retrieve("salary bands 90k 250k", GUEST) == []
 
     # user-level ACL entry works
-    assert any(r["doc_id"] == "merger" for r in rag.retrieve("acquisition Acme", {"id": "dana", "groups": []}))
+    assert any(
+        r["doc_id"] == "merger" for r in rag.retrieve("acquisition Acme", {"id": "dana", "groups": []})
+    )
 
     # multi-group user sees both
     ids = {r["doc_id"] for r in rag.retrieve("payments acquisition", CAROL, k=5)}
@@ -58,7 +73,7 @@ def test():
     # empty ACL refused at ingest
     try:
         rag.add_document("bad", "text", set())
-        assert False, "empty acl accepted"
+        raise AssertionError("empty acl accepted")
     except ValueError:
         pass
 
@@ -82,8 +97,9 @@ def test():
 
     # sentence-boundary chunking: sentences stay whole, boundary sentence overlaps
     r4 = PermissionRAG()
-    r4.add_document("s", "One two three four. Five six seven eight. Nine ten eleven twelve.",
-                    {"*"}, chunk_words=10)
+    r4.add_document(
+        "s", "One two three four. Five six seven eight. Nine ten eleven twelve.", {"*"}, chunk_words=10
+    )
     texts = [c["text"] for c in r4.chunks]
     assert texts[0] == "One two three four. Five six seven eight."
     assert texts[1].startswith("Five six seven eight.")  # overlap carries the boundary sentence

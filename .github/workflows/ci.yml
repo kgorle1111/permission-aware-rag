@@ -8,7 +8,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install pytest
+      - run: pip install pytest ruff
+      - run: ruff check . && ruff format --check .
       - run: pytest -q
         working-directory: app
       - run: python run_evals.py   # leak gate: exits 1 on any ACL leak or recall miss

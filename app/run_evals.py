@@ -5,6 +5,7 @@ Metrics: recall@k (expected doc appears in top-k) and leak rate (a must_not
 doc appears — this must always be 0, it is the product's core claim).
 Exit code 1 on any leak or recall failure, so it can gate CI.
 """
+
 import json
 import pathlib
 import sys

@@ -4,6 +4,7 @@ Run: python3 underwriter_server.py [port]
 Set ANTHROPIC_API_KEY to enable /ask (LLM answers with prompt caching);
 without it, /ask returns retrieval-only results with a note.
 """
+
 import base64
 import csv
 import hashlib
@@ -16,7 +17,7 @@ import sys
 import threading
 import time
 from collections import defaultdict, deque
-from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 import llm
@@ -32,13 +33,41 @@ USERS = {
 }
 
 rag = PermissionRAG(audit_path=pathlib.Path(__file__).with_name("audit_log.jsonl"))
-rag.add_document("policy-10023", "Policy 10023 status: ACTIVE. Homeowners, insured Maria Chen, coverage 450000 dollars, premium paid through December 2026. Prior carrier lapse of 30 days in 2023.", {"group:underwriting"})
-rag.add_document("policy-10088", "Policy 10088 status: PENDING RENEWAL. Commercial property, insured Delgado Logistics LLC, coverage 2.1 million dollars. Renewal blocked pending updated roof inspection report.", {"group:underwriting"})
-rag.add_document("claims-10023", "Claims history for policy 10023: one water damage claim in March 2024, paid 12400 dollars, subrogation recovered 8000 dollars. No open claims.", {"group:underwriting"})
-rag.add_document("bank-delgado", "Bank profile Delgado Logistics LLC: operating account average balance 310000 dollars, two NSF events in the last twelve months, line of credit 500000 dollars at 72 percent utilization.", {"group:banking"})
-rag.add_document("credit-memo-delgado", "Credit memo: Delgado Logistics debt service coverage ratio 1.1, below the 1.25 threshold. Recommend additional collateral or premium loading before binding above 1 million.", {"group:senior"})
-rag.add_document("watchlist", "Compliance watchlist: Delgado Logistics principal Robert Delgado is under review for a 2025 misrepresentation flag on a prior marine cargo application. Do not bind without compliance sign-off.", {"group:compliance"})
-rag.add_document("guidelines", "Underwriting guideline excerpt: properties with a prior coverage lapse over 21 days require senior review. Commercial risks above 2 million require a current inspection dated within 12 months.", {"*"})
+rag.add_document(
+    "policy-10023",
+    "Policy 10023 status: ACTIVE. Homeowners, insured Maria Chen, coverage 450000 dollars, premium paid through December 2026. Prior carrier lapse of 30 days in 2023.",
+    {"group:underwriting"},
+)
+rag.add_document(
+    "policy-10088",
+    "Policy 10088 status: PENDING RENEWAL. Commercial property, insured Delgado Logistics LLC, coverage 2.1 million dollars. Renewal blocked pending updated roof inspection report.",
+    {"group:underwriting"},
+)
+rag.add_document(
+    "claims-10023",
+    "Claims history for policy 10023: one water damage claim in March 2024, paid 12400 dollars, subrogation recovered 8000 dollars. No open claims.",
+    {"group:underwriting"},
+)
+rag.add_document(
+    "bank-delgado",
+    "Bank profile Delgado Logistics LLC: operating account average balance 310000 dollars, two NSF events in the last twelve months, line of credit 500000 dollars at 72 percent utilization.",
+    {"group:banking"},
+)
+rag.add_document(
+    "credit-memo-delgado",
+    "Credit memo: Delgado Logistics debt service coverage ratio 1.1, below the 1.25 threshold. Recommend additional collateral or premium loading before binding above 1 million.",
+    {"group:senior"},
+)
+rag.add_document(
+    "watchlist",
+    "Compliance watchlist: Delgado Logistics principal Robert Delgado is under review for a 2025 misrepresentation flag on a prior marine cargo application. Do not bind without compliance sign-off.",
+    {"group:compliance"},
+)
+rag.add_document(
+    "guidelines",
+    "Underwriting guideline excerpt: properties with a prior coverage lapse over 21 days require senior review. Commercial risks above 2 million require a current inspection dated within 12 months.",
+    {"*"},
+)
 
 UI = pathlib.Path(__file__).with_name("ui.html")
 PRESETS = pathlib.Path(__file__).with_name("presets.json")
@@ -81,6 +110,7 @@ def resolve_user(handler, qs, body):
     uid = (body or {}).get("user") or qs.get("user", [""])[0]
     return USERS.get(uid)
 
+
 # /ask is a paid API call; bound it per client IP before this ever leaves loopback.
 RATE_LIMIT, RATE_WINDOW = 10, 60.0  # ponytail: in-memory per-process; shared store if this ever scales out
 _hits = defaultdict(lambda: deque(maxlen=RATE_LIMIT))
@@ -88,12 +118,22 @@ _rate_lock = threading.Lock()
 
 
 # Haiku 4.5 $/MTok (2026-07): input 1.00, output 5.00, cache read 0.10, cache write 1.25
-PRICE = {"input_tokens": 1.00, "output_tokens": 5.00,
-         "cache_read_input_tokens": 0.10, "cache_creation_input_tokens": 1.25}
+PRICE = {
+    "input_tokens": 1.00,
+    "output_tokens": 5.00,
+    "cache_read_input_tokens": 0.10,
+    "cache_creation_input_tokens": 1.25,
+}
 
 # Running value-receipt totals for /audit — per-process, resets on restart.
-TOTALS = {"asks": 0, "input_tokens": 0, "output_tokens": 0,
-          "cache_read_input_tokens": 0, "est_cost_usd": 0.0, "llm_ms": 0.0}
+TOTALS = {
+    "asks": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "est_cost_usd": 0.0,
+    "llm_ms": 0.0,
+}
 _totals_lock = threading.Lock()
 
 
@@ -122,10 +162,8 @@ def rate_limited(ip):
 
 def audit_for(user):
     """Audit entries visible to this user: own entries only, unless in the audit group."""
-    entries = rag.audit if "audit" in user["groups"] else \
-        [e for e in rag.audit if e["user"] == user["id"]]
+    entries = rag.audit if "audit" in user["groups"] else [e for e in rag.audit if e["user"] == user["id"]]
     return entries[-50:]
-
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -140,8 +178,10 @@ class Handler(BaseHTTPRequestHandler):
     def _qa(self, path, user, query):
         """Shared /query and /ask logic; caller has already resolved identity."""
         if not user:
-            self._json(401 if JWT_SECRET else 400,
-                       {"error": "valid bearer token required" if JWT_SECRET else "need user and q"})
+            self._json(
+                401 if JWT_SECRET else 400,
+                {"error": "valid bearer token required" if JWT_SECRET else "need user and q"},
+            )
             return
         if not query:
             self._json(400, {"error": "need user and q"})
@@ -215,8 +255,16 @@ class Handler(BaseHTTPRequestHandler):
                 w = csv.writer(buf)
                 w.writerow(["ts", "user", "query", "returned", "denied_chunks", "elapsed_ms"])
                 for e in entries:
-                    w.writerow([e["ts"], e["user"], e["query"], ";".join(e["returned"]),
-                                e["denied_chunks"], e.get("elapsed_ms", "")])
+                    w.writerow(
+                        [
+                            e["ts"],
+                            e["user"],
+                            e["query"],
+                            ";".join(e["returned"]),
+                            e["denied_chunks"],
+                            e.get("elapsed_ms", ""),
+                        ]
+                    )
                 body = buf.getvalue().encode()
                 self.send_response(200)
                 self.send_header("Content-Type", "text/csv")
@@ -233,8 +281,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "text/html")
             self.send_header("X-Content-Type-Options", "nosniff")
             # inline script/style are how the single-file UI ships; CSP still blocks all external loads
-            self.send_header("Content-Security-Policy",
-                             "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:")
+            self.send_header(
+                "Content-Security-Policy",
+                "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:",
+            )
             self.end_headers()
             self.wfile.write(UI.read_bytes())
 

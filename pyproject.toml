@@ -1,0 +1,17 @@
+[project]
+name = "permission-aware-rag"
+version = "0.1.0"
+description = "Permission-aware RAG: ACL filtering before ranking, one structured LLM call, human-review-always-wins"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]  # long lines are synthetic corpus text and inline HTML, not code
+
+[tool.pytest.ini_options]
+testpaths = ["app"]

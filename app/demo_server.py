@@ -1,7 +1,8 @@
 """Demo UI: same query, different users, different answers. Run: python3 demo_server.py [port]"""
+
 import json
 import sys
-from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 from permission_rag import PermissionRAG
@@ -14,10 +15,26 @@ USERS = {
 }
 
 rag = PermissionRAG()
-rag.add_document("handbook", "Company handbook: vacation policy is twenty days per year. Remote work is allowed three days per week. Expense reports are due monthly.", {"*"})
-rag.add_document("arch", "Engineering architecture doc: the payments service uses Postgres with a Redis cache. Deploys go through the staging cluster. On-call rotation is weekly.", {"group:eng"})
-rag.add_document("salaries", "HR confidential: salary bands range from 90k for L1 to 250k for L6. Annual raises average four percent. Bonus pool is fifteen percent of profit.", {"group:hr"})
-rag.add_document("merger", "Executive memo: the acquisition of Acme Corp closes next quarter at a valuation of 40 million. Do not discuss externally.", {"group:exec"})
+rag.add_document(
+    "handbook",
+    "Company handbook: vacation policy is twenty days per year. Remote work is allowed three days per week. Expense reports are due monthly.",
+    {"*"},
+)
+rag.add_document(
+    "arch",
+    "Engineering architecture doc: the payments service uses Postgres with a Redis cache. Deploys go through the staging cluster. On-call rotation is weekly.",
+    {"group:eng"},
+)
+rag.add_document(
+    "salaries",
+    "HR confidential: salary bands range from 90k for L1 to 250k for L6. Annual raises average four percent. Bonus pool is fifteen percent of profit.",
+    {"group:hr"},
+)
+rag.add_document(
+    "merger",
+    "Executive memo: the acquisition of Acme Corp closes next quarter at a valuation of 40 million. Do not discuss externally.",
+    {"group:exec"},
+)
 
 PAGE = """<!doctype html><meta charset="utf-8"><title>Permission-Aware RAG</title>
 <style>body{font-family:system-ui;max-width:720px;margin:2rem auto;padding:0 1rem}
@@ -53,10 +70,11 @@ class Handler(BaseHTTPRequestHandler):
             user = USERS.get(qs.get("user", [""])[0])
             query = qs.get("q", [""])[0]
             if not user or not query or len(query) > MAX_Q_LEN:
-                self.send_response(400); self.end_headers(); return
+                self.send_response(400)
+                self.end_headers()
+                return
             results = rag.retrieve(query, user, k=3)
-            body = json.dumps({"results": results,
-                               "denied_chunks": rag.audit[-1]["denied_chunks"]}).encode()
+            body = json.dumps({"results": results, "denied_chunks": rag.audit[-1]["denied_chunks"]}).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("X-Content-Type-Options", "nosniff")
@@ -66,8 +84,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "text/html")
             self.send_header("X-Content-Type-Options", "nosniff")
-            self.send_header("Content-Security-Policy",
-                             "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'")
+            self.send_header(
+                "Content-Security-Policy",
+                "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'",
+            )
             self.end_headers()
             self.wfile.write(PAGE.encode())
 

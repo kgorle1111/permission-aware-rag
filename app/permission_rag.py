@@ -5,6 +5,7 @@ Core security property: a chunk the caller cannot read is excluded BEFORE rankin
 
 ACL entries: "user:<id>", "group:<name>", or "*" (public).
 """
+
 import hashlib
 import json
 import math
@@ -13,22 +14,24 @@ import re
 import threading
 import time
 from collections import Counter
+from collections.abc import Iterable
 
 _TOKEN = re.compile(r"[a-z0-9]+")
 
 
-def tokenize(text):
+def tokenize(text: str) -> list[str]:
     return _TOKEN.findall(text.lower())
 
 
 class PermissionRAG:
     # ponytail: in-memory BM25 ranking, swap _score for embedding cosine when recall matters
     AUDIT_MAX = 1000  # in-memory bound; the JSONL file keeps full history
-    def __init__(self, audit_path=None):
+
+    def __init__(self, audit_path: str | pathlib.Path | None = None) -> None:
         """audit_path: optional JSONL file; entries append there and reload on start,
         so the trail survives restarts (compliance requirement, not a nice-to-have)."""
-        self.chunks = []      # {id, doc_id, text, acl:set, tf:Counter}
-        self.audit = []       # one entry per retrieve() call
+        self.chunks = []  # {id, doc_id, text, acl:set, tf:Counter}
+        self.audit = []  # one entry per retrieve() call
         self.audit_path = pathlib.Path(audit_path) if audit_path else None
         self._audit_lock = threading.Lock()  # servers run threaded; keep JSONL lines whole
         self._last_hash = ""  # tamper-evident chain: each entry carries prev line's sha256
@@ -39,7 +42,7 @@ class PermissionRAG:
             if lines:
                 self._last_hash = hashlib.sha256(lines[-1].encode()).hexdigest()
 
-    def add_document(self, doc_id, text, acl, chunk_words=80):
+    def add_document(self, doc_id: str, text: str, acl: Iterable[str], chunk_words: int = 80) -> None:
         """Ingest a document. `acl` is the set of principals allowed to read it."""
         if not acl:
             raise ValueError("acl must not be empty — refusing to ingest unreadable/ambiguous document")
@@ -47,24 +50,25 @@ class PermissionRAG:
             raise ValueError(f"doc_id {doc_id!r} already ingested — use remove_document() then re-add")
         acl = set(acl)
         for i, chunk_text in enumerate(self._chunk_texts(text, chunk_words)):
-            self.chunks.append({
-                "id": f"{doc_id}#{i}",
-                "doc_id": doc_id,
-                "text": chunk_text,
-                "acl": acl,
-                "tf": Counter(tokenize(chunk_text)),
-            })
+            self.chunks.append(
+                {
+                    "id": f"{doc_id}#{i}",
+                    "doc_id": doc_id,
+                    "text": chunk_text,
+                    "acl": acl,
+                    "tf": Counter(tokenize(chunk_text)),
+                }
+            )
 
     @staticmethod
-    def _chunk_texts(text, chunk_words):
+    def _chunk_texts(text: str, chunk_words: int) -> list[str]:
         """Pack whole sentences up to chunk_words, with a one-sentence overlap so a
         fact spanning a boundary stays retrievable. Oversize sentences hard-split."""
         pieces = []
         for s in re.split(r"(?<=[.!?])\s+", text.strip()):
             words = s.split()
             if len(words) > chunk_words:
-                pieces.extend(" ".join(words[i:i + chunk_words])
-                              for i in range(0, len(words), chunk_words))
+                pieces.extend(" ".join(words[i : i + chunk_words]) for i in range(0, len(words), chunk_words))
             elif words:
                 pieces.append(s)
         chunks, cur, cur_len = [], [], 0
@@ -74,14 +78,16 @@ class PermissionRAG:
                 chunks.append(" ".join(cur))
                 last = cur[-1]
                 # overlap only if the carried sentence leaves room for new content
-                cur, cur_len = ([last], len(last.split())) if len(last.split()) <= chunk_words // 2 else ([], 0)
+                cur, cur_len = (
+                    ([last], len(last.split())) if len(last.split()) <= chunk_words // 2 else ([], 0)
+                )
             cur.append(s)
             cur_len += n
         if cur:
             chunks.append(" ".join(cur))
         return chunks
 
-    def remove_document(self, doc_id):
+    def remove_document(self, doc_id: str) -> int:
         """Remove all chunks for doc_id; returns count removed. Re-ingest = remove + add.
         df/n are computed per-query over the visible set, so no index correction needed."""
         before = len(self.chunks)
@@ -89,7 +95,7 @@ class PermissionRAG:
         return before - len(self.chunks)
 
     @staticmethod
-    def can_read(user, acl):
+    def can_read(user: dict, acl: set[str]) -> bool:
         """user = {"id": str, "groups": [str, ...]}"""
         if "*" in acl:
             return True
@@ -101,7 +107,7 @@ class PermissionRAG:
     # normalization (b) stops long chunks winning on bulk alone.
     K1, B = 1.5, 0.75
 
-    def _score(self, qtokens, chunk, df, n, avglen):
+    def _score(self, qtokens: set[str], chunk: dict, df: Counter, n: int, avglen: float) -> float:
         length = sum(chunk["tf"].values())
         score = 0.0
         for t in qtokens:
@@ -112,7 +118,7 @@ class PermissionRAG:
             score += idf * f * (self.K1 + 1) / (f + self.K1 * (1 - self.B + self.B * length / avglen))
         return score
 
-    def retrieve(self, query, user, k=3):
+    def retrieve(self, query: str, user: dict, k: int = 3) -> list[dict]:
         """Return top-k chunks the user is allowed to read, ranked by relevance.
 
         Pre-filter, then rank: denied chunks are never scored, so their content
@@ -128,11 +134,11 @@ class PermissionRAG:
         n = len(visible)
         avglen = sum(sum(c["tf"].values()) for c in visible) / n if n else 1.0
         qtokens = set(tokenize(query))
-        scored = sorted(((self._score(qtokens, c, df, n, avglen), c) for c in visible),
-                        key=lambda sc: sc[0], reverse=True)
+        scored = sorted(
+            ((self._score(qtokens, c, df, n, avglen), c) for c in visible), key=lambda sc: sc[0], reverse=True
+        )
         results = [
-            {"id": c["id"], "doc_id": c["doc_id"], "text": c["text"],
-             "score": round(s, 4)}
+            {"id": c["id"], "doc_id": c["doc_id"], "text": c["text"], "score": round(s, 4)}
             for s, c in scored[:k]
             if s > 0
         ]
@@ -150,14 +156,14 @@ class PermissionRAG:
             self._last_hash = hashlib.sha256(line.encode()).hexdigest()
             self.audit.append(entry)
             if len(self.audit) > self.AUDIT_MAX:
-                del self.audit[:-self.AUDIT_MAX]
+                del self.audit[: -self.AUDIT_MAX]
             if self.audit_path:
                 with self.audit_path.open("a") as f:
                     f.write(line + "\n")
         return results
 
     @staticmethod
-    def verify_audit_chain(path):
+    def verify_audit_chain(path: str | pathlib.Path) -> bool:
         """True iff the JSONL audit log's hash chain is intact (no edited/removed lines)."""
         prev = ""
         with pathlib.Path(path).open() as f:

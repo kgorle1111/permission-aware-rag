@@ -2,6 +2,7 @@
 
 Run: pytest test_http.py. No API key needed — /ask exercises the no-LLM path.
 """
+
 import base64
 import hashlib
 import hmac
@@ -28,8 +29,7 @@ def _get(base, path, headers=None):
 
 def _post(base, path, body, headers=None):
     data = body if isinstance(body, bytes) else json.dumps(body).encode()
-    req = urllib.request.Request(base + path, data,
-                                 {"content-type": "application/json", **(headers or {})})
+    req = urllib.request.Request(base + path, data, {"content-type": "application/json", **(headers or {})})
     try:
         with urllib.request.urlopen(req) as r:
             return r.status, json.load(r)
@@ -38,11 +38,15 @@ def _post(base, path, body, headers=None):
 
 
 def _jwt(secret, claims):
-    enc = lambda o: base64.urlsafe_b64encode(json.dumps(o).encode()).rstrip(b"=").decode()
+    def enc(o):
+        return base64.urlsafe_b64encode(json.dumps(o).encode()).rstrip(b"=").decode()
+
     h, p = enc({"alg": "HS256", "typ": "JWT"}), enc(claims)
-    sig = base64.urlsafe_b64encode(
-        hmac.new(secret.encode(), f"{h}.{p}".encode(), hashlib.sha256).digest()
-    ).rstrip(b"=").decode()
+    sig = (
+        base64.urlsafe_b64encode(hmac.new(secret.encode(), f"{h}.{p}".encode(), hashlib.sha256).digest())
+        .rstrip(b"=")
+        .decode()
+    )
     return f"{h}.{p}.{sig}"
 
 
@@ -95,7 +99,9 @@ def test():
         # JWT seam: valid token resolves claims; bad/missing token is 401
         srv.JWT_SECRET = "test-secret"
         try:
-            tok = _jwt("test-secret", {"sub": "sso-user", "groups": ["underwriting"], "exp": time.time() + 60})
+            tok = _jwt(
+                "test-secret", {"sub": "sso-user", "groups": ["underwriting"], "exp": time.time() + 60}
+            )
             code, d = _get(base, "/query?q=claims+history", {"Authorization": f"Bearer {tok}"})
             assert code == 200 and d["results"]
             assert _get(base, "/query?q=x", {"Authorization": "Bearer bad.token.sig"})[0] == 401
@@ -107,9 +113,13 @@ def test():
 
         # cost observability: mocked LLM answer carries llm_ms + est_cost; /audit totals accrue
         from unittest import mock
+
         usage = {"input_tokens": 1000, "output_tokens": 300, "cache_read_input_tokens": 2000}
-        with mock.patch.object(srv.llm, "ask", return_value={
-                "answer": "ok [policy-10023]", "usage": usage, "unverified_citations": []}):
+        with mock.patch.object(
+            srv.llm,
+            "ask",
+            return_value={"answer": "ok [policy-10023]", "usage": usage, "unverified_citations": []},
+        ):
             code, d = _post(base, "/ask", {"user": "junior", "q": "policy 10023 status"})
         assert code == 200 and "llm_ms" in d
         assert d["est_cost_usd"] == round((1000 * 1.00 + 300 * 5.00 + 2000 * 0.10) / 1e6, 6)
