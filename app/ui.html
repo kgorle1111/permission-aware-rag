@@ -178,6 +178,8 @@ function render(d){
       +d.unverified_citations.length+' unverified citation(s): '+esc(d.unverified_citations.join(', '))+'</span>';
   if(d.usage&&d.usage.cache_read_input_tokens!==undefined)
     h+='<span>in '+d.usage.input_tokens+' &middot; cached '+d.usage.cache_read_input_tokens+' &middot; out '+d.usage.output_tokens+'</span>';
+  if(d.llm_ms!==undefined)
+    h+='<span>'+d.llm_ms+' ms &middot; $'+d.est_cost_usd+'</span>';
   h+='</p>';
   if(d.answer)h+='<div class="card answer">'+linkify(d.answer)
     +'<div style="margin-top:8px"><button type="button" class="chip" id="copy">Copy as file note</button></div></div>';
@@ -238,7 +240,9 @@ async function refreshAudit(){
     $('audit').innerHTML='<table><thead><tr><th>Time</th><th>Role</th><th>Query</th><th>Returned</th><th>Hidden</th><th>ms</th></tr></thead><tbody>'
      +d.entries.slice(-8).reverse().map(a=>'<tr><td>'+new Date(a.ts*1000).toLocaleTimeString()+'</td><td>'+esc(a.user)+'</td><td>'+esc(a.query)
        +'</td><td>'+a.returned.length+'</td><td>'+a.denied_chunks+'</td><td>'+(a.elapsed_ms??'')+'</td></tr>').join('')+'</tbody></table>'
-     +'<p class="meta" style="margin-top:8px"><a href="/audit?user='+role+'&format=csv">Export CSV</a></p>';
+     +'<p class="meta" style="margin-top:8px"><a href="/audit?user='+role+'&format=csv">Export CSV</a>'
+     +(d.llm_summary&&d.llm_summary.asks?'<span>'+d.llm_summary.asks+' LLM call(s) &middot; $'
+       +d.llm_summary.est_cost_usd+' total &middot; '+Math.round(d.llm_summary.llm_ms/d.llm_summary.asks)+' ms avg</span>':'')+'</p>';
   }catch(_){}
 }
 </script>

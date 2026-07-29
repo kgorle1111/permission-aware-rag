@@ -87,6 +87,29 @@ _hits = defaultdict(lambda: deque(maxlen=RATE_LIMIT))
 _rate_lock = threading.Lock()
 
 
+# Haiku 4.5 $/MTok (2026-07): input 1.00, output 5.00, cache read 0.10, cache write 1.25
+PRICE = {"input_tokens": 1.00, "output_tokens": 5.00,
+         "cache_read_input_tokens": 0.10, "cache_creation_input_tokens": 1.25}
+
+# Running value-receipt totals for /audit — per-process, resets on restart.
+TOTALS = {"asks": 0, "input_tokens": 0, "output_tokens": 0,
+          "cache_read_input_tokens": 0, "est_cost_usd": 0.0, "llm_ms": 0.0}
+_totals_lock = threading.Lock()
+
+
+def est_cost(usage):
+    return round(sum(usage.get(k, 0) * p for k, p in PRICE.items()) / 1e6, 6)
+
+
+def record_ask(usage, llm_ms):
+    with _totals_lock:
+        TOTALS["asks"] += 1
+        for k in ("input_tokens", "output_tokens", "cache_read_input_tokens"):
+            TOTALS[k] += usage.get(k, 0)
+        TOTALS["est_cost_usd"] = round(TOTALS["est_cost_usd"] + est_cost(usage), 6)
+        TOTALS["llm_ms"] = round(TOTALS["llm_ms"] + llm_ms, 1)
+
+
 def rate_limited(ip):
     now = time.monotonic()
     with _rate_lock:
@@ -138,14 +161,19 @@ class Handler(BaseHTTPRequestHandler):
             if not results:
                 out["note"] = "No accessible documents matched; skipped the LLM call."
             else:
+                t0 = time.perf_counter()
                 try:
                     llm_out = llm.ask(query, results)
                 except Exception as e:  # LLM failure must not take down retrieval
                     print(f"llm error: {e}", file=sys.stderr)  # detail stays server-side
                     out["note"] = "LLM call failed; showing retrieval only."
             if llm_out:
+                llm_ms = round((time.perf_counter() - t0) * 1000, 1)
+                record_ask(llm_out["usage"], llm_ms)
                 out["answer"] = llm_out["answer"]
                 out["usage"] = llm_out["usage"]
+                out["llm_ms"] = llm_ms
+                out["est_cost_usd"] = est_cost(llm_out["usage"])
                 out["unverified_citations"] = llm_out["unverified_citations"]
             elif "note" not in out:
                 out["note"] = "Set ANTHROPIC_API_KEY to enable drafted answers; showing retrieval only."
@@ -197,7 +225,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(body)
                 return
-            self._json(200, {"entries": entries})
+            with _totals_lock:
+                summary = dict(TOTALS)
+            self._json(200, {"entries": entries, "llm_summary": summary})
         else:
             self.send_response(200)
             self.send_header("Content-Type", "text/html")
