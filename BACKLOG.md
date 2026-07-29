@@ -95,6 +95,11 @@ sanitized LLM errors to browser, `test_llm.py` (mocked urlopen).
 tests (`test_http.py`: 400s, /audit scoping, rate limit, skip-LLM), audit
 `elapsed_ms` + in-memory bound (1000), GitHub Actions CI with leak gate.
 
+**DONE 2026-07-28 (wave 4):** keyboard shortcuts (/, 1–4, Esc), query-term
+highlighting, audit timestamps + elapsed_ms in UI, retrieval-only quick mode,
+escalation hint on empty+denied, audit CSV export (`/audit?format=csv`),
+defensive parsing of malformed API responses.
+
 ## Execution notes (from the pipeline doc)
 
 Partition by FILE OWNERSHIP when implementing: `permission_rag.py` and
