@@ -15,12 +15,12 @@ call drafts cited findings on top; a human always makes the decision.
 **Built end-to-end in Python stdlib only.** No vector database, no framework, no
 dependencies — every security property is in ~600 lines you can actually read.
 
-![Underwriter Workbench — a senior underwriter's view: four accessible sources, one chunk hidden by permissions](docs/workbench.png)
+![Same question, four roles — sources and permission badges change with each role](docs/workbench.gif)
 
-*A senior underwriter asks about a bind decision: four sources their role permits, one
-chunk hidden by permissions (the badge explains which data classes and who to escalate
-to). Switch to Junior and the banking and credit-memo sources vanish — from the results
-and from the ranking math.*
+*The same question asked as Junior → Senior → Compliance → Auditor. Sources appear and
+vanish with the role — a junior sees 2 sources with 3 chunks hidden; a senior sees the
+banking and credit-memo files (4 sources, 1 hidden). The hidden-badge tooltip names the
+missing data classes and who to escalate to. Static shot: [docs/workbench.png](docs/workbench.png).*
 
 ---
 
