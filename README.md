@@ -15,6 +15,13 @@ call drafts cited findings on top; a human always makes the decision.
 **Built end-to-end in Python stdlib only.** No vector database, no framework, no
 dependencies — every security property is in ~600 lines you can actually read.
 
+![Underwriter Workbench — a senior underwriter's view: four accessible sources, one chunk hidden by permissions](docs/workbench.png)
+
+*A senior underwriter asks about a bind decision: four sources their role permits, one
+chunk hidden by permissions (the badge explains which data classes and who to escalate
+to). Switch to Junior and the banking and credit-memo sources vanish — from the results
+and from the ranking math.*
+
 ---
 
 ## The problem
