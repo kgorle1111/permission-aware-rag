@@ -50,6 +50,12 @@ def test():
         code, d = _get(base, "/audit?user=auditor")
         assert {e["user"] for e in d["entries"]} >= {"junior", "senior"}
 
+        # /audit CSV export: header row + scoped to caller
+        with urllib.request.urlopen(base + "/audit?user=junior&format=csv") as r:
+            assert r.headers["Content-Type"] == "text/csv"
+            lines = r.read().decode().splitlines()
+        assert lines[0].startswith("ts,user,query") and all(",junior," in ln for ln in lines[1:])
+
         # rate limit: /ask 429s within the window (runs last — it exhausts the bucket)
         codes = [_get(base, f"/ask?user=junior&q=policy+{i}")[0] for i in range(srv.RATE_LIMIT + 2)]
         assert 429 in codes and codes[-1] == 429

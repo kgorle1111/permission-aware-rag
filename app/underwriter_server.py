@@ -4,6 +4,8 @@ Run: python3 underwriter_server.py [port]
 Set ANTHROPIC_API_KEY to enable /ask (LLM answers with prompt caching);
 without it, /ask returns retrieval-only results with a note.
 """
+import csv
+import io
 import json
 import pathlib
 import sys
@@ -106,11 +108,28 @@ class Handler(BaseHTTPRequestHandler):
                     out["note"] = "Set ANTHROPIC_API_KEY to enable drafted answers; showing retrieval only."
             self._json(200, out)
         elif url.path == "/audit":
-            user = USERS.get(parse_qs(url.query).get("user", [""])[0])
+            qs = parse_qs(url.query)
+            user = USERS.get(qs.get("user", [""])[0])
             if not user:
                 self._json(400, {"error": "need user"})
                 return
-            self._json(200, {"entries": audit_for(user)})
+            entries = audit_for(user)
+            if qs.get("format", [""])[0] == "csv":  # compliance needs the trail out of the browser
+                buf = io.StringIO()
+                w = csv.writer(buf)
+                w.writerow(["ts", "user", "query", "returned", "denied_chunks", "elapsed_ms"])
+                for e in entries:
+                    w.writerow([e["ts"], e["user"], e["query"], ";".join(e["returned"]),
+                                e["denied_chunks"], e.get("elapsed_ms", "")])
+                body = buf.getvalue().encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/csv")
+                self.send_header("Content-Disposition", "attachment; filename=audit.csv")
+                self.send_header("X-Content-Type-Options", "nosniff")
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            self._json(200, {"entries": entries})
         else:
             self.send_response(200)
             self.send_header("Content-Type", "text/html")
