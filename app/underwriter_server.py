@@ -4,9 +4,13 @@ Run: python3 underwriter_server.py [port]
 Set ANTHROPIC_API_KEY to enable /ask (LLM answers with prompt caching);
 without it, /ask returns retrieval-only results with a note.
 """
+import base64
 import csv
+import hashlib
+import hmac
 import io
 import json
+import os
 import pathlib
 import sys
 import threading
@@ -37,8 +41,45 @@ rag.add_document("watchlist", "Compliance watchlist: Delgado Logistics principal
 rag.add_document("guidelines", "Underwriting guideline excerpt: properties with a prior coverage lapse over 21 days require senior review. Commercial risks above 2 million require a current inspection dated within 12 months.", {"*"})
 
 UI = pathlib.Path(__file__).with_name("ui.html")
+PRESETS = pathlib.Path(__file__).with_name("presets.json")
 
 MAX_Q_LEN = 1000
+MAX_BODY = 16 * 1024
+
+# The "N hidden" count is a deliberate demo side channel (it sells the feature).
+# Default off outside the demo: SHOW_DENIED=0 removes it from responses.
+SHOW_DENIED = os.environ.get("SHOW_DENIED", "1") == "1"
+
+# SSO seam: set UNDERWRITER_JWT_SECRET and identity comes from a signed HS256
+# JWT (sub + groups claims) instead of the demo dropdown. can_read() unchanged.
+JWT_SECRET = os.environ.get("UNDERWRITER_JWT_SECRET")
+
+
+def _b64url(s):
+    return base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
+
+
+def user_from_jwt(auth_header):
+    """Validate 'Bearer <hs256 jwt>' -> {"id", "groups"} or None."""
+    try:
+        h, p, sig = auth_header.split()[1].split(".")
+        expected = hmac.new(JWT_SECRET.encode(), f"{h}.{p}".encode(), hashlib.sha256).digest()
+        if not hmac.compare_digest(_b64url(sig), expected):
+            return None
+        claims = json.loads(_b64url(p))
+        if claims.get("exp", 0) < time.time():
+            return None
+        return {"id": claims["sub"], "groups": list(claims.get("groups", []))}
+    except Exception:
+        return None
+
+
+def resolve_user(handler, qs, body):
+    """JWT when configured; demo dropdown (?user= / body user) otherwise."""
+    if JWT_SECRET:
+        return user_from_jwt(handler.headers.get("Authorization", ""))
+    uid = (body or {}).get("user") or qs.get("user", [""])[0]
+    return USERS.get(uid)
 
 # /ask is a paid API call; bound it per client IP before this ever leaves loopback.
 RATE_LIMIT, RATE_WINDOW = 10, 60.0  # ponytail: in-memory per-process; shared store if this ever scales out
@@ -73,43 +114,70 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _qa(self, path, user, query):
+        """Shared /query and /ask logic; caller has already resolved identity."""
+        if not user:
+            self._json(401 if JWT_SECRET else 400,
+                       {"error": "valid bearer token required" if JWT_SECRET else "need user and q"})
+            return
+        if not query:
+            self._json(400, {"error": "need user and q"})
+            return
+        if len(query) > MAX_Q_LEN:
+            self._json(400, {"error": f"q too long (max {MAX_Q_LEN} chars)"})
+            return
+        if path == "/ask" and rate_limited(self.client_address[0]):
+            self._json(429, {"error": "rate limited; retry in a minute"})
+            return
+        results = rag.retrieve(query, user, k=4)
+        out = {"results": results}
+        if SHOW_DENIED:
+            out["denied_chunks"] = rag.audit[-1]["denied_chunks"]
+        if path == "/ask":
+            llm_out = None
+            if not results:
+                out["note"] = "No accessible documents matched; skipped the LLM call."
+            else:
+                try:
+                    llm_out = llm.ask(query, results)
+                except Exception as e:  # LLM failure must not take down retrieval
+                    print(f"llm error: {e}", file=sys.stderr)  # detail stays server-side
+                    out["note"] = "LLM call failed; showing retrieval only."
+            if llm_out:
+                out["answer"] = llm_out["answer"]
+                out["usage"] = llm_out["usage"]
+                out["unverified_citations"] = llm_out["unverified_citations"]
+            elif "note" not in out:
+                out["note"] = "Set ANTHROPIC_API_KEY to enable drafted answers; showing retrieval only."
+        self._json(200, out)
+
+    def do_POST(self):
+        url = urlparse(self.path)
+        if url.path not in ("/query", "/ask"):
+            self._json(404, {"error": "not found"})
+            return
+        length = int(self.headers.get("Content-Length") or 0)
+        if not 0 < length <= MAX_BODY:
+            self._json(400, {"error": "need a JSON body"})
+            return
+        try:
+            body = json.loads(self.rfile.read(length))
+            assert isinstance(body, dict)
+        except (ValueError, AssertionError):
+            self._json(400, {"error": "malformed JSON body"})
+            return
+        self._qa(url.path, resolve_user(self, {}, body), str(body.get("q", "")))
+
     def do_GET(self):
         url = urlparse(self.path)
         if url.path in ("/query", "/ask"):
             qs = parse_qs(url.query)
-            user = USERS.get(qs.get("user", [""])[0])
-            query = qs.get("q", [""])[0]
-            if not user or not query:
-                self._json(400, {"error": "need user and q"})
-                return
-            if len(query) > MAX_Q_LEN:
-                self._json(400, {"error": f"q too long (max {MAX_Q_LEN} chars)"})
-                return
-            if url.path == "/ask" and rate_limited(self.client_address[0]):
-                self._json(429, {"error": "rate limited; retry in a minute"})
-                return
-            results = rag.retrieve(query, user, k=4)
-            out = {"results": results, "denied_chunks": rag.audit[-1]["denied_chunks"]}
-            if url.path == "/ask":
-                llm_out = None
-                if not results:
-                    out["note"] = "No accessible documents matched; skipped the LLM call."
-                else:
-                    try:
-                        llm_out = llm.ask(query, results)
-                    except Exception as e:  # LLM failure must not take down retrieval
-                        print(f"llm error: {e}", file=sys.stderr)  # detail stays server-side
-                        out["note"] = "LLM call failed; showing retrieval only."
-                if llm_out:
-                    out["answer"] = llm_out["answer"]
-                    out["usage"] = llm_out["usage"]
-                    out["unverified_citations"] = llm_out["unverified_citations"]
-                elif "note" not in out:
-                    out["note"] = "Set ANTHROPIC_API_KEY to enable drafted answers; showing retrieval only."
-            self._json(200, out)
+            self._qa(url.path, resolve_user(self, qs, None), qs.get("q", [""])[0])
+        elif url.path == "/presets":
+            self._json(200, json.loads(PRESETS.read_text()))
         elif url.path == "/audit":
             qs = parse_qs(url.query)
-            user = USERS.get(qs.get("user", [""])[0])
+            user = resolve_user(self, qs, None)
             if not user:
                 self._json(400, {"error": "need user"})
                 return
