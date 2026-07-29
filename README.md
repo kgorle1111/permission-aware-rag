@@ -88,7 +88,7 @@ results = rag.retrieve("salary bands", hr_user, k=3)
 
 rag.retrieve("salary bands", {"id": "alice", "groups": ["eng"]})  # [] — filtered before ranking
 
-rag.remove_document("salaries")                    # re-sync = remove + add
+rag.remove_document("salaries")  # re-sync = remove + add
 PermissionRAG.verify_audit_chain("audit_log.jsonl")  # True unless the log was tampered with
 ```
 
