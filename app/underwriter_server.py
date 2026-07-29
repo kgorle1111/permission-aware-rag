@@ -308,6 +308,8 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8421
-    print(f"http://127.0.0.1:{port}")
-    ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()
+    # local default stays loopback-only; hosts (Render, Docker) set HOST=0.0.0.0 + PORT
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", 8421))
+    host = os.environ.get("HOST", "127.0.0.1")
+    print(f"http://{host}:{port}")
+    ThreadingHTTPServer((host, port), Handler).serve_forever()

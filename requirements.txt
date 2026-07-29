@@ -1,0 +1,2 @@
+# Intentionally empty — the core app is Python stdlib only.
+# (The optional pgvector backend needs `pip install -e ".[pg]"`; not used by the demo deploy.)

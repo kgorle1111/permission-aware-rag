@@ -66,6 +66,9 @@ User question ──► ACL pre-filter ──► BM25 over visible set ──►
 
 ## Try it in 60 seconds
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/kgorle1111/permission-aware-rag)
+&nbsp;— one-click free-tier deploy ([setup guide](SETUP.md)), or run it locally:
+
 ```bash
 git clone https://github.com/kgorle1111/permission-aware-rag && cd permission-aware-rag/app
 python3 run_evals.py                # the leak gate: 20 cases | recall@4: 14/14 | leaks: 0

@@ -1,0 +1,15 @@
+# Render blueprint — free-tier public demo of the Underwriter Workbench.
+# Retrieval-only by default (no LLM spend); add ANTHROPIC_API_KEY in the
+# Render dashboard to enable drafted answers (rate-limited 10/min/IP in-app).
+services:
+  - type: web
+    name: permission-aware-rag
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app/underwriter_server.py
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: PYTHON_VERSION
+        value: 3.12.6
