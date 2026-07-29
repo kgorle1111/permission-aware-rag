@@ -10,7 +10,10 @@ Everything below plugs in at one of three seams: **identity in**, **documents in
 |---|---|
 | Role picker in the sidebar | SSO (Okta / Entra / Google Workspace). Map IdP groups → RAG groups 1:1 (`group:underwriting`, `group:banking`, `group:compliance`, `group:senior`). No per-user ACL editing in this tool — permissions stay owned by IT in the IdP. |
 
-Integration cost: replace the `USERS` dict with a JWT check; `can_read()` is unchanged.
+Integration cost: **already a config change** — set `UNDERWRITER_JWT_SECRET` and identity
+comes from a signed HS256 bearer token (`sub` + `groups` claims); the demo dropdown is
+ignored. `can_read()` is unchanged. Remaining production work: point validation at the
+IdP's keys (RS256/JWKS) instead of a shared secret.
 
 ## 2. Documents in (what it can retrieve)
 
@@ -35,11 +38,13 @@ Underwriters live in their policy admin system and email — not in new tabs. Th
 integration tiers, cheapest first:
 
 1. **Standalone tab (today):** the workbench UI. Zero integration work.
-2. **Deep link:** `/?q=<question>&policy=<id>` from the policy admin's notes field —
-   one URL template pasted into the existing system's custom-link config.
-3. **API embed:** `GET /ask?user=<role>&q=<q>` returns JSON — drop the drafted findings
-   into the underwriting file note via the policy admin's API. The answer text is
-   already citation-formatted for paste-into-file-note.
+2. **Deep link (implemented):** `/?user=<role>&q=<question>` auto-selects the role and
+   submits — one URL template pasted into the policy admin's custom-link config. The UI
+   also keeps the URL shareable on every ask.
+3. **API embed (implemented):** `POST /ask` with `{"user","q"}` returns JSON with the
+   drafted findings, citations, `llm_ms`, and `est_cost_usd` — drop into the underwriting
+   file note via the policy admin's API. The UI's **Copy as file note** and **Copy as
+   curl** buttons make both directions self-documenting for shop IT.
 
 ## 4. Workflow presets (sidebar) — mapped to real underwriter tasks
 
@@ -51,8 +56,9 @@ integration tiers, cheapest first:
 | Bind decision prep | Authority-limit check before binding |
 | Compliance screen | Pre-bind clearance |
 
-Presets are one array in `app/ui.html` — each shop edits them to match its own queue
-names in minutes. That's the "adjusts to any workflow" mechanism: configuration, not code.
+Presets live in `app/presets.json`, served at `/presets` — each shop edits a JSON file
+to match its own queue names in minutes, no HTML knowledge required. That's the
+"adjusts to any workflow" mechanism: configuration, not code.
 
 ## 5. What is deliberately NOT integrated
 

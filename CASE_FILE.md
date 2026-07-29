@@ -41,7 +41,7 @@ decisions) → audit trail (every retrieval logs who/what/returned/denied-count)
   `cache_control: ephemeral`. This is the stable prefix every request shares.
 - **Not cached:** retrieved context + question — they change per request, caching them
   would just churn cache writes.
-- **Caveat:** Haiku's minimum cacheable block is 2048 tokens; the current stub prompt is
+- **Caveat:** Haiku 4.5's minimum cacheable block is 4096 tokens; the current stub prompt is
   below that, so cache reads show 0 until the real guidelines manual is pasted in.
   `usage` (input / cache_read / output tokens) is surfaced in every response so you can
   verify the moment it engages.
@@ -66,13 +66,15 @@ role before any prompt iteration.
   Regression-tested in `test_permission_rag.py`. Was BACKLOG.md S1.
 - **"N chunks hidden" side channel:** the denied count is shown in the UI. Deliberate for
   the demo (it sells the feature); consider hiding per-query counts in production.
-- **TF-IDF ceiling:** exact-word matching only; swap `_score` for embedding cosine when
+- **BM25 ceiling:** exact-word matching only; swap `_score` for embedding cosine when
   recall matters. ACL logic is unchanged by that swap.
 - **Regulatory:** if this touches real consumer credit decisions, ECOA/FCRA adverse-action
   territory — one more reason output stays "findings for human review."
 
 ## Next steps
 
-1. Paste a real (or realistic ~3k-token) guidelines manual into `SYSTEM_PROMPT` → verify cache reads.
-2. Build the 20-case eval harness (per-role Q/A + must-not-cite assertions).
-3. Value receipts: log per-query time-saved estimate for the pilot pitch.
+1. Paste a real (or realistic ~4.5k-token) guidelines manual into `SYSTEM_PROMPT` →
+   verify cache reads (Haiku 4.5 minimum cacheable block is 4096 tokens).
+2. ~~Build the 20-case eval harness~~ Done — `app/run_evals.py`, gates CI.
+3. Value receipts: per-query `llm_ms` + `est_cost_usd` now ship in every /ask and roll
+   up in `/audit.llm_summary`; add a time-saved estimate for the pilot pitch.

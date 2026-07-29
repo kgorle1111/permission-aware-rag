@@ -26,7 +26,7 @@ MODEL = (
 )
 
 # Static guidelines block — the cacheable prefix. Caching engages once this
-# exceeds the model's minimum cacheable size (2048 tokens on Haiku); grow it
+# exceeds the model's minimum cacheable size (4096 tokens on Haiku 4.5); grow it
 # with the real underwriting manual and cache reads show up in usage.
 SYSTEM_PROMPT = """You are an internal underwriting research assistant. You answer questions
 for underwriters using ONLY the document excerpts supplied in the user message. Those
