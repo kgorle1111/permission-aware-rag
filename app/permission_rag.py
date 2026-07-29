@@ -5,6 +5,7 @@ Core security property: a chunk the caller cannot read is excluded BEFORE rankin
 
 ACL entries: "user:<id>", "group:<name>", or "*" (public).
 """
+import hashlib
 import json
 import math
 import pathlib
@@ -30,28 +31,62 @@ class PermissionRAG:
         self.audit = []       # one entry per retrieve() call
         self.audit_path = pathlib.Path(audit_path) if audit_path else None
         self._audit_lock = threading.Lock()  # servers run threaded; keep JSONL lines whole
+        self._last_hash = ""  # tamper-evident chain: each entry carries prev line's sha256
         if self.audit_path and self.audit_path.exists():
             with self.audit_path.open() as f:
-                self.audit = [json.loads(line) for line in f if line.strip()]
+                lines = [line.rstrip("\n") for line in f if line.strip()]
+            self.audit = [json.loads(line) for line in lines]
+            if lines:
+                self._last_hash = hashlib.sha256(lines[-1].encode()).hexdigest()
 
     def add_document(self, doc_id, text, acl, chunk_words=80):
         """Ingest a document. `acl` is the set of principals allowed to read it."""
         if not acl:
             raise ValueError("acl must not be empty — refusing to ingest unreadable/ambiguous document")
         if any(c["doc_id"] == doc_id for c in self.chunks):
-            raise ValueError(f"doc_id {doc_id!r} already ingested — remove/re-ingest is not supported yet")
+            raise ValueError(f"doc_id {doc_id!r} already ingested — use remove_document() then re-add")
         acl = set(acl)
-        words = text.split()
-        for i in range(0, len(words), chunk_words):
-            chunk_text = " ".join(words[i:i + chunk_words])
-            tf = Counter(tokenize(chunk_text))
+        for i, chunk_text in enumerate(self._chunk_texts(text, chunk_words)):
             self.chunks.append({
-                "id": f"{doc_id}#{i // chunk_words}",
+                "id": f"{doc_id}#{i}",
                 "doc_id": doc_id,
                 "text": chunk_text,
                 "acl": acl,
-                "tf": tf,
+                "tf": Counter(tokenize(chunk_text)),
             })
+
+    @staticmethod
+    def _chunk_texts(text, chunk_words):
+        """Pack whole sentences up to chunk_words, with a one-sentence overlap so a
+        fact spanning a boundary stays retrievable. Oversize sentences hard-split."""
+        pieces = []
+        for s in re.split(r"(?<=[.!?])\s+", text.strip()):
+            words = s.split()
+            if len(words) > chunk_words:
+                pieces.extend(" ".join(words[i:i + chunk_words])
+                              for i in range(0, len(words), chunk_words))
+            elif words:
+                pieces.append(s)
+        chunks, cur, cur_len = [], [], 0
+        for s in pieces:
+            n = len(s.split())
+            if cur and cur_len + n > chunk_words:
+                chunks.append(" ".join(cur))
+                last = cur[-1]
+                # overlap only if the carried sentence leaves room for new content
+                cur, cur_len = ([last], len(last.split())) if len(last.split()) <= chunk_words // 2 else ([], 0)
+            cur.append(s)
+            cur_len += n
+        if cur:
+            chunks.append(" ".join(cur))
+        return chunks
+
+    def remove_document(self, doc_id):
+        """Remove all chunks for doc_id; returns count removed. Re-ingest = remove + add.
+        df/n are computed per-query over the visible set, so no index correction needed."""
+        before = len(self.chunks)
+        self.chunks = [c for c in self.chunks if c["doc_id"] != doc_id]
+        return before - len(self.chunks)
 
     @staticmethod
     def can_read(user, acl):
@@ -110,10 +145,27 @@ class PermissionRAG:
             "elapsed_ms": round((time.perf_counter() - t0) * 1000, 2),
         }
         with self._audit_lock:
+            entry["prev_sha256"] = self._last_hash
+            line = json.dumps(entry)
+            self._last_hash = hashlib.sha256(line.encode()).hexdigest()
             self.audit.append(entry)
             if len(self.audit) > self.AUDIT_MAX:
                 del self.audit[:-self.AUDIT_MAX]
             if self.audit_path:
                 with self.audit_path.open("a") as f:
-                    f.write(json.dumps(entry) + "\n")
+                    f.write(line + "\n")
         return results
+
+    @staticmethod
+    def verify_audit_chain(path):
+        """True iff the JSONL audit log's hash chain is intact (no edited/removed lines)."""
+        prev = ""
+        with pathlib.Path(path).open() as f:
+            for line in f:
+                line = line.rstrip("\n")
+                if not line.strip():
+                    continue
+                if json.loads(line).get("prev_sha256") != prev:
+                    return False
+                prev = hashlib.sha256(line.encode()).hexdigest()
+        return True
