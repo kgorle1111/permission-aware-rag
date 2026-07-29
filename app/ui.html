@@ -96,6 +96,10 @@ details summary{cursor:pointer;color:var(--fg2);font-size:.85rem;min-height:44px
     <h2>Workflows</h2>
     <div class="presets" id="presets"></div>
   </section>
+  <section>
+    <h2>Recent</h2>
+    <div class="presets" id="recent"><span class="meta">No questions yet.</span></div>
+  </section>
   <section class="meta" style="margin-top:auto">
     <span>AI drafts &middot; you decide</span>
   </section>
@@ -135,6 +139,25 @@ $('roles').addEventListener('click',e=>{
   document.querySelectorAll('.role').forEach(x=>x.setAttribute('aria-pressed',x===b));
   if($('q').value) $('f').requestSubmit();   // re-ask same question as new role
 });
+// recent-questions history: last 10, localStorage, replayed with their role
+const hist=()=>{try{return JSON.parse(localStorage.getItem('uw-history')||'[]')}catch(_){return[]}};
+function pushHist(q){
+  const h=[{q,role},...hist().filter(x=>x.q!==q)].slice(0,10);
+  localStorage.setItem('uw-history',JSON.stringify(h)); drawHist();
+}
+function drawHist(){
+  const h=hist(); if(!h.length)return;
+  $('recent').innerHTML=h.map(x=>
+   `<button type="button" class="chip" data-q="${esc(x.q)}" data-r="${esc(x.role)}" title="${esc(x.q)} (as ${esc(x.role)})">${esc(x.q.length>38?x.q.slice(0,38)+'…':x.q)}</button>`).join('');
+}
+$('recent').addEventListener('click',e=>{
+  const b=e.target.closest('.chip'); if(!b)return;
+  role=b.dataset.r;
+  document.querySelectorAll('.role').forEach(x=>x.setAttribute('aria-pressed',x.dataset.r===role));
+  $('q').value=b.dataset.q; $('f').requestSubmit();
+});
+drawHist();
+
 // workflows come from presets.json — shops edit JSON, not HTML
 fetch('/presets').then(r=>r.json()).then(ps=>{
   $('presets').innerHTML=ps.map(([n,q])=>
@@ -156,6 +179,7 @@ $('f').addEventListener('submit',async e=>{
     const r=await fetch($('quick').checked?'/query':'/ask',{method:'POST',
       headers:{'content-type':'application/json'},body:JSON.stringify({user:role,q})});
     if(!r.ok) throw new Error('server returned '+r.status);
+    pushHist(q);
     render(await r.json());
   }catch(err){
     $('out').innerHTML='<div class="card err fade">Request failed: '+esc(err.message)+'. Check the server is running, then retry.</div>';
@@ -164,15 +188,28 @@ $('f').addEventListener('submit',async e=>{
   }
 });
 
+// what each role can't see — feeds the hidden-badge explainer
+const MISSING={junior:'banking, credit memos, compliance watchlist',
+  senior:'compliance watchlist',compliance:'banking, credit memos',
+  auditor:'policy & claims files, credit memos'};
+let lastResult=null;  // {q, role, count} — powers the role-switch comparison banner
+
 function render(d){
   const docIds=new Set(d.results.map(r=>r.doc_id));
   // [doc-id] citations in the answer become links to their source card
   const linkify=t=>esc(t).replace(/\[([\w#.-]+)\]/g,(m,id)=>
     docIds.has(id)?'<a href="#src-'+esc(id)+'" class="cite">'+m+'</a>':m);
   let h='<div class="fade">';
+  const q=$('q').value.trim();
   h+='<p class="meta"><span class="badge ok">'+d.results.length+' accessible source(s)</span>';
   if(d.denied_chunks!==undefined)
-    h+='<span class="badge deny">'+d.denied_chunks+' hidden by permissions</span>';
+    h+='<span class="badge deny" title="'+d.denied_chunks+' chunk(s) in data classes this role cannot access ('
+      +esc(MISSING[role]||'other data classes')+'). Escalate to a colleague with that access if the question needs them.">'
+      +d.denied_chunks+' hidden by permissions</span>';
+  if(lastResult&&lastResult.q===q&&lastResult.role!==role)
+    h+='<span class="badge">as '+esc(role)+': '+d.results.length+' source(s) — was '
+      +lastResult.count+' as '+esc(lastResult.role)+'</span>';
+  lastResult={q,role,count:d.results.length};
   if(d.unverified_citations&&d.unverified_citations.length)
     h+='<span class="badge deny" title="Cited ids not in the retrieved sources — treat those claims as unverified">'
       +d.unverified_citations.length+' unverified citation(s): '+esc(d.unverified_citations.join(', '))+'</span>';
@@ -193,7 +230,17 @@ function render(d){
   else if((d.denied_chunks||0)>0)
     h+='<div class="card">No accessible documents match — but '+d.denied_chunks+' chunk(s) your role can\'t see exist in the corpus. If this question needs them, route it to a role with wider access (e.g. senior or compliance).</div>';
   else h+='<div class="card">No documents you can access match this question. Try another phrasing.</div>';
+  h+='<p class="meta"><button type="button" class="chip" id="curl" title="Self-documenting API call for shop IT">Copy as curl</button></p>';
   $('out').innerHTML=h+'</div>';
+  $('curl').addEventListener('click',async()=>{
+    const path=$('quick').checked?'/query':'/ask';
+    const cmd="curl -s -X POST "+location.origin+path
+      +" -H 'content-type: application/json' -d '"+JSON.stringify({user:role,q}).replace(/'/g,"'\\''")+"'";
+    const b=$('curl');
+    try{await navigator.clipboard.writeText(cmd);b.textContent='Copied ✓';}
+    catch(_){b.textContent='Copy failed';}
+    setTimeout(()=>b.textContent='Copy as curl',2000);
+  });
   document.querySelectorAll('.cite').forEach(a=>a.addEventListener('click',e=>{
     e.preventDefault();
     const c=$(a.getAttribute('href').slice(1)); if(!c)return;
