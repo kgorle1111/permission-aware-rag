@@ -93,6 +93,30 @@ For readers evaluating the engineering rather than the demo:
 | **Test discipline** | Four test files: exact-content leak tests, role ACL tests, mocked-LLM payload tests, and HTTP endpoint tests against a real in-process server (auth, rate-limit 429s, CSV export). Plus ruff lint + format gating CI. |
 | **Frontend** | Single-file vanilla-JS workbench on a token-based design system (dark + light, WCAG-checked), inline SVG icons, strict CSP with zero external origins. Deep links, keyboard-first, audit trail with CSV export. |
 
+## Two backends, one guarantee
+
+| | In-memory (default) | Postgres + pgvector |
+|---|---|---|
+| Ranking | BM25 (stdlib) | pgvector cosine over embeddings |
+| ACL enforcement | Python pre-filter | **Postgres Row-Level Security** — the database refuses to return hidden rows, even to a SQL injection through the app's connection |
+| Score side channel | Closed (visible-set statistics) | No analogue — embedding distance is per-row, no corpus statistics |
+| Audit | Hash-chained JSONL | Hash-chained `audit` table |
+| Dependencies | Zero | `psycopg` (`pip install -e ".[pg]"`) |
+
+The pgvector backend ([`app/pgvector_rag.py`](app/pgvector_rag.py)) is the production
+answer to "where should ACLs live?": in the database that already has them. Chunks carry
+an `acl text[]`; an RLS policy admits a row only when it overlaps the caller's principals
+(set per-transaction via a parameterized `set_config`); the app connects as a
+non-superuser role, so with no principals set the table is *empty*. CI proves it with the
+same 20-case leak gate plus an RLS-specific test: a raw `SELECT *` as the app role
+returns only what the policy allows — no application `WHERE` clause involved.
+
+Embeddings default to a deterministic stdlib feature-hash
+([`app/embedding.py`](app/embedding.py)) so the whole path runs with no model and no
+network; swap `embed()` for Voyage AI or sentence-transformers for semantic recall — the
+RLS logic doesn't change. Run against the server with
+`RAG_BACKEND=pgvector DATABASE_URL=postgres://... python3 underwriter_server.py`.
+
 ## Threat model (what's handled, what's not)
 
 | Vector | Status |
