@@ -7,6 +7,9 @@ without it, /ask returns retrieval-only results with a note.
 import json
 import pathlib
 import sys
+import threading
+import time
+from collections import defaultdict, deque
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
@@ -33,6 +36,23 @@ rag.add_document("guidelines", "Underwriting guideline excerpt: properties with 
 
 UI = pathlib.Path(__file__).with_name("ui.html")
 
+MAX_Q_LEN = 1000
+
+# /ask is a paid API call; bound it per client IP before this ever leaves loopback.
+RATE_LIMIT, RATE_WINDOW = 10, 60.0  # ponytail: in-memory per-process; shared store if this ever scales out
+_hits = defaultdict(lambda: deque(maxlen=RATE_LIMIT))
+_rate_lock = threading.Lock()
+
+
+def rate_limited(ip):
+    now = time.monotonic()
+    with _rate_lock:
+        dq = _hits[ip]
+        if len(dq) == RATE_LIMIT and now - dq[0] < RATE_WINDOW:
+            return True
+        dq.append(now)
+    return False
+
 
 def audit_for(user):
     """Audit entries visible to this user: own entries only, unless in the audit group."""
@@ -47,6 +67,7 @@ class Handler(BaseHTTPRequestHandler):
         body = json.dumps(obj).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
+        self.send_header("X-Content-Type-Options", "nosniff")
         self.end_headers()
         self.wfile.write(body)
 
@@ -59,17 +80,28 @@ class Handler(BaseHTTPRequestHandler):
             if not user or not query:
                 self._json(400, {"error": "need user and q"})
                 return
+            if len(query) > MAX_Q_LEN:
+                self._json(400, {"error": f"q too long (max {MAX_Q_LEN} chars)"})
+                return
+            if url.path == "/ask" and rate_limited(self.client_address[0]):
+                self._json(429, {"error": "rate limited; retry in a minute"})
+                return
             results = rag.retrieve(query, user, k=4)
             out = {"results": results, "denied_chunks": rag.audit[-1]["denied_chunks"]}
             if url.path == "/ask":
-                try:
-                    llm_out = llm.ask(query, results)
-                except Exception as e:  # LLM failure must not take down retrieval
-                    llm_out = None
-                    out["note"] = f"LLM call failed ({e}); showing retrieval only."
+                llm_out = None
+                if not results:
+                    out["note"] = "No accessible documents matched; skipped the LLM call."
+                else:
+                    try:
+                        llm_out = llm.ask(query, results)
+                    except Exception as e:  # LLM failure must not take down retrieval
+                        print(f"llm error: {e}", file=sys.stderr)  # detail stays server-side
+                        out["note"] = "LLM call failed; showing retrieval only."
                 if llm_out:
                     out["answer"] = llm_out["answer"]
                     out["usage"] = llm_out["usage"]
+                    out["unverified_citations"] = llm_out["unverified_citations"]
                 elif "note" not in out:
                     out["note"] = "Set ANTHROPIC_API_KEY to enable drafted answers; showing retrieval only."
             self._json(200, out)
@@ -82,6 +114,10 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self.send_response(200)
             self.send_header("Content-Type", "text/html")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            # inline script/style are how the single-file UI ships; CSP still blocks all external loads
+            self.send_header("Content-Security-Policy",
+                             "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:")
             self.end_headers()
             self.wfile.write(UI.read_bytes())
 
