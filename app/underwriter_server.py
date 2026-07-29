@@ -32,42 +32,57 @@ USERS = {
     "auditor": {"id": "auditor", "groups": ["compliance", "banking", "audit"]},
 }
 
-rag = PermissionRAG(audit_path=pathlib.Path(__file__).with_name("audit_log.jsonl"))
-rag.add_document(
-    "policy-10023",
-    "Policy 10023 status: ACTIVE. Homeowners, insured Maria Chen, coverage 450000 dollars, premium paid through December 2026. Prior carrier lapse of 30 days in 2023.",
-    {"group:underwriting"},
-)
-rag.add_document(
-    "policy-10088",
-    "Policy 10088 status: PENDING RENEWAL. Commercial property, insured Delgado Logistics LLC, coverage 2.1 million dollars. Renewal blocked pending updated roof inspection report.",
-    {"group:underwriting"},
-)
-rag.add_document(
-    "claims-10023",
-    "Claims history for policy 10023: one water damage claim in March 2024, paid 12400 dollars, subrogation recovered 8000 dollars. No open claims.",
-    {"group:underwriting"},
-)
-rag.add_document(
-    "bank-delgado",
-    "Bank profile Delgado Logistics LLC: operating account average balance 310000 dollars, two NSF events in the last twelve months, line of credit 500000 dollars at 72 percent utilization.",
-    {"group:banking"},
-)
-rag.add_document(
-    "credit-memo-delgado",
-    "Credit memo: Delgado Logistics debt service coverage ratio 1.1, below the 1.25 threshold. Recommend additional collateral or premium loading before binding above 1 million.",
-    {"group:senior"},
-)
-rag.add_document(
-    "watchlist",
-    "Compliance watchlist: Delgado Logistics principal Robert Delgado is under review for a 2025 misrepresentation flag on a prior marine cargo application. Do not bind without compliance sign-off.",
-    {"group:compliance"},
-)
-rag.add_document(
-    "guidelines",
-    "Underwriting guideline excerpt: properties with a prior coverage lapse over 21 days require senior review. Commercial risks above 2 million require a current inspection dated within 12 months.",
-    {"*"},
-)
+CORPUS = [
+    (
+        "policy-10023",
+        "Policy 10023 status: ACTIVE. Homeowners, insured Maria Chen, coverage 450000 dollars, premium paid through December 2026. Prior carrier lapse of 30 days in 2023.",
+        {"group:underwriting"},
+    ),
+    (
+        "policy-10088",
+        "Policy 10088 status: PENDING RENEWAL. Commercial property, insured Delgado Logistics LLC, coverage 2.1 million dollars. Renewal blocked pending updated roof inspection report.",
+        {"group:underwriting"},
+    ),
+    (
+        "claims-10023",
+        "Claims history for policy 10023: one water damage claim in March 2024, paid 12400 dollars, subrogation recovered 8000 dollars. No open claims.",
+        {"group:underwriting"},
+    ),
+    (
+        "bank-delgado",
+        "Bank profile Delgado Logistics LLC: operating account average balance 310000 dollars, two NSF events in the last twelve months, line of credit 500000 dollars at 72 percent utilization.",
+        {"group:banking"},
+    ),
+    (
+        "credit-memo-delgado",
+        "Credit memo: Delgado Logistics debt service coverage ratio 1.1, below the 1.25 threshold. Recommend additional collateral or premium loading before binding above 1 million.",
+        {"group:senior"},
+    ),
+    (
+        "watchlist",
+        "Compliance watchlist: Delgado Logistics principal Robert Delgado is under review for a 2025 misrepresentation flag on a prior marine cargo application. Do not bind without compliance sign-off.",
+        {"group:compliance"},
+    ),
+    (
+        "guidelines",
+        "Underwriting guideline excerpt: properties with a prior coverage lapse over 21 days require senior review. Commercial risks above 2 million require a current inspection dated within 12 months.",
+        {"*"},
+    ),
+]
+
+# RAG_BACKEND=pgvector + DATABASE_URL -> Postgres RLS + pgvector (see pgvector_rag.py);
+# default stays the zero-dependency in-memory backend.
+if os.environ.get("RAG_BACKEND") == "pgvector":
+    from pgvector_rag import PgVectorRAG
+
+    rag = PgVectorRAG(os.environ["DATABASE_URL"])
+else:
+    rag = PermissionRAG(audit_path=pathlib.Path(__file__).with_name("audit_log.jsonl"))
+for _doc_id, _text, _acl in CORPUS:
+    try:
+        rag.add_document(_doc_id, _text, _acl)
+    except ValueError:
+        pass  # already ingested (persistent backend restart)
 
 UI = pathlib.Path(__file__).with_name("ui.html")
 PRESETS = pathlib.Path(__file__).with_name("presets.json")
