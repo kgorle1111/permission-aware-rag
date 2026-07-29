@@ -5,3 +5,4 @@ __pycache__/
 logs/
 app/audit_log.jsonl
 uv.lock
+SETUP.md
