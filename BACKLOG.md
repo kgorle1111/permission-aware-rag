@@ -100,6 +100,12 @@ highlighting, audit timestamps + elapsed_ms in UI, retrieval-only quick mode,
 escalation hint on empty+denied, audit CSV export (`/audit?format=csv`),
 defensive parsing of malformed API responses.
 
+**DONE 2026-07-28 (wave 5):** POST bodies for /ask & /query (UI switched; GET
+kept for deep links/back-compat), JWT identity seam (`UNDERWRITER_JWT_SECRET`
+→ HS256 bearer tokens, dropdown otherwise, `can_read` unchanged),
+`SHOW_DENIED=0` config switch, presets served from `presets.json` at
+`/presets`. All covered in `test_http.py`.
+
 ## Execution notes (from the pipeline doc)
 
 Partition by FILE OWNERSHIP when implementing: `permission_rag.py` and
