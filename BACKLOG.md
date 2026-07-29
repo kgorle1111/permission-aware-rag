@@ -100,6 +100,12 @@ highlighting, audit timestamps + elapsed_ms in UI, retrieval-only quick mode,
 escalation hint on empty+denied, audit CSV export (`/audit?format=csv`),
 defensive parsing of malformed API responses.
 
+**DONE 2026-07-28 (wave 6):** cost/latency observability per /ask (`llm_ms` +
+`est_cost_usd` per response, running totals in `/audit.llm_summary`, UI
+receipts), `remove_document`/re-ingest, sentence-boundary chunking with
+one-sentence overlap (eval-verified: recall@4 14/14, 0 leaks),
+tamper-evident audit hash chain (`prev_sha256` + `verify_audit_chain`).
+
 **DONE 2026-07-28 (wave 5):** POST bodies for /ask & /query (UI switched; GET
 kept for deep links/back-compat), JWT identity seam (`UNDERWRITER_JWT_SECRET`
 → HS256 bearer tokens, dropdown otherwise, `can_read` unchanged),
