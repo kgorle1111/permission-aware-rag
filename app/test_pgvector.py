@@ -23,12 +23,23 @@ BOB = {"id": "bob", "groups": ["hr"]}
 GUEST = {"id": "guest", "groups": []}
 
 
+_open: list = []
+
+
 def _fresh() -> PgVectorRAG:
+    while _open:  # close prior test's connection so DROP TABLE can't block on its locks
+        _open.pop().close()
     with psycopg.connect(ADMIN, autocommit=True) as c:
+        c.execute(
+            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+            "WHERE usename = 'rag_app' AND pid <> pg_backend_pid()"
+        )
         c.execute("DROP TABLE IF EXISTS chunks, corpus_stats, audit CASCADE")
     setup_schema(ADMIN)
     app_dsn = psycopg.conninfo.make_conninfo(ADMIN, user="rag_app", password="rag_app")
-    return PgVectorRAG(app_dsn)
+    rag = PgVectorRAG(app_dsn)
+    _open.append(rag)
+    return rag
 
 
 def _seed(rag: PgVectorRAG) -> None:

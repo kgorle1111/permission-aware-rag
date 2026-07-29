@@ -100,8 +100,13 @@ class PgVectorRAG:
     audit_path = None  # interface compat with the JSONL backend
 
     def __init__(self, dsn: str):
-        self.conn = psycopg.connect(dsn)
-        self.conn.autocommit = False
+        # autocommit: single reads commit immediately (no idle-in-transaction locks);
+        # multi-statement work still uses explicit conn.transaction() blocks, which
+        # is also what scopes each set_config(..., is_local=true) GUC.
+        self.conn = psycopg.connect(dsn, autocommit=True)
+
+    def close(self) -> None:
+        self.conn.close()
 
     # ── ingest (rag.mode = 'ingest') ─────────────────────────────────────────
     def add_document(self, doc_id: str, text: str, acl, chunk_words: int = 80) -> None:
