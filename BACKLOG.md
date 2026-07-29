@@ -90,6 +90,11 @@ input caps, skip-LLM-on-zero-results, post-hoc citation verification
 (`unverified_citations` + UI badge), API error bodies + retry on 429/529,
 sanitized LLM errors to browser, `test_llm.py` (mocked urlopen).
 
+**DONE 2026-07-28 (wave 3):** BM25 scoring (eval-verified: recall@4 14/14,
+0 leaks, ACL untouched), duplicate-ingest guard, chunking tests, HTTP endpoint
+tests (`test_http.py`: 400s, /audit scoping, rate limit, skip-LLM), audit
+`elapsed_ms` + in-memory bound (1000), GitHub Actions CI with leak gate.
+
 ## Execution notes (from the pipeline doc)
 
 Partition by FILE OWNERSHIP when implementing: `permission_rag.py` and
