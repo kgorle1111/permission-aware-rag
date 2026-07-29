@@ -70,6 +70,8 @@ td{font-variant-numeric:tabular-nums}
 .fade{animation:fi .2s ease-out}
 @keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .err{color:var(--danger)}
+mark{background:none;color:var(--primary);font-weight:600}
+.opts{display:flex;align-items:center;gap:6px;color:var(--fg2);font-size:.82rem;white-space:nowrap}
 .cite{text-decoration:none;font-family:"IBM Plex Mono",monospace;font-size:.85em}
 .cite:hover{text-decoration:underline}
 .flash{animation:fl 1.2s ease-out}
@@ -101,8 +103,9 @@ details summary{cursor:pointer;color:var(--fg2);font-size:.85rem;min-height:44px
 <main>
   <form id="f">
     <label for="q" class="visually-hidden" style="position:absolute;left:-9999px">Question</label>
-    <input type="text" id="q" placeholder="Ask about a policy, claim, or account…" required autocomplete="off">
+    <input type="text" id="q" placeholder="Ask about a policy, claim, or account…  ( / to focus, 1–4 role, Esc clear )" required autocomplete="off">
     <button class="btn" id="go" type="submit">Ask</button>
+    <label class="opts"><input type="checkbox" id="quick">Sources only (instant)</label>
   </form>
   <div id="out" aria-live="polite"></div>
   <details>
@@ -152,7 +155,7 @@ $('f').addEventListener('submit',async e=>{
   $('go').disabled=true;
   $('out').innerHTML='<div class="skel" role="status" aria-label="Loading"></div>';
   try{
-    const r=await fetch('/ask?user='+role+'&q='+encodeURIComponent(q));
+    const r=await fetch(($('quick').checked?'/query':'/ask')+'?user='+role+'&q='+encodeURIComponent(q));
     if(!r.ok) throw new Error('server returned '+r.status);
     render(await r.json());
   }catch(err){
@@ -179,10 +182,15 @@ function render(d){
   if(d.answer)h+='<div class="card answer">'+linkify(d.answer)
     +'<div style="margin-top:8px"><button type="button" class="chip" id="copy">Copy as file note</button></div></div>';
   else if(d.note)h+='<p class="meta">'+esc(d.note)+'</p>';
+  // highlight query terms in excerpts (after escaping; words >2 chars only)
+  const terms=[...new Set(($('q').value.toLowerCase().match(/[a-z0-9]+/g)||[]).filter(t=>t.length>2))];
+  const hi=t=>{let s=esc(t);if(terms.length)s=s.replace(new RegExp('\\b('+terms.join('|')+')\\b','gi'),'<mark>$1</mark>');return s};
   if(d.results.length)
     h+=d.results.map(r=>'<div class="card src" id="src-'+esc(r.doc_id)+'"><b>['+esc(r.doc_id)+']</b> <span class="score">relevance '
-      +r.score+'</span><br>'+esc(r.text)+'</div>').join('');
-  else h+='<div class="card">No documents you can access match this question. Try another phrasing, or a role with wider access.</div>';
+      +r.score+'</span><br>'+hi(r.text)+'</div>').join('');
+  else if(d.denied_chunks>0)
+    h+='<div class="card">No accessible documents match — but '+d.denied_chunks+' chunk(s) your role can\'t see exist in the corpus. If this question needs them, route it to a role with wider access (e.g. senior or compliance).</div>';
+  else h+='<div class="card">No documents you can access match this question. Try another phrasing.</div>';
   $('out').innerHTML=h+'</div>';
   document.querySelectorAll('.cite').forEach(a=>a.addEventListener('click',e=>{
     e.preventDefault();
@@ -202,6 +210,16 @@ function render(d){
   });
 }
 
+// keyboard shortcuts: / focus, 1-4 role, Esc clear (inactive while typing)
+document.addEventListener('keydown',e=>{
+  const typing=e.target===$('q');
+  if(e.key==='Escape'&&typing){$('q').value='';$('q').blur();return}
+  if(typing||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.key==='/'){e.preventDefault();$('q').focus();return}
+  const i=parseInt(e.key,10)-1;
+  if(i>=0&&i<ROLES.length)document.querySelectorAll('.role')[i].click();
+});
+
 // deep links: ?user=&q= auto-selects the role and submits
 {
   const p=new URLSearchParams(location.search);
@@ -217,9 +235,10 @@ async function refreshAudit(){
   try{
     const d=await(await fetch('/audit?user='+encodeURIComponent(role))).json();
     if(!d.entries.length)return;
-    $('audit').innerHTML='<table><thead><tr><th>Role</th><th>Query</th><th>Returned</th><th>Hidden</th></tr></thead><tbody>'
-     +d.entries.slice(-8).reverse().map(a=>'<tr><td>'+esc(a.user)+'</td><td>'+esc(a.query)
-       +'</td><td>'+a.returned.length+'</td><td>'+a.denied_chunks+'</td></tr>').join('')+'</tbody></table>';
+    $('audit').innerHTML='<table><thead><tr><th>Time</th><th>Role</th><th>Query</th><th>Returned</th><th>Hidden</th><th>ms</th></tr></thead><tbody>'
+     +d.entries.slice(-8).reverse().map(a=>'<tr><td>'+new Date(a.ts*1000).toLocaleTimeString()+'</td><td>'+esc(a.user)+'</td><td>'+esc(a.query)
+       +'</td><td>'+a.returned.length+'</td><td>'+a.denied_chunks+'</td><td>'+(a.elapsed_ms??'')+'</td></tr>').join('')+'</tbody></table>'
+     +'<p class="meta" style="margin-top:8px"><a href="/audit?user='+role+'&format=csv">Export CSV</a></p>';
   }catch(_){}
 }
 </script>
