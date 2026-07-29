@@ -1,4 +1,13 @@
-# Improvement Backlog — sweep of 2026-07-20
+# Improvement Backlog — sweep of 2026-07-20 — ✅ COMPLETE 2026-07-28
+
+**All seven waves shipped.** Every security finding (S1–S5) and all 50 lane items are
+done, deduped, or explicitly deferred with a trigger (see per-wave notes below).
+
+**DONE 2026-07-28 (wave 7):** docs accuracy pass (README/INTEGRATION/CASE_FILE
+rewritten for the current API; Haiku 4.5 cache-minimum corrected to 4096),
+pyproject + ruff (check+format in CI), type hints on core surfaces,
+recent-questions history chips, role-switch comparison banner, hidden-badge
+explainer, copy-as-curl.
 
 Produced by the improvement-sweep pipeline (5 category lanes × ~100 ideas → top 10
 each, verified against code) + an independent security review. Nothing here is
