@@ -81,7 +81,10 @@ def ask(question, chunks, timeout=60):
                       "content": f"Context (permission-filtered):\n{context}\n\nQuestion: {question}"}],
     }
     data = _post(body, key, timeout)
-    answer = data["content"][0]["text"]
+    try:
+        answer = data["content"][0]["text"]
+    except (KeyError, IndexError, TypeError):
+        raise RuntimeError(f"unexpected API response shape: {str(data)[:200]}") from None
     # post-hoc grounding check: any [doc-id] cited that we never retrieved is
     # either hallucinated or aggregation leakage — surface it, don't hide it
     cited = set(re.findall(r"\[([\w.-]+)\]", answer))
