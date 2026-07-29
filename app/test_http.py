@@ -2,8 +2,12 @@
 
 Run: pytest test_http.py. No API key needed — /ask exercises the no-LLM path.
 """
+import base64
+import hashlib
+import hmac
 import json
 import threading
+import time
 import urllib.error
 import urllib.request
 from http.server import ThreadingHTTPServer
@@ -13,12 +17,33 @@ import underwriter_server as srv
 srv.rag.audit_path = None  # tests must not write the real audit log
 
 
-def _get(base, path):
+def _get(base, path, headers=None):
+    req = urllib.request.Request(base + path, headers=headers or {})
     try:
-        with urllib.request.urlopen(base + path) as r:
+        with urllib.request.urlopen(req) as r:
             return r.status, json.load(r)
     except urllib.error.HTTPError as e:
         return e.code, json.loads(e.read() or b"{}")
+
+
+def _post(base, path, body, headers=None):
+    data = body if isinstance(body, bytes) else json.dumps(body).encode()
+    req = urllib.request.Request(base + path, data,
+                                 {"content-type": "application/json", **(headers or {})})
+    try:
+        with urllib.request.urlopen(req) as r:
+            return r.status, json.load(r)
+    except urllib.error.HTTPError as e:
+        return e.code, json.loads(e.read() or b"{}")
+
+
+def _jwt(secret, claims):
+    enc = lambda o: base64.urlsafe_b64encode(json.dumps(o).encode()).rstrip(b"=").decode()
+    h, p = enc({"alg": "HS256", "typ": "JWT"}), enc(claims)
+    sig = base64.urlsafe_b64encode(
+        hmac.new(secret.encode(), f"{h}.{p}".encode(), hashlib.sha256).digest()
+    ).rstrip(b"=").decode()
+    return f"{h}.{p}.{sig}"
 
 
 def test():
@@ -49,6 +74,36 @@ def test():
         assert code == 200 and all(e["user"] == "junior" for e in d["entries"])
         code, d = _get(base, "/audit?user=auditor")
         assert {e["user"] for e in d["entries"]} >= {"junior", "senior"}
+
+        # POST works for /query and /ask; malformed body is a clean 400
+        code, d = _post(base, "/query", {"user": "junior", "q": "claims history policy 10023"})
+        assert code == 200 and d["results"][0]["doc_id"] == "claims-10023"
+        assert _post(base, "/ask", {"user": "junior", "q": "zzqqxx"})[1]["note"].startswith("No accessible")
+        assert _post(base, "/query", b"not json")[0] == 400
+
+        # /presets serves the JSON file
+        code, d = _get(base, "/presets")
+        assert code == 200 and isinstance(d, list) and len(d[0]) == 2
+
+        # SHOW_DENIED off: denied count absent from responses
+        srv.SHOW_DENIED = False
+        try:
+            assert "denied_chunks" not in _get(base, "/query?user=junior&q=policy")[1]
+        finally:
+            srv.SHOW_DENIED = True
+
+        # JWT seam: valid token resolves claims; bad/missing token is 401
+        srv.JWT_SECRET = "test-secret"
+        try:
+            tok = _jwt("test-secret", {"sub": "sso-user", "groups": ["underwriting"], "exp": time.time() + 60})
+            code, d = _get(base, "/query?q=claims+history", {"Authorization": f"Bearer {tok}"})
+            assert code == 200 and d["results"]
+            assert _get(base, "/query?q=x", {"Authorization": "Bearer bad.token.sig"})[0] == 401
+            assert _get(base, "/query?user=junior&q=x")[0] == 401  # dropdown ignored in JWT mode
+            expired = _jwt("test-secret", {"sub": "u", "groups": [], "exp": time.time() - 5})
+            assert _get(base, "/query?q=x", {"Authorization": f"Bearer {expired}"})[0] == 401
+        finally:
+            srv.JWT_SECRET = None
 
         # /audit CSV export: header row + scoped to caller
         with urllib.request.urlopen(base + "/audit?user=junior&format=csv") as r:

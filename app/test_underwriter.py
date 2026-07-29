@@ -29,8 +29,8 @@ def test():
     # S2: audit trail is scoped — non-audit roles see only their own queries
     assert {e["user"] for e in audit_for(USERS["junior"])} == {"junior"}
     assert {e["user"] for e in audit_for(USERS["senior"])} == {"senior"}
-    # the audit group sees everyone
-    assert {e["user"] for e in audit_for(USERS["auditor"])} == set(USERS)
+    # the audit group sees everyone (superset: other test files share this rag and add actors)
+    assert {e["user"] for e in audit_for(USERS["auditor"])} >= set(USERS)
 
     print("underwriter ACL tests passed")
 
