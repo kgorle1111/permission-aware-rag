@@ -80,9 +80,15 @@ Clean: no secrets in tree or git history; `can_read` logic sound; empty-ACL refu
 
 ## Recommended first wave (if asked)
 
-**DONE 2026-07-28:** S1, S2, deep links, copy-to-file-note, clickable citations,
-eval harness (20 cases, recall@4 14/14, 0 leaks), audit persistence (JSONL),
-ThreadingHTTPServer. First wave complete.
+**DONE 2026-07-28 (wave 1):** S1, S2, deep links, copy-to-file-note, clickable
+citations, eval harness (20 cases, recall@4 14/14, 0 leaks), audit persistence
+(JSONL), ThreadingHTTPServer.
+
+**DONE 2026-07-28 (wave 2):** S3 (injection boundary + mocked leak test),
+S4 (demo XSS + CSP/nosniff on both servers), S5 (per-IP rate limit on /ask),
+input caps, skip-LLM-on-zero-results, post-hoc citation verification
+(`unverified_citations` + UI badge), API error bodies + retry on 429/529,
+sanitized LLM errors to browser, `test_llm.py` (mocked urlopen).
 
 ## Execution notes (from the pipeline doc)
 
