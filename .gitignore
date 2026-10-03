@@ -6,3 +6,4 @@ logs/
 app/audit_log.jsonl
 uv.lock
 SETUP.md
+PLAN.md
