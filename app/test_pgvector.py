@@ -146,3 +146,15 @@ def test_underwriter_eval_leak_gate():
     assert not leaks, leaks  # the product's core claim — must always hold
     # hashed embeddings are a placeholder; require recall to stay useful, not perfect
     assert recall_hits >= recall_total * 0.8, f"recall {recall_hits}/{recall_total}"
+
+
+def test_acl_and_principal_boundary():
+    rag = _fresh()
+    with pytest.raises(TypeError):
+        rag.add_document("s", "text", "group:hr")
+    with pytest.raises(ValueError):
+        rag.add_document("s", "text", {"group:a,b"})
+    with pytest.raises(ValueError):
+        PgVectorRAG.principals({"id": "u", "groups": ["eng,group:hr"]})
+    with pytest.raises(ValueError):
+        PgVectorRAG.principals({"id": "", "groups": []})

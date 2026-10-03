@@ -17,10 +17,26 @@ from collections import Counter
 from collections.abc import Iterable
 
 _TOKEN = re.compile(r"[a-z0-9]+")
+# no comma: the pgvector backend joins principals with ',' for the RLS policy.
+# Use fullmatch, never match with ^...$ — '$' also matches before a trailing '\n'.
+_ACL_ENTRY = re.compile(r"\*|(user|group):[^,\s]+")
 
 
 def tokenize(text: str) -> list[str]:
     return _TOKEN.findall(text.lower())
+
+
+def normalize_acl(acl: Iterable[str]) -> frozenset[str]:
+    """Validate an ACL at the ingest boundary; every backend must route through this."""
+    if isinstance(acl, (str, bytes)):
+        raise TypeError('acl must be a set/list of entries, e.g. {"group:hr"}, not a bare string')
+    entries = frozenset(acl)
+    if not entries:
+        raise ValueError("acl must not be empty — refusing to ingest unreadable/ambiguous document")
+    for e in entries:
+        if not isinstance(e, str) or not _ACL_ENTRY.fullmatch(e):
+            raise ValueError(f'bad acl entry {e!r}: expected "*", "user:<id>" or "group:<name>"')
+    return entries
 
 
 class PermissionRAG:
@@ -44,11 +60,9 @@ class PermissionRAG:
 
     def add_document(self, doc_id: str, text: str, acl: Iterable[str], chunk_words: int = 80) -> None:
         """Ingest a document. `acl` is the set of principals allowed to read it."""
-        if not acl:
-            raise ValueError("acl must not be empty — refusing to ingest unreadable/ambiguous document")
+        acl = normalize_acl(acl)
         if any(c["doc_id"] == doc_id for c in self.chunks):
             raise ValueError(f"doc_id {doc_id!r} already ingested — use remove_document() then re-add")
-        acl = set(acl)
         for i, chunk_text in enumerate(self._chunk_texts(text, chunk_words)):
             self.chunks.append(
                 {

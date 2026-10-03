@@ -109,6 +109,25 @@ def test():
     r4.add_document("s", "Replacement text here.", {"*"})
     assert len(r4.chunks) == 1 and r4.remove_document("missing") == 0
 
+    # ACL boundary: a bare str must not be iterated into characters, entries must be well-formed
+    r5 = PermissionRAG()
+    for bad in ("group:partners*", "group:hr"):
+        try:
+            r5.add_document("s", "text", bad)
+            raise AssertionError(f"str acl {bad!r} accepted")
+        except TypeError:
+            pass
+    for bad in ({"group:"}, {"admin"}, {"group:a,b"}, {"user: x"}, {"group:hr\n"}):
+        try:
+            r5.add_document("s", "text", bad)
+            raise AssertionError(f"malformed acl {bad!r} accepted")
+        except ValueError:
+            pass
+    assert r5.chunks == []
+    r5.add_document("hr-only", "benefits enrollment opens in november.", ["group:hr"])
+    assert any(r["doc_id"] == "hr-only" for r in r5.retrieve("benefits enrollment", BOB))
+    assert r5.retrieve("benefits enrollment", GUEST) == []
+
     # audit persistence: entries survive a restart via JSONL
     with tempfile.TemporaryDirectory() as tmp:
         path = pathlib.Path(tmp) / "audit.jsonl"

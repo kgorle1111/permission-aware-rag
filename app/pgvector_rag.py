@@ -28,7 +28,7 @@ import time
 
 import psycopg
 from embedding import DIMS, embed, to_pgvector
-from permission_rag import PermissionRAG
+from permission_rag import PermissionRAG, normalize_acl
 from psycopg import sql
 
 SCHEMA = f"""
@@ -110,8 +110,7 @@ class PgVectorRAG:
 
     # ── ingest (rag.mode = 'ingest') ─────────────────────────────────────────
     def add_document(self, doc_id: str, text: str, acl, chunk_words: int = 80) -> None:
-        if not acl:
-            raise ValueError("acl must not be empty — refusing to ingest unreadable/ambiguous document")
+        entries = sorted(normalize_acl(acl))
         with self.conn.transaction():
             self.conn.execute("SELECT set_config('rag.mode', 'ingest', true)")
             dup = self.conn.execute("SELECT 1 FROM chunks WHERE doc_id = %s LIMIT 1", (doc_id,)).fetchone()
@@ -120,7 +119,7 @@ class PgVectorRAG:
             for i, chunk_text in enumerate(PermissionRAG._chunk_texts(text, chunk_words)):
                 self.conn.execute(
                     "INSERT INTO chunks (id, doc_id, text, acl, embedding) VALUES (%s,%s,%s,%s,%s::vector)",
-                    (f"{doc_id}#{i}", doc_id, chunk_text, list(acl), to_pgvector(embed(chunk_text))),
+                    (f"{doc_id}#{i}", doc_id, chunk_text, entries, to_pgvector(embed(chunk_text))),
                 )
             self.conn.execute("UPDATE corpus_stats SET chunk_count = (SELECT count(*) FROM chunks)")
 
@@ -134,6 +133,10 @@ class PgVectorRAG:
     # ── retrieval (rag.principals only — RLS does the filtering) ─────────────
     @staticmethod
     def principals(user: dict) -> list[str]:
+        names = [user["id"], *user.get("groups", ())]
+        # ',' is the GUC delimiter; an embedded one would forge an extra principal
+        if any(not n or "," in n for n in names):
+            raise ValueError("user id and group names must be non-empty and contain no comma")
         return ["*", f"user:{user['id']}"] + [f"group:{g}" for g in user.get("groups", ())]
 
     def retrieve(self, query: str, user: dict, k: int = 3) -> list[dict]:
