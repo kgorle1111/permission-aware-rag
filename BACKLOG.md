@@ -1,3 +1,22 @@
+# Backlog
+
+## Open items (B-ids)
+
+Every deliberate shortcut in code (a `kn:` or `ponytail:` comment) must appear here with
+its upgrade trigger. `app/test_ledgers.py` fails if a shortcut comment has no row.
+
+| Id | Status | Item | Trigger to build | Where |
+|---|---|---|---|---|
+| B01 | open | In-memory BM25 index, linear scan per query | Corpus past ~50k chunks, or p95 retrieve > 200 ms | `app/permission_rag.py` "in-memory BM25 ranking" |
+| B02 | open | Feature-hash embedder in place of a real model | E4 (recall lower bound ≥ 0.70) fails on non-lexical probes | `app/embedding.py` "placeholder embedder" |
+| B03 | open | Rate limiter is in-memory, per process | More than one server process or host | `app/underwriter_server.py` "in-memory per-process" |
+| B04 | open | Smallest model tier (Haiku) for grounded answers | An answer-quality eval shows Haiku below bar | `app/llm.py` "smallest tier" |
+| B05 | open | RLS ingest gated by a forgeable GUC, not a DB role | Before any deployment that runs untrusted SQL paths (THREAT_MODEL T13) | `app/pgvector_rag.py` "rag.mode" |
+| B06 | open | JWT group with a comma → 500 on pgvector | First real IdP integration (THREAT_MODEL T14) | `app/pgvector_rag.py` "contain no comma" |
+| B07 | open | Held-out real-corpus leak eval | Real corpus available | `evals/results/2026-10-03-v2/table.md` "real-corpus held-out run" |
+
+---
+
 # Improvement Backlog — sweep of 2026-07-20 — ✅ COMPLETE 2026-07-28
 
 **All seven waves shipped.** Every security finding (S1–S5) and all 50 lane items are
