@@ -39,3 +39,9 @@ jobs:
       - run: pip install pytest "psycopg[binary]"
       - run: pytest test_pgvector.py -q   # RLS leak gate over the pgvector backend
         working-directory: app
+      # scaled eval needs an empty corpus: fresh database, not the one pytest just filled
+      - run: python -c "import psycopg; psycopg.connect('${{ env.DATABASE_URL }}', autocommit=True).execute('CREATE DATABASE scale_eval')"
+      - run: python eval_scale.py --pgvector   # 1,350 must-not probes under RLS
+        working-directory: app
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/scale_eval
