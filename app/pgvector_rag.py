@@ -8,9 +8,10 @@ same guarantee down into Postgres Row-Level Security:
   supplied per-transaction via `set_config('rag.principals', ...)` (parameterized —
   no SQL string building).
 - The app role is a non-superuser and not the table owner, so RLS applies to every
-  query it runs. With no principals set, the table is EMPTY. Even a SQL injection
-  through this connection cannot see a forbidden row — the pre-filter guarantee
-  becomes a database property instead of an application promise.
+  query it runs. With no principals set, the table is EMPTY. A query that forgets
+  its filter cannot see a forbidden row — the pre-filter guarantee becomes a
+  database property instead of an application promise. NOT a SQL-injection
+  defense yet: the app role can set the rag.* GUCs itself (docs/THREAT_MODEL.md T13).
 - Ranking is pgvector cosine (`<=>`) over the RLS-filtered rows. Embedding distance
   is per-row (no corpus statistics), so the BM25 side channel (S1) has no analogue
   here by construction.

@@ -101,7 +101,7 @@ For readers evaluating the engineering rather than the demo:
 | | In-memory (default) | Postgres + pgvector |
 |---|---|---|
 | Ranking | BM25 (stdlib) | pgvector cosine over embeddings |
-| ACL enforcement | Python pre-filter | **Postgres Row-Level Security** — the database refuses to return hidden rows, even to a SQL injection through the app's connection |
+| ACL enforcement | Python pre-filter | **Postgres Row-Level Security** — the database refuses to return hidden rows even when an app query forgets its filter (not yet SQL-injection-proof: [T13](docs/THREAT_MODEL.md)) |
 | Score side channel | Closed (visible-set statistics) | No analogue — embedding distance is per-row, no corpus statistics |
 | Audit | Hash-chained JSONL | Hash-chained `audit` table |
 | Dependencies | Zero | `psycopg` (`pip install -e ".[pg]"`) |
