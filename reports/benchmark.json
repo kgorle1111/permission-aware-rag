@@ -1,0 +1,73 @@
+{
+  "benchmark": "permission-aware-rag-offline",
+  "corpus": "docs.json",
+  "corpus_chunks": 12,
+  "corpus_documents": 6,
+  "corpus_sha256": "335d67e91907f34070454cedf5da8726b950c0a3327804c55005c61d847c153f",
+  "forbidden_canary_chunks": 5,
+  "latency_ms": {
+    "cold": {
+      "median": 1.103,
+      "p95": 1.332,
+      "samples": 100
+    },
+    "single_sync_revoke": {
+      "changed_docs": [
+        "hr-salaries"
+      ],
+      "elapsed": 9.859
+    },
+    "warm_cache": {
+      "median": 0.601,
+      "p95": 0.769,
+      "samples": 100
+    }
+  },
+  "method": {
+    "environment": "temporary SQLite + embedded Qdrant + hash embeddings; no LLM",
+    "iterations_per_principal": 20,
+    "p95_definition": "nearest rank",
+    "performance_targets": null,
+    "settings": {
+      "cache_max_entries": 256,
+      "cache_ttl_s": 300,
+      "collection": "chunks",
+      "embedding_backend": "hash",
+      "embedding_dimensions": 384,
+      "min_score": 0.1,
+      "permissions_backend": "jsonl",
+      "top_k": 4
+    }
+  },
+  "principals_checked": [
+    "alice",
+    "bob",
+    "carol",
+    "ceo",
+    "guest"
+  ],
+  "probe_variants": [
+    "full_paragraph",
+    "canary_only",
+    "instruction_injection"
+  ],
+  "runtime": {
+    "implementation": "CPython",
+    "packages": {
+      "PyJWT": "2.13.0",
+      "SQLAlchemy": "2.0.51",
+      "cryptography": "49.0.0",
+      "fastapi": "0.139.0",
+      "qdrant-client": "1.18.0"
+    },
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "python": "3.12.4"
+  },
+  "security": {
+    "checks_passed": true,
+    "revoked_cached_answer_leaks": 0,
+    "unauthorized_canary_leaks": 0
+  },
+  "timestamp_utc": "2026-10-04T12:33:27.369227+00:00",
+  "unauthorized_probe_checks": 60
+}

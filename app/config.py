@@ -27,6 +27,10 @@ JWT_PRIVATE_KEY_PATH = os.getenv("JWT_PRIVATE_KEY_PATH", str(ROOT / "config" / "
 JWKS_URL = os.getenv("JWKS_URL", "")
 JWT_AUDIENCE = os.getenv("JWT_AUDIENCE", "permission-rag-api")
 
+JWT_ISSUER = os.getenv("JWT_ISSUER", "")
+SYNC_INTERVAL_S = float(os.getenv("SYNC_INTERVAL_S", "10"))
+CACHE_MAX_ENTRIES = int(os.getenv("CACHE_MAX_ENTRIES", "256"))
+
 TOP_K = int(os.getenv("TOP_K", "4"))
 # similarity floor: hits below this never count as results, so a query about a
 # topic the user can't read looks exactly like a query about nothing
@@ -45,3 +49,11 @@ PERMISSIONS_SOURCE = os.getenv("PERMISSIONS_SOURCE", str(ROOT / "corpus" / "perm
 CACHE_TTL_S = float(os.getenv("CACHE_TTL_S", "300"))
 
 DEMO_MODE = os.getenv("DEMO_MODE", "0") == "1"
+
+# Optional real Drive source. Corpus doc_ids must be native Drive file IDs.
+PERMISSIONS_BACKEND = os.getenv("PERMISSIONS_BACKEND", "jsonl")
+DRIVE_CREDENTIALS_FILE = os.getenv("DRIVE_CREDENTIALS_FILE", "")
+DRIVE_SUBJECT = os.getenv("DRIVE_SUBJECT", "")
+DRIVE_WEBHOOK_CHANNEL_ID = os.getenv("DRIVE_WEBHOOK_CHANNEL_ID", "")
+DRIVE_WEBHOOK_TOKEN = os.getenv("DRIVE_WEBHOOK_TOKEN", "")
+DRIVE_WEBHOOK_RESOURCE_ID = os.getenv("DRIVE_WEBHOOK_RESOURCE_ID", "")

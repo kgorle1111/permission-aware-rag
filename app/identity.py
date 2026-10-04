@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+import json
 
 import jwt
 from fastapi import HTTPException, Request
@@ -32,7 +33,7 @@ class Principal:
     @property
     def scope_key(self) -> str:
         """Stable key for permission-scoped caching."""
-        return "|".join(sorted(self.principals))
+        return json.dumps(sorted(set(self.principals)), separators=(",", ":"))
 
 
 _public_key_cache: str | None = None
@@ -58,6 +59,7 @@ def verify_token(token: str) -> Principal:
         claims = jwt.decode(
             token, key, algorithms=["RS256"],  # RS256 only — never accept HS256 here
             audience=config.JWT_AUDIENCE,
+            issuer=config.JWT_ISSUER or None,
             options={"require": ["exp", "sub"]},
         )
     except jwt.InvalidTokenError as e:
@@ -66,9 +68,11 @@ def verify_token(token: str) -> Principal:
         # key file missing, unreadable, etc. — fail closed, reveal nothing
         raise HTTPException(401, "identity layer unavailable")
     groups = claims.get("groups", [])
-    if not isinstance(groups, list):
+    if (not isinstance(claims["sub"], str) or not claims["sub"].strip()
+            or not isinstance(groups, list)
+            or any(not isinstance(g, str) or not g.strip() for g in groups)):
         raise HTTPException(401, "invalid token: groups claim malformed")
-    return Principal(user_id=claims["sub"], groups=tuple(str(g) for g in groups))
+    return Principal(user_id=claims["sub"], groups=tuple(groups))
 
 
 def principal_from_request(request: Request) -> Principal:

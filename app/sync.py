@@ -1,74 +1,105 @@
-"""Permission sync: keeps index ACL metadata consistent with the source
-system. The gap between an upstream revocation and the index reflecting it is
-the STALENESS WINDOW — a measured property (tests/test_revocation.py), not a
-hand-wave.
+"""Durable permission reconciliation with section restrictions and retry safety.
 
-Source here is a synthetic permissions.jsonl (one {"doc_id", "acl"} per line)
-standing in for Drive/Confluence; app/connectors/gdrive.py is the real-world
-connector using the same update path.
+The JSONL source is a patch feed: missing documents are unchanged. Explicit
+{ "doc_id": "...", "deleted": true } removes a document from both stores.
 """
 from __future__ import annotations
-
 import json
 import logging
 import time
 from pathlib import Path
 
 from . import config
-from .ingest import validate_acl
+from .ingest import strictest, validate_acl
 from .retrieval import clear_cache
-from .store import ChunkACL, SessionLocal
-from .vectorstore import update_doc_acl
+from .store import ChunkACL, ChunkPolicy, SourceCheckpoint, permission_transaction
+from .vectorstore import update_chunk_acl, delete_doc
 
 log = logging.getLogger("permrag")
 
 
-def read_source(path: str | Path = None) -> dict[str, list[str]]:
-    path = Path(path or config.PERMISSIONS_SOURCE)
-    acls: dict[str, list[str]] = {}
-    for line in path.read_text().splitlines():
-        line = line.strip()
-        if line:
-            row = json.loads(line)
-            acls[row["doc_id"]] = validate_acl(row["acl"])
-    return acls
+def read_source(path: str | Path = None):
+    desired = {}
+    for line in Path(path or config.PERMISSIONS_SOURCE).read_text().splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        doc_id = row["doc_id"]
+        if not isinstance(doc_id, str) or not doc_id.strip() or doc_id in desired:
+            raise ValueError("invalid or duplicate document id")
+        if "deleted" in row and not isinstance(row["deleted"], bool):
+            raise ValueError("deleted must be a boolean")
+        desired[doc_id] = None if row.get("deleted") else validate_acl(row.get("acl"))
+    return desired
 
 
 def sync_once(source_path: str | Path = None) -> list[str]:
-    """One reconciliation pass. Returns doc_ids whose ACLs changed.
-
-    Order matters: Postgres (source-of-truth, transactional) first, then the
-    Qdrant payload, then the answer cache is invalidated — so a revoked user
-    can't keep reading a cached answer after the index was fixed.
-    """
-    desired = read_source(source_path)
-    changed: list[str] = []
-    with SessionLocal() as s:
-        current: dict[str, list[str]] = {}
-        for row in s.query(ChunkACL).all():
-            current.setdefault(row.doc_id, row.acl)
-        for doc_id, acl in desired.items():
-            if doc_id in current and sorted(current[doc_id]) != sorted(acl):
-                s.query(ChunkACL).filter_by(doc_id=doc_id).update({"acl": acl})
-                changed.append(doc_id)
-        s.commit()
-
-    for doc_id in changed:
-        update_doc_acl(doc_id, desired[doc_id])
-    if changed:
-        clear_cache()  # permission-scoped, but revocation must also kill stale answers
-        log.info("permission sync applied: %s", changed)
-    return changed
+    # Mark pending even if source parsing fails: permissions cannot be trusted
+    # after an attempted reconciliation fails. A subsequent pass repairs it.
+    with permission_transaction() as (s, state):
+        state.revision += 1
+        intent = state.revision
+        state.pending = True
+    changed = set()
+    with permission_transaction() as (s, state):
+        if state.revision != intent:
+            raise RuntimeError("reconciliation superseded by a newer mutation")
+        if state.rebuild_required:
+            raise RuntimeError("full reingestion required")
+        rows = s.query(ChunkACL).all()
+        checkpoint = None
+        if source_path is not None or config.PERMISSIONS_BACKEND == "jsonl":
+            desired = read_source(source_path)
+        elif config.PERMISSIONS_BACKEND == "gdrive":
+            from .connectors.gdrive import build_drive_client, load_drive_changes
+            drive = build_drive_client(config.DRIVE_CREDENTIALS_FILE, config.DRIVE_SUBJECT or None)
+            checkpoint = s.get(SourceCheckpoint, "gdrive")
+            desired, token = load_drive_changes(
+                drive, checkpoint.token if checkpoint else None,
+                sorted({row.doc_id for row in rows}))
+            if not isinstance(token, str) or not token:
+                raise ValueError("Drive checkpoint missing")
+            if checkpoint is None:
+                checkpoint = SourceCheckpoint(provider="gdrive", token=token)
+                s.add(checkpoint)
+            else:
+                checkpoint.token = token
+        else:
+            raise ValueError("unsupported permissions backend")
+        policies = {p.chunk_id: p for p in s.query(ChunkPolicy).all()}
+        if any(row.chunk_id not in policies for row in rows):
+            raise RuntimeError("legacy index: full reingestion required")
+        for row in rows:
+            policy = policies[row.chunk_id]
+            if row.doc_id in desired:
+                acl = desired[row.doc_id]
+                if acl is None:
+                    delete_doc(row.doc_id)
+                    s.delete(row)
+                    s.delete(policy)
+                    changed.add(row.doc_id)
+                    continue
+                effective = (acl if policy.section_acl is None else
+                             strictest(acl, policy.section_acl))
+                if policy.doc_acl != acl or row.acl != effective:
+                    changed.add(row.doc_id)
+                policy.doc_acl = acl
+                row.acl = effective
+            # Replay every effective ACL, including after a partial Qdrant write
+            # followed by SQL rollback or after the source changes again.
+            update_chunk_acl(row.chunk_id, row.acl)
+        state.revision += 1
+        state.pending = False
+    clear_cache()
+    return sorted(changed)
 
 
 def watch(interval_s: float = 10.0):
-    """Reconciliation polling loop. interval_s IS your worst-case staleness
-    bound — state it, don't hide it. (Webhook push, where the source supports
-    it, makes the best case near-real-time; see connectors/gdrive.py.)"""
-    log.info("permission sync watching every %.1fs", interval_s)
+    if interval_s <= 0:
+        raise ValueError("poll interval must be positive")
     while True:
         try:
             sync_once()
         except Exception:
-            log.exception("sync pass failed; will retry")
+            log.exception("sync failed; queries remain blocked until recovery")
         time.sleep(interval_s)

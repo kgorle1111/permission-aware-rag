@@ -45,6 +45,8 @@ def _hash_embed(text: str, dim: int) -> list[float]:
 
 
 def embed(texts: list[str]) -> list[list[float]]:
+    if config.EMBED_BACKEND not in {"hash", "st"} or config.EMBED_DIM < 1:
+        raise ValueError("invalid embedding backend or dimension")
     if config.EMBED_BACKEND == "st":
         global _st_model
         if _st_model is None:

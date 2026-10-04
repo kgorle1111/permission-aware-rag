@@ -20,6 +20,13 @@ os.environ["JWT_PUBLIC_KEY_PATH"] = str(_tmp / "idp_public.pem")
 os.environ["PERMISSIONS_SOURCE"] = str(_tmp / "permissions.jsonl")
 os.environ["ANTHROPIC_API_KEY"] = ""  # extractive answers only — offline
 os.environ["DEMO_MODE"] = "0"
+os.environ["SYNC_INTERVAL_S"] = "0"
+os.environ["PERMISSIONS_BACKEND"] = "jsonl"
+os.environ["QDRANT_URL"] = ""
+os.environ["JWKS_URL"] = ""
+os.environ["JWT_ISSUER"] = ""
+os.environ["EMBED_BACKEND"] = "hash"
+os.environ["EMBED_DIM"] = "384"
 
 import jwt as pyjwt  # noqa: E402
 import pytest  # noqa: E402

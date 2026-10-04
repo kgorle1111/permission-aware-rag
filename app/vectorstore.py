@@ -1,13 +1,15 @@
 """Qdrant with ACL payload filtering — the pre-filter enforced by the engine.
 
-The ACL check is a payload predicate evaluated DURING HNSW traversal (or the
-local-mode equivalent), not a post-hoc filter: forbidden points are never
-scored, so nothing about them can influence results, ranks, or counts.
+The result query carries an ACL predicate to the engine; only matching
+points are returned to generation. Engine scoring internals vary by backend.
+The separate audit query samples unfiltered top-k with ACL-only payloads.
 
 Local embedded mode by default (QDRANT_PATH); set QDRANT_URL for a server —
 identical API either way.
 """
 from __future__ import annotations
+
+import atexit
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
@@ -47,7 +49,7 @@ def reset_collection():
 
 def upsert_chunks(chunks: list[dict]):
     """chunks: [{id:int, doc_id, text, acl:[...], vector:[...]}]"""
-    client().upsert(config.COLLECTION, points=[
+    client().upsert(config.COLLECTION, wait=True, points=[
         PointStruct(id=ch["id"], vector=ch["vector"],
                     payload={"doc_id": ch["doc_id"], "text": ch["text"], "acl": ch["acl"]})
         for ch in chunks
@@ -79,17 +81,27 @@ def search_unfiltered_count(query_vector: list[float], principals: list[str], to
     return sum(1 for h in hits if not (set(h.payload.get("acl", [])) & pset))
 
 
-def update_doc_acl(doc_id: str, acl: list[str]):
-    """Permission sync writes flow through here (plus Postgres source of truth)."""
-    client().set_payload(
-        collection_name=config.COLLECTION,
-        payload={"acl": acl},
-        points=Filter(must=[FieldCondition(key="doc_id", match=MatchValue(value=doc_id))]),
-    )
-
-
 def delete_doc(doc_id: str):
     client().delete(
         collection_name=config.COLLECTION,
+        wait=True,
         points_selector=Filter(must=[FieldCondition(key="doc_id", match=MatchValue(value=doc_id))]),
     )
+
+
+def update_chunk_acl(chunk_id: int, acl: list[str]):
+    if not client().retrieve(config.COLLECTION, ids=[chunk_id],
+                             with_payload=False, with_vectors=False):
+        raise RuntimeError("indexed chunk missing; full reingestion required")
+    client().set_payload(collection_name=config.COLLECTION,
+                         payload={"acl": acl}, points=[chunk_id], wait=True)
+
+
+def close_client():
+    global _client
+    if _client is not None:
+        _client.close()
+        _client = None
+
+
+atexit.register(close_client)

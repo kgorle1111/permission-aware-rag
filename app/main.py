@@ -8,19 +8,20 @@ GET  /         — demo UI (three users, one query, three different answers)
 from __future__ import annotations
 
 import logging
+import asyncio
+import hmac
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from . import audit as audit_mod
 from . import config
-from .generation import answer
 from .identity import Principal, principal_from_request
 from .retrieval import retrieve
-from .store import init_db
+from .store import init_db, SessionLocal, PermissionState
 from .sync import sync_once
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
@@ -30,7 +31,30 @@ log = logging.getLogger("permrag")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
-    yield
+    stop = asyncio.Event()
+    async def poll():
+        while not stop.is_set():
+            try:
+                await asyncio.to_thread(sync_once)
+            except Exception:
+                log.exception("permission sync failed")
+            try:
+                await asyncio.wait_for(stop.wait(), timeout=config.SYNC_INTERVAL_S)
+            except asyncio.TimeoutError:
+                pass
+    # Reconcile before accepting traffic so startup cannot serve stale corpus ACLs.
+    if config.SYNC_INTERVAL_S > 0:
+        try:
+            await asyncio.to_thread(sync_once)
+        except Exception:
+            log.exception("startup reconciliation failed; retrieval remains blocked")
+    task = asyncio.create_task(poll()) if config.SYNC_INTERVAL_S > 0 else None
+    try:
+        yield
+    finally:
+        if task is not None:
+            stop.set()
+            await task
 
 
 app = FastAPI(title="Permission-Aware RAG", lifespan=lifespan)
@@ -40,13 +64,17 @@ class QueryIn(BaseModel):
     query: str = Field(min_length=1, max_length=2000)
     k: int = Field(default=0, ge=0, le=20)
 
+    @field_validator("query")
+    @classmethod
+    def meaningful_query(cls, value):
+        if not value.strip():
+            raise ValueError("query must contain non-whitespace text")
+        return value
+
 
 @app.post("/query")
 def query(body: QueryIn, principal: Principal = Depends(principal_from_request)):
-    resp = retrieve(body.query, principal, k=body.k or None)
-    if resp.get("answer") is None:
-        resp["answer"] = answer(body.query, resp["results"])
-    return resp
+    return retrieve(body.query, principal, k=body.k or None)
 
 
 @app.get("/audit")
@@ -60,7 +88,45 @@ def audit(principal: Principal = Depends(principal_from_request)):
 def sync(principal: Principal = Depends(principal_from_request)):
     if "security" not in principal.groups:
         raise HTTPException(403, "sync trigger requires group:security")
-    return {"changed_docs": sync_once()}
+    try:
+        return {"changed_docs": sync_once()}
+    except Exception:
+        log.exception("manual permission sync failed")
+        raise HTTPException(503, "permission reconciliation unavailable")
+
+
+@app.post("/webhooks/drive", status_code=204)
+def drive_notification(request: Request):
+    # Google notification delivery cannot use our end-user JWT. It must match
+    # the pre-registered channel capability and resource before triggering sync.
+    expected = {
+        "x-goog-channel-id": config.DRIVE_WEBHOOK_CHANNEL_ID,
+        "x-goog-channel-token": config.DRIVE_WEBHOOK_TOKEN,
+        "x-goog-resource-id": config.DRIVE_WEBHOOK_RESOURCE_ID,
+    }
+    if config.PERMISSIONS_BACKEND != "gdrive" or not all(expected.values()):
+        raise HTTPException(404, "not found")
+    if not all(hmac.compare_digest(request.headers.get(name, "").encode(), value.encode())
+               for name, value in expected.items()):
+        raise HTTPException(403, "invalid notification channel")
+    try:
+        sync_once()
+    except Exception:
+        log.exception("Drive notification reconciliation failed")
+        raise HTTPException(503, "permission reconciliation unavailable")
+    return Response(status_code=204)
+
+
+@app.get("/readyz")
+def readyz():
+    try:
+        with SessionLocal() as session:
+            state = session.get(PermissionState, 1)
+            if state and not state.pending and not state.rebuild_required:
+                return {"ready": True}
+    except Exception:
+        log.exception("readiness check failed")
+    raise HTTPException(503, "permission reconciliation required")
 
 
 @app.get("/healthz")

@@ -14,15 +14,21 @@ from .store import AuditLog, SessionLocal
 
 
 def write_audit(principal: Principal, query: str, chunk_ids: list, doc_ids: list,
-                denied_count: int, fail_closed: bool):
-    with SessionLocal() as s:
+                denied_count: int, fail_closed: bool, session=None):
+    def add(s):
         s.add(AuditLog(
             user_id=principal.user_id, groups=list(principal.groups), query=query,
             returned_chunk_ids=[str(c) for c in chunk_ids],
             returned_doc_ids=list(doc_ids),
             denied_count=denied_count, fail_closed=fail_closed,
         ))
-        s.commit()
+        s.flush()
+    if session is not None:
+        add(session)
+    else:
+        with SessionLocal() as s:
+            add(s)
+            s.commit()
 
 
 def recent(limit: int = 50) -> list[dict]:

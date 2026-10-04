@@ -10,17 +10,18 @@ import json
 from pathlib import Path
 
 from .embeddings import embed
-from .store import ChunkACL, SessionLocal
+from .store import ChunkACL, ChunkPolicy, SourceCheckpoint, permission_transaction
 from .vectorstore import reset_collection, upsert_chunks
 
-OWNER_ONLY = ["user:__owner_only__"]
+OWNER_ONLY = []  # empty means deny everyone; no forgeable sentinel principal
 
 
 def strictest(acl_a: list[str], acl_b: list[str]) -> list[str]:
-    """Strictest-wins ACL merge: a principal passes the result iff it passes
-    BOTH inputs. '*' on one side means that side allows everyone, so the
-    other side decides. An empty result collapses to owner-only (deny by
-    default), never to public."""
+    """Conservative intersection of principal grants; wildcard yields the other ACL.
+
+    An empty intersection denies everyone. Different memberships can satisfy
+    the two inputs separately yet be denied by this flat-set representation.
+    """
     a, b = set(acl_a), set(acl_b)
     if "*" in a and "*" in b:
         return ["*"]
@@ -32,10 +33,14 @@ def strictest(acl_a: list[str], acl_b: list[str]) -> list[str]:
 
 
 def validate_acl(acl: list[str]) -> list[str]:
-    """Empty or malformed ACLs never enter the index — deny by default."""
-    clean = [p for p in (acl or [])
-             if p == "*" or p.startswith("user:") or p.startswith("group:")]
-    return clean or list(OWNER_ONLY)
+    """Malformed or empty ACLs deny everyone, including mixed valid/invalid lists."""
+    if not isinstance(acl, list):
+        return []
+    clean = [p for p in acl if isinstance(p, str) and (
+        p == "*" or (p.startswith(("user:", "group:")) and
+                     bool(p.split(":", 1)[1].strip()))) ]
+    return sorted(set(clean)) if len(clean) == len(acl) else []
+
 
 
 def chunk_document(doc: dict) -> list[dict]:
@@ -48,14 +53,23 @@ def chunk_document(doc: dict) -> list[dict]:
         if "acl" in section:
             acl = strictest(doc_acl, validate_acl(section["acl"]))
         for para in [p.strip() for p in section["text"].split("\n\n") if p.strip()]:
-            chunks.append({"doc_id": doc["doc_id"], "text": para, "acl": acl})
+            chunks.append({"doc_id": doc["doc_id"], "text": para, "acl": acl,
+                           "doc_acl": doc_acl,
+                           "section_acl": validate_acl(section["acl"]) if "acl" in section else None})
     return chunks
 
 
 def ingest_corpus(corpus_path: str | Path, reset: bool = True) -> int:
     docs = json.loads(Path(corpus_path).read_text())
+    if not isinstance(docs, list):
+        raise ValueError("corpus must be a list of documents")
+    seen = set()
     all_chunks = []
     for doc in docs:
+        doc_id = doc.get("doc_id")
+        if not isinstance(doc_id, str) or not doc_id.strip() or doc_id in seen:
+            raise ValueError("document ids must be nonempty and unique")
+        seen.add(doc_id)
         all_chunks.extend(chunk_document(doc))
     for i, ch in enumerate(all_chunks):
         ch["id"] = i
@@ -63,14 +77,31 @@ def ingest_corpus(corpus_path: str | Path, reset: bool = True) -> int:
     for ch, v in zip(all_chunks, vectors):
         ch["vector"] = v
 
-    if reset:
+    if not reset:
+        raise ValueError("incremental ingestion is unsupported; use a full replacement")
+    # Persist the barrier before touching either store. A crash or failed write
+    # leaves queries denied until a successful full reingestion.
+    with permission_transaction() as (s, state):
+        state.revision += 1
+        intent = state.revision
+        state.pending = True
+        state.rebuild_required = True
+    with permission_transaction() as (s, state):
+        if state.revision != intent:
+            raise RuntimeError("ingestion superseded; retry full reingestion")
         reset_collection()
-    upsert_chunks(all_chunks)
-
-    # transactional source-of-truth mirror: fully applied or not at all
-    with SessionLocal() as s:
+        if all_chunks:
+            upsert_chunks(all_chunks)
         s.query(ChunkACL).delete()
+        s.query(ChunkPolicy).delete()
+        s.query(SourceCheckpoint).delete()
         for ch in all_chunks:
             s.add(ChunkACL(chunk_id=ch["id"], doc_id=ch["doc_id"], acl=ch["acl"]))
-        s.commit()
+            s.add(ChunkPolicy(chunk_id=ch["id"], doc_acl=ch["doc_acl"],
+                              section_acl=ch["section_acl"]))
+        state.revision += 1
+        state.pending = False
+        state.rebuild_required = False
+    from .retrieval import clear_cache
+    clear_cache()
     return len(all_chunks)

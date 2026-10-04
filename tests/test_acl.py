@@ -22,8 +22,8 @@ def test_strictest_intersection():
 def test_empty_or_malformed_acl_never_becomes_public():
     assert validate_acl([]) == OWNER_ONLY
     assert validate_acl(None) == OWNER_ONLY
-    assert validate_acl(["everyone", "admin"]) == OWNER_ONLY  # malformed entries dropped
-    assert validate_acl(["group:eng", "banana"]) == ["group:eng"]
+    assert validate_acl(["everyone", "admin"]) == OWNER_ONLY  # malformed input denied
+    assert validate_acl(["group:eng", "banana"]) == OWNER_ONLY
 
 
 def test_chunk_inheritance_with_section_override():

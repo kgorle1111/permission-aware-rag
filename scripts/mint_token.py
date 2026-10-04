@@ -17,8 +17,9 @@ from app import config  # noqa: E402
 def mint(user: str, groups: list[str], ttl_s: int = 3600) -> str:
     private_key = Path(config.JWT_PRIVATE_KEY_PATH).read_text()
     now = dt.datetime.now(dt.timezone.utc)
+    issuer = {"iss": config.JWT_ISSUER} if config.JWT_ISSUER else {}
     return jwt.encode(
-        {"sub": user, "groups": groups, "aud": config.JWT_AUDIENCE,
+        {**issuer, "sub": user, "groups": groups, "aud": config.JWT_AUDIENCE,
          "iat": now, "exp": now + dt.timedelta(seconds=ttl_s)},
         private_key, algorithm="RS256")
 
