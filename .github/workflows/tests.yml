@@ -1,11 +1,11 @@
-name: tests
+name: tests-and-container
 
 on:
   push:
   pull_request:
 
 jobs:
-  pytest:
+  unit-and-coverage:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -17,7 +17,163 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-      - name: Install dependencies
-        run: python -m pip install -r requirements.txt
-      - name: Run offline test suite
-        run: python -m pytest -q
+      - name: Install test dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Run tests and enforce branch coverage
+        run: >-
+          python -m pytest tests/ -q --cov=app --cov=scripts --cov-branch
+          --cov-report=term-missing --cov-fail-under=96
+
+  mutation-score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Run mutations in Linux container
+        run: |
+          docker run --rm --volume "$PWD:/src" --workdir /src python:3.12-slim \
+            sh -eu -c 'apt-get update; apt-get install -y --no-install-recommends git; python -m pip install -r requirements-dev.txt; mutmut run --max-children 1; mutmut export-cicd-stats' 2>&1 | tee mutation-run.log
+      - name: Validate the complete mutation report
+        run: python scripts/check_mutations.py mutants/mutmut-cicd-stats.json --mutants-dir mutants
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-results
+          path: |
+            mutants/mutmut-cicd-stats.json
+            mutants/mutmut-stats.json
+            mutants/app/**/*.py.meta
+            mutants/app/**/*.py
+            mutation-run.log
+          if-no-files-found: error
+
+  container-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production image
+        run: docker build --tag permission-aware-rag:ci .
+      - name: Confirm image contains no signing keys
+        run: >-
+          docker run --rm --entrypoint sh permission-aware-rag:ci
+          -c 'test ! -e /app/config/idp_private.pem && test ! -e /app/config/idp_public.pem'
+      - name: Start persistent container
+        run: |
+          docker run --detach --name permission-rag-smoke \
+            --publish 127.0.0.1:18090:8090 \
+            --volume permission-rag-ci-data:/data \
+            permission-aware-rag:ci
+      - name: Verify readiness, authentication, retrieval, and persistence
+        run: |
+          set -euo pipefail
+          ready=0
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:18090/readyz >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          test "$ready" = 1
+          curl --fail --silent http://127.0.0.1:18090/healthz >/dev/null
+          test "$(docker exec permission-rag-smoke id -u)" = 10001
+          docker exec permission-rag-smoke test -s /data/idp_private.pem
+          docker exec permission-rag-smoke test -s /data/idp_public.pem
+          docker exec permission-rag-smoke test -s /data/rag.db
+          docker exec permission-rag-smoke test -f /data/.corpus-ingested
+          unauthenticated=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            --header 'Content-Type: application/json' \
+            --data '{"query":"salary bands"}' \
+            http://127.0.0.1:18090/query)
+          test "$unauthenticated" = 401
+          token=$(docker exec permission-rag-smoke python scripts/mint_token.py \
+            bob@company.com --groups hr)
+          response=$(curl --fail --silent \
+            --header "Authorization: Bearer $token" \
+            --header 'Content-Type: application/json' \
+            --data '{"query":"what are the salary bands?"}' \
+            http://127.0.0.1:18090/query)
+          python -c 'import json,sys; body=json.loads(sys.argv[1]); assert any(item["doc_id"] == "hr-salaries" for item in body["results"])' "$response"
+          security_token=$(docker exec permission-rag-smoke python scripts/mint_token.py \
+            sec@company.com --groups security)
+          guest_token=$(docker exec permission-rag-smoke python scripts/mint_token.py \
+            guest@external.com)
+          docker restart permission-rag-smoke >/dev/null
+          ready=0
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:18090/readyz >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          test "$ready" = 1
+          docker exec permission-rag-smoke test -s /data/idp_private.pem
+          docker exec permission-rag-smoke test -s /data/rag.db
+          persisted=$(curl --fail --silent \
+            --header "Authorization: Bearer $token" \
+            --header 'Content-Type: application/json' \
+            --data '{"query":"what are the salary bands?"}' \
+            http://127.0.0.1:18090/query)
+          python -c 'import json,sys; body=json.loads(sys.argv[1]); assert any(item["doc_id"] == "hr-salaries" for item in body["results"])' "$persisted"
+          audit=$(curl --fail --silent --header "Authorization: Bearer $security_token" \
+            http://127.0.0.1:18090/audit)
+          python -c 'import json,sys; assert json.loads(sys.argv[1])["recent"]' "$audit"
+          guest=$(curl --fail --silent \
+            --header "Authorization: Bearer $guest_token" \
+            --header 'Content-Type: application/json' \
+            --data '{"query":"what are the salary bands?"}' \
+            http://127.0.0.1:18090/query)
+          python -c 'import json,sys; body=json.loads(sys.argv[1]); assert all(item["doc_id"] != "hr-salaries" for item in body["results"])' "$guest"
+          demo_status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            http://127.0.0.1:18090/demo/tokens)
+          test "$demo_status" = 404
+          docker cp permission-rag-smoke:/data/idp_public.pem "$RUNNER_TEMP/idp_public.pem"
+          docker create --name permission-rag-public-key-seed --user 0:0 \
+            --volume permission-rag-public-only-data:/data \
+            --entrypoint sh permission-aware-rag:ci -c 'sleep 60'
+          docker cp "$RUNNER_TEMP/idp_public.pem" \
+            permission-rag-public-key-seed:/data/idp_public.pem
+          docker start permission-rag-public-key-seed >/dev/null
+          docker exec --user 0:0 permission-rag-public-key-seed \
+            chmod 644 /data/idp_public.pem
+          docker rm --force permission-rag-public-key-seed >/dev/null
+          docker run --detach --name permission-rag-public-only \
+            --publish 127.0.0.1:18091:8090 \
+            --volume permission-rag-public-only-data:/data \
+            --env JWT_PUBLIC_KEY_PATH=/data/idp_public.pem \
+            --env JWT_PRIVATE_KEY_PATH=/run/no-private/idp_private.pem \
+            permission-aware-rag:ci
+          ready=0
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:18091/readyz >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          test "$ready" = 1
+          curl --fail --silent --header "Authorization: Bearer $token" \
+            --header 'Content-Type: application/json' \
+            --data '{"query":"what are the salary bands?"}' \
+            http://127.0.0.1:18091/query | python -c 'import json,sys; assert any(x["doc_id"]=="hr-salaries" for x in json.load(sys.stdin)["results"])'
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            http://127.0.0.1:18091/demo/tokens)" = 404
+          docker exec permission-rag-public-only test ! -e /run/no-private/idp_private.pem
+      - name: Show container logs on failure
+        if: failure()
+        run: |
+          docker logs permission-rag-smoke
+          docker logs permission-rag-public-only || true
+      - name: Remove smoke container
+        if: always()
+        run: |
+          docker rm --force permission-rag-smoke || true
+          docker rm --force permission-rag-public-only || true
+          docker rm --force permission-rag-public-key-seed || true
+          docker volume rm permission-rag-ci-data || true
+          docker volume rm permission-rag-public-only-data || true

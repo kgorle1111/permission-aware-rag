@@ -1,15 +1,15 @@
--- Defense in depth (Postgres only): Row-Level Security on the ACL mirror, so
--- even a direct SQL query — a buggy admin dashboard, a future engineer with a
--- psql session — respects the permission model.
---
--- Usage: run once against your Postgres DB, then have the app set
---   SET app.user_id = 'alice@company.com';
---   SET app.user_groups = 'eng,oncall';
--- per connection/transaction before querying chunk_acl directly.
+-- Example defense-in-depth SELECT policy for a separate reporting role.
+-- This file is not installed by the application. Runtime retrieval uses verified
+-- JWT claims and a Qdrant ACL filter; it does not set PostgreSQL user context.
+-- Table owners and BYPASSRLS roles ordinarily bypass these policies. Validate
+-- role privileges and transaction-scoped settings before relying on this example.
+-- A trusted caller would set app.user_id and app.user_groups per transaction.
+-- Do not expose those settings as client-controlled authorization claims.
 
 ALTER TABLE chunk_acl ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY chunk_visibility ON chunk_acl
+    FOR SELECT
     USING (
         acl::jsonb ?| ARRAY['*', 'user:' || current_setting('app.user_id', true)]
         OR acl::jsonb ?| (

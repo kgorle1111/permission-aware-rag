@@ -15,7 +15,9 @@ python scripts/ingest.py
 DEMO_MODE=1 uvicorn app.main:app --port 8090
 ```
 
-The demo UI is at <http://localhost:8090>. In another terminal, `python scripts/demo.py` runs the scripted example against the running API. `DEMO_MODE=1` enables development token minting and must not be used for a real deployment. To run the tests locally, use `pytest -q`.
+The demo UI is at <http://localhost:8090>. In another terminal, `python scripts/demo.py` runs the scripted example against the running API. `DEMO_MODE=1` enables development token minting and must not be used for a real deployment. See [SETUP.md](SETUP.md) for test, coverage, and mutation-check commands.
+
+For a containerized local run, use `docker compose up --build`. The container initializes the corpus and signing keypair on first start and stores SQL, Qdrant data, and runtime keys in the persistent `rag-data` volume mounted at `/data`. Demo token minting remains off unless you explicitly set `DEMO_MODE=1`. See [SETUP.md](SETUP.md) for the volume lifecycle and public-key-only configuration.
 
 ## Current behavior and boundaries
 

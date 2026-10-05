@@ -1,6 +1,6 @@
 """Generation downstream of the filter: the prompt is assembled ONLY from
-permitted chunks. Even a fully jailbroken model cannot reveal what it never
-received — that is the design's key property against prompt injection.
+permitted chunks. Unreadable corpus text is excluded from this context;
+this does not prevent model hallucinations or inference from permitted text.
 
 Keyless default: extractive answer (top permitted chunks verbatim). With
 ANTHROPIC_API_KEY set, a grounded LLM answer with citations.

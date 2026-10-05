@@ -2,7 +2,8 @@
 
 POST /query    — JWT-verified, ACL pre-filtered retrieval + grounded answer
 GET  /audit    — admin only (group:security): trail + denied-query heatmap
-POST /sync     — trigger a permission reconciliation pass (webhook target)
+POST /sync     — security-admin permission reconciliation
+POST /webhooks/drive — channel-authenticated Drive notifications
 GET  /         — demo UI (three users, one query, three different answers)
 """
 from __future__ import annotations

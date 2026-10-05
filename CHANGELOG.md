@@ -10,3 +10,6 @@
 - Persist Drive checkpoints transactionally with permission changes and paginate complete permission snapshots.
 - Add isolated leakage, latency, and revocation measurements, plus security regression tests.
 - Render demo answers and audit data safely as text and discard stale responses after identity changes.
+- Enforce at least 96% combined application and command-script branch coverage in CI.
+- Add a nonroot persistent Docker image and functional container checks for authentication, access filtering, restart persistence, and public-key-only verification.
+- Add Linux mutation testing and validate complete mutation reports before accepting results.

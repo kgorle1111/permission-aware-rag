@@ -1,9 +1,10 @@
 """Identity propagation: the retrieval API knows the real end-user, verified.
 
 JWTs are RS256-signed by the IdP (scripts/gen_keys.py plays IdP locally; set
-JWKS_URL for a real Okta/Auth0/Azure AD). The API holds only the public key —
-it can verify tokens but never forge them. Groups come from the token's signed
-claims, never from anything the client asserts about itself in the request.
+JWKS_URL for a real Okta/Auth0/Azure AD). Verification requires only the public
+key. Local setup and demo token minting also use a private key; production can
+mount only a trusted public key or use JWKS. Groups come from signed claims,
+never from anything the client asserts about itself in the request.
 
 FAIL CLOSED: any verification problem = 401 and no retrieval. There is no
 "default user" and no unauthenticated path.

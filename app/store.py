@@ -2,8 +2,8 @@
 the ACL source of truth and the append-only audit log.
 
 SQLite by default (zero infra, ACID for a single writer); DATABASE_URL for
-Postgres in production. config/postgres_rls.sql adds Row-Level Security as
-defense in depth there.
+Postgres when configured. config/postgres_rls.sql is an illustrative policy;
+the runtime does not set the end-user context needed to enforce that policy.
 """
 from __future__ import annotations
 

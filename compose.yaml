@@ -1,0 +1,27 @@
+services:
+  rag:
+    build: .
+    image: permission-aware-rag:local
+    ports:
+      - target: 8090
+        published: "${PORT:-8090}"
+        host_ip: 127.0.0.1
+        protocol: tcp
+    volumes:
+      - rag-data:/data
+    environment:
+      DEMO_MODE: "${DEMO_MODE:-0}"
+      JWT_AUDIENCE: "${JWT_AUDIENCE:-permission-rag-api}"
+      JWT_ISSUER: "${JWT_ISSUER:-}"
+      PERMISSIONS_BACKEND: "${PERMISSIONS_BACKEND:-jsonl}"
+      SYNC_INTERVAL_S: "${SYNC_INTERVAL_S:-10}"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/readyz', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  rag-data:

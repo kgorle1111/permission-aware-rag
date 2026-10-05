@@ -1,7 +1,7 @@
 """Run permission sync: one pass, or watch mode (polling reconciliation).
 
   python scripts/sync_run.py             # one pass
-  python scripts/sync_run.py --watch 10  # poll every 10s (= staleness bound)
+  python scripts/sync_run.py --watch 10  # poll every 10s (plus sync time; source/provider delay is additional)
 """
 import argparse
 import sys
