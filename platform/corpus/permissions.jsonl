@@ -1,0 +1,6 @@
+{"doc_id": "handbook", "acl": ["*"]}
+{"doc_id": "eng-oncall", "acl": ["group:eng"]}
+{"doc_id": "hr-salaries", "acl": ["group:hr"]}
+{"doc_id": "exec-comp", "acl": ["user:ceo@company.com", "group:board"]}
+{"doc_id": "board-minutes", "acl": ["user:ceo@company.com", "group:board"]}
+{"doc_id": "company-strategy", "acl": ["*"]}

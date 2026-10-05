@@ -126,6 +126,24 @@ network; swap `embed()` for Voyage AI or sentence-transformers for semantic reca
 RLS logic doesn't change. Run against the server with
 `RAG_BACKEND=pgvector DATABASE_URL=postgres://... python3 underwriter_server.py`.
 
+## The production platform ([`platform/`](platform/))
+
+The root of this repo is the zero-dependency reference: small enough to read in one sitting.
+[`platform/`](platform/README.md) is the same permission-before-ranking design built as a
+deployable service:
+
+| | Root (reference) | `platform/` (service) |
+|---|---|---|
+| API | stdlib HTTP server | FastAPI |
+| Vectors | BM25 / pgvector + RLS | Qdrant + SQL store |
+| Identity | demo roles / HS256 seam | RS256 JWT, verified per request |
+| Source sync | static corpus | Google Drive delta + webhook, permission revocation |
+| Tests | leak evals, mutants, isolation oracle | 273 tests, 98.85% branch coverage (≥96% gate), mutmut |
+| Shipping | Render one-click | Docker image (non-root), container smoke CI |
+
+The platform has its own CI in [`.github/workflows/platform.yml`](.github/workflows/platform.yml).
+Its mutation-score job is report-only until the remaining surviving mutants are reviewed.
+
 ## Threat model (what's handled, what's not)
 
 | Vector | Status |

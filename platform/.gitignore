@@ -1,0 +1,32 @@
+.venv/
+__pycache__/
+.env
+*.db
+*.db-shm
+*.db-wal
+qdrant_data/
+config/idp_private.pem
+config/idp_public.pem
+CLAUDE.md
+
+.pytest_cache/
+.local-backups/
+.drive-channel*.env
+
+# Private agent planning and execution logs (never publish)
+/HANDOFF.md
+/PLAN.md
+/WORK_LOG.md
+/.planning/
+
+# Generated verification artifacts
+.coverage*
+!.coveragerc
+coverage.json
+coverage.xml
+htmlcov/
+mutants/
+.mutmut-cache/
+reports/coverage*
+reports/mutation*
+*.log

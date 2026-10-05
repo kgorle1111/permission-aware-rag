@@ -1,0 +1,60 @@
+[
+  {
+    "doc_id": "handbook",
+    "acl": ["*"],
+    "sections": [
+      {
+        "text": "Vacation policy: every employee gets twenty days of paid vacation per year, plus public holidays. Unused days roll over up to five days.\n\nRemote work: employees may work remotely up to three days per week with manager approval.\n\nExpense policy: meals during business travel are reimbursed up to $60 per day with receipts."
+      }
+    ]
+  },
+  {
+    "doc_id": "eng-oncall",
+    "acl": ["group:eng"],
+    "sections": [
+      {
+        "text": "On-call rotation: engineers rotate weekly; the pager handoff happens Mondays at 10:00. Escalation goes to the staff engineer on duty.\n\nProduction database credentials are stored in the vault under ENG-CANARY-7f3a9. Never paste credentials into chat or tickets."
+      }
+    ]
+  },
+  {
+    "doc_id": "hr-salaries",
+    "acl": ["group:hr"],
+    "sections": [
+      {
+        "text": "Compensation bands: salary bands range from 90k to 250k depending on level and location. Band adjustments happen every April.\n\nThe full salary spreadsheet is tagged HR-CANARY-2b8c1 and must not be shared outside the HR group."
+      }
+    ]
+  },
+  {
+    "doc_id": "exec-comp",
+    "acl": ["user:ceo@company.com", "group:board"],
+    "sections": [
+      {
+        "text": "Executive compensation: the CEO total package for this year is $1.2M including equity refresh, reference EXEC-CANARY-9d4e2. Board approval was granted in the February session.\n\nCFO and CTO packages are indexed to the 75th percentile of peer companies."
+      }
+    ]
+  },
+  {
+    "doc_id": "board-minutes",
+    "acl": ["user:ceo@company.com", "group:board"],
+    "sections": [
+      {
+        "text": "Board minutes, March: the board discussed the unannounced acquisition of Northwind Labs, codename BOARD-CANARY-5a6f0. Diligence closes next quarter. This information is material and non-public."
+      }
+    ]
+  },
+  {
+    "doc_id": "company-strategy",
+    "acl": ["*"],
+    "sections": [
+      {
+        "text": "Company strategy overview: we focus on mid-market customers in North America and Europe. Product-led growth remains the primary acquisition channel."
+      },
+      {
+        "acl": ["group:finance"],
+        "text": "Financial projections: next fiscal year revenue target is $48M with FIN-CANARY-4c1d7 gross margin assumptions of 71 percent. Not for distribution outside finance."
+      }
+    ]
+  }
+]
