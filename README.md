@@ -50,6 +50,12 @@ This system makes the leak **structurally impossible** rather than filtered-afte
    (recall@4: 14/14) and *must-never-return* documents (leak rate: 0). Any leak fails the
    build. Retrieval-quality changes (TF-IDF → BM25, chunking rewrite) merged only after
    this gate passed unchanged.
+4. **Evidence that scales** — a frozen 210-doc generated corpus gives **0/1,350 leaks
+   (95% upper bound 0.28%)**, and an isolation check (results must be identical to a
+   corpus holding only the caller's readable docs) catches all 6 deliberately leaky
+   retrievers in [`app/mutants.py`](app/mutants.py). Hand-labeled cases alone caught 1 of 6.
+   [Results](evals/results/2026-10-03-v2/table.md) · [Threat model](docs/THREAT_MODEL.md) ·
+   [Decisions](docs/DECISIONS.md)
 
 ```
 User question ──► ACL pre-filter ──► BM25 over visible set ──► top-k chunks
@@ -101,7 +107,7 @@ For readers evaluating the engineering rather than the demo:
 | | In-memory (default) | Postgres + pgvector |
 |---|---|---|
 | Ranking | BM25 (stdlib) | pgvector cosine over embeddings |
-| ACL enforcement | Python pre-filter | **Postgres Row-Level Security** — the database refuses to return hidden rows, even to a SQL injection through the app's connection |
+| ACL enforcement | Python pre-filter | **Postgres Row-Level Security** — the database refuses to return hidden rows even when an app query forgets its filter (not yet SQL-injection-proof: [T13](docs/THREAT_MODEL.md)) |
 | Score side channel | Closed (visible-set statistics) | No analogue — embedding distance is per-row, no corpus statistics |
 | Audit | Hash-chained JSONL | Hash-chained `audit` table |
 | Dependencies | Zero | `psycopg` (`pip install -e ".[pg]"`) |
