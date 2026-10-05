@@ -126,7 +126,7 @@ def test_section_acl_survives_document_acl_broadening_and_restriction(client):
         reingest()
 
 
-def test_cache_separates_k_and_unambiguous_principal_scopes(monkeypatch):
+def test_cache_separates_k_and_unambiguous_principal_scopes(client, monkeypatch):
     """Neither result limits nor crafted identity delimiters may alias keys."""
     retrieval.clear_cache()
     calls = []

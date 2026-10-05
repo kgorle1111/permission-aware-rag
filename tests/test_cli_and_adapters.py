@@ -141,3 +141,47 @@ def test_demo_routes_mint_real_scope_tokens_and_readiness(client, monkeypatch):
     from app import main
     monkeypatch.setattr(main, "SessionLocal", Mock(side_effect=RuntimeError("DB unavailable")))
     assert client.get("/readyz").status_code == 503
+
+
+def test_benchmark_worker_checks_security_and_emits_json(client, monkeypatch, tmp_path, capsys):
+    import json
+    from scripts import benchmark
+    monkeypatch.setenv("JWT_PRIVATE_KEY_PATH", str(tmp_path / "private.pem"))
+    monkeypatch.setenv("JWT_PUBLIC_KEY_PATH", str(tmp_path / "public.pem"))
+    try:
+        assert benchmark.main(["--_worker", str(benchmark.DEFAULT_CORPUS), "1"]) == 0
+        report = json.loads(capsys.readouterr().out)
+        assert report["unauthorized_probe_checks"] == 60
+        assert report["security"] == {"checks_passed": True, "unauthorized_canary_leaks": 0,
+                                      "revoked_cached_answer_leaks": 0}
+        assert report["latency_ms"]["cold"]["samples"] == 5
+    finally:
+        reingest()
+
+
+def test_benchmark_cli_report_and_worker_failure(monkeypatch, tmp_path, capsys):
+    from scripts import benchmark
+    output = tmp_path / "results/report.json"
+    monkeypatch.setattr(benchmark, "run_worker", lambda *args: {"checked": True})
+    assert benchmark.main(["--output", str(output)]) == 0
+    assert '"checked": true' in output.read_text()
+    assert '"checked": true' in capsys.readouterr().out
+
+
+def test_drive_watch_cli_and_invalid_provider_response(monkeypatch, tmp_path, capsys):
+    from scripts import drive_watch
+    from unittest.mock import MagicMock
+    drive = MagicMock()
+    drive.changes().getStartPageToken().execute.return_value = {"startPageToken": "start"}
+    drive.changes().watch().execute.return_value = {"resourceId": "resource", "expiration": "999"}
+    monkeypatch.setattr(drive_watch, "build_drive_client", lambda *args: drive)
+    output = tmp_path / "channel.env"
+    monkeypatch.setattr(sys, "argv", ["watch", "--address", "https://example.test/webhooks/drive", "--output", str(output)])
+    drive_watch.main()
+    assert output.exists() and "saved privately" in capsys.readouterr().out
+    with pytest.raises(ValueError, match="lifetime"):
+        drive_watch.register(drive, "https://example.test", tmp_path / "badttl", 200)
+    for index, resource_id in enumerate(["", "invalid\nresource"]):
+        drive.changes().watch().execute.return_value = {"resourceId": resource_id}
+        with pytest.raises(ValueError, match="resource ID"):
+            drive_watch.register(drive, "https://example.test", tmp_path / f"bad{index}")
