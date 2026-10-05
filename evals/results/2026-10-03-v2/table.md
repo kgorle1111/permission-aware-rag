@@ -7,12 +7,13 @@ like `group:banking*`), 630 probe phrasings × 4 roles. Intervals are Wilson 95%
 | backend | docs | leaks / must-not probes | leak rate 95% UB | recall@4 | recall 95% CI | eval set |
 |---|---|---|---|---|---|---|
 | in-memory BM25 | 210 | 0/1350 | 0.28% | 1170/1170 = 100.0% | 99.7%–100.0% | `db6b5dcb51a5` |
-| pgvector + RLS | — | not yet run | — | — | — | — |
+| pgvector + RLS | 210 | 0/1350 | 0.28% | 1167/1170 = 99.7% | 99.2%–99.9% | `db6b5dcb51a5` |
 
 ## Pre-registered claims (PLAN.md PREREG)
 
 - **E1, zero leaks at scale: shown for in-memory.** 0/1350 at n ≥ 1,000, with a UB of 0.28% (< 0.5%).
-- **E3, pgvector matches: pending.** It needs a run against Postgres.
+- **E3, pgvector matches: shown.** It has 0 leaks on the same frozen set, under Postgres RLS (CI run
+  37270074256, `pgvector/pgvector:pg16`). It misses 3 recall probes because of the feature-hash embedder.
 - **E4, recall useful: shown, but weakly.** The lower bound is 99.7% (≥ 0.70). Every probe is
   drawn from the target's own text (full text, title, last 8 words), so this measures
   lexical recall, not semantic recall.
