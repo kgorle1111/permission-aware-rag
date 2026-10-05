@@ -72,3 +72,23 @@ def test_new_database_starts_at_pending_revision_zero(tmp_path, monkeypatch):
             assert state.rebuild_required is True
     finally:
         engine.dispose()
+
+
+def test_init_db_creates_canonical_permission_row_even_with_other_ids(tmp_path, monkeypatch):
+    from sqlalchemy.orm import sessionmaker
+    engine = store.make_engine(f"sqlite:///{tmp_path / 'existing.db'}")
+    sessions = sessionmaker(bind=engine)
+    monkeypatch.setattr(store, "engine", engine)
+    monkeypatch.setattr(store, "SessionLocal", sessions)
+    try:
+        store.Base.metadata.create_all(engine)
+        with sessions() as session:
+            session.add(store.PermissionState(id=2, revision=7, pending=True))
+            session.commit()
+        store.init_db()
+        with sessions() as session:
+            state = session.get(store.PermissionState, 1)
+            assert state is not None and state.pending is True
+            assert session.get(store.PermissionState, 2).revision == 7
+    finally:
+        engine.dispose()

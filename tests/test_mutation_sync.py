@@ -99,3 +99,22 @@ def test_zero_watch_interval_rejects_before_sync_or_sleep(monkeypatch):
     monkeypatch.setattr(sync.time, "sleep", forbidden)
     with pytest.raises(ValueError, match="positive"):
         sync.watch(0)
+
+
+def test_document_policy_change_is_reported_when_all_sections_stay_restricted(client, tmp_path):
+    from app.ingest import ingest_corpus
+    corpus = tmp_path / "corpus.json"
+    corpus.write_text(json.dumps([{"doc_id": "restricted", "acl": ["*"], "sections": [
+        {"acl": ["group:finance"], "text": "section stays restricted"}]}]))
+    source = tmp_path / "source.jsonl"
+    source.write_text(json.dumps({"doc_id": "restricted", "acl": ["group:finance"]}))
+    try:
+        ingest_corpus(corpus)
+        assert sync.sync_once(source) == ["restricted"]
+        with SessionLocal() as session:
+            row = session.query(ChunkACL).one()
+            assert row.acl == ["group:finance"]
+            assert session.get(ChunkPolicy, row.chunk_id).doc_acl == ["group:finance"]
+        assert sync.sync_once(source) == []
+    finally:
+        reingest()

@@ -6,8 +6,9 @@ from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
+from starlette.requests import Request
 
-from app import config, identity, retrieval, vectorstore
+from app import config, identity, ingest, retrieval, vectorstore
 from app.identity import Principal
 from conftest import mint
 
@@ -68,6 +69,34 @@ def test_invalid_token_error_remains_a_401_with_sanitized_prefix():
     assert error.value.detail.startswith("invalid token:")
 
 
+def test_malformed_groups_have_stable_fail_closed_detail():
+    with pytest.raises(HTTPException) as error:
+        identity.verify_token(mint("malformed@example.test", groups="staff"))
+    assert error.value.status_code == 401
+    assert error.value.detail == "invalid token: groups claim malformed"
+
+
+def test_missing_bearer_has_stable_401_detail_and_header_lookup_is_case_insensitive():
+    with pytest.raises(HTTPException) as error:
+        identity.principal_from_request(Request({"type": "http", "headers": []}))
+    assert error.value.status_code == 401
+    assert error.value.detail == "missing bearer token"
+
+    request = Request(
+        {
+            "type": "http",
+            "headers": [(b"authorization", f"Bearer {mint('header@example.test', [])}".encode())],
+        }
+    )
+    assert request.headers.get("AUTHORIZATION", "").startswith("Bearer ")
+    assert identity.principal_from_request(request) == Principal("header@example.test", ())
+
+
+def test_acl_principal_value_can_contain_colons_after_the_type_prefix():
+    assert ingest.validate_acl(["user::"]) == ["user::"]
+    assert Principal(":").principals == ["user::", "*"]
+
+
 def test_retrieval_uses_configured_default_limit_when_k_is_omitted(
     client, monkeypatch
 ):
@@ -114,6 +143,39 @@ def test_vector_search_passes_acl_filter_limit_and_payload_options(monkeypatch):
     assert acl_filter.match.any == ["user:reader@example.test", "*"]
 
 
+def test_upsert_is_durable_before_permission_state_can_be_committed(monkeypatch):
+    captured = {}
+
+    class FakeClient:
+        def upsert(self, collection_name, **kwargs):
+            captured["collection_name"] = collection_name
+            captured.update(kwargs)
+
+    monkeypatch.setattr(vectorstore, "client", lambda: FakeClient())
+    chunks = [
+        {
+            "id": 7,
+            "doc_id": "confidential-plan",
+            "text": "Private text",
+            "acl": ["group:finance"],
+            "vector": [0.3, 0.7],
+        }
+    ]
+    vectorstore.upsert_chunks(chunks)
+
+    assert captured["collection_name"] == config.COLLECTION
+    assert captured["wait"] is True
+    points = captured["points"]
+    assert len(points) == 1
+    assert points[0].id == 7
+    assert points[0].vector == [0.3, 0.7]
+    assert points[0].payload == {
+        "doc_id": "confidential-plan",
+        "text": "Private text",
+        "acl": ["group:finance"],
+    }
+
+
 def test_unfiltered_audit_query_is_relevant_limited_and_returns_only_denied_count(
     monkeypatch,
 ):
@@ -139,6 +201,60 @@ def test_unfiltered_audit_query_is_relevant_limited_and_returns_only_denied_coun
     assert captured["score_threshold"] == config.MIN_SCORE
     assert captured["with_payload"] == ["acl"]
     assert "query_filter" not in captured
+
+
+def test_unfiltered_audit_treats_missing_acl_payload_as_denied(monkeypatch):
+    class FakeClient:
+        def query_points(self, **_kwargs):
+            return SimpleNamespace(
+                points=[SimpleNamespace(payload={"doc_id": "legacy-no-acl"})]
+            )
+
+    monkeypatch.setattr(vectorstore, "client", lambda: FakeClient())
+    assert vectorstore.search_unfiltered_count([0.1], ["group:hr"], 1) == 1
+
+
+def test_acl_update_reads_no_document_data_and_waits_for_visibility(monkeypatch):
+    captured = {}
+
+    class FakeClient:
+        def retrieve(self, collection_name, **kwargs):
+            captured["retrieve_collection"] = collection_name
+            captured["retrieve"] = kwargs
+            return [object()]
+
+        def set_payload(self, **kwargs):
+            captured["set_payload"] = kwargs
+
+    monkeypatch.setattr(vectorstore, "client", lambda: FakeClient())
+    vectorstore.update_chunk_acl(91, ["group:hr"])
+
+    assert captured["retrieve_collection"] == config.COLLECTION
+    assert captured["retrieve"] == {
+        "ids": [91],
+        "with_payload": False,
+        "with_vectors": False,
+    }
+    assert captured["set_payload"] == {
+        "collection_name": config.COLLECTION,
+        "payload": {"acl": ["group:hr"]},
+        "points": [91],
+        "wait": True,
+    }
+
+
+def test_acl_update_missing_point_preserves_full_reingestion_error(monkeypatch):
+    class FakeClient:
+        def retrieve(self, *_args, **_kwargs):
+            return []
+
+        def set_payload(self, **_kwargs):
+            pytest.fail("must not write an ACL for a missing point")
+
+    monkeypatch.setattr(vectorstore, "client", lambda: FakeClient())
+    with pytest.raises(RuntimeError) as error:
+        vectorstore.update_chunk_acl(91, ["group:hr"])
+    assert str(error.value) == "indexed chunk missing; full reingestion required"
 
 
 def test_remote_document_delete_waits_for_exact_document_filter(monkeypatch):

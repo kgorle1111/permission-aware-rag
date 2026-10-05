@@ -38,6 +38,18 @@ def test_hash_embedding_has_stable_signed_ngram_buckets_and_unit_norm():
     assert embeddings._hash_embed("alpha beta gamma", 64) == vector
 
 
+def test_repeated_ngrams_accumulate_collisions_before_normalization():
+    vector = embeddings._hash_embed("alpha alpha", 8)
+    expected = {
+        0: -1 / math.sqrt(7),
+        2: -2 / math.sqrt(7),
+        4: 1 / math.sqrt(7),
+        5: 1 / math.sqrt(7),
+    }
+    assert {index: value for index, value in enumerate(vector) if value} == pytest.approx(expected)
+    assert sum(value * value for value in vector) == pytest.approx(1.0)
+
+
 def test_hash_embedding_stopword_only_text_is_a_finite_zero_vector():
     vector = embeddings._hash_embed("the and or", 7)
     assert vector == [0.0] * 7
@@ -80,8 +92,9 @@ def test_embedding_rejects_unknown_backend_and_nonpositive_dimensions(
 ):
     monkeypatch.setattr(config, "EMBED_BACKEND", backend)
     monkeypatch.setattr(config, "EMBED_DIM", dimension)
-    with pytest.raises(ValueError, match="invalid embedding backend or dimension"):
+    with pytest.raises(ValueError) as error:
         embeddings.embed(["text"])
+    assert str(error.value) == "invalid embedding backend or dimension"
 
 
 def test_strictest_handles_both_wildcards_and_intersects_grants():

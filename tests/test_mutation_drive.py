@@ -96,12 +96,14 @@ def test_unknown_removed_changes_are_filtered_by_known_document_ids():
 @pytest.mark.parametrize("token", [17, [], {}])
 def test_truthy_non_string_change_page_tokens_are_rejected(token):
     drive = Mock()
-    drive.changes.return_value.list.return_value = _request({
-        "changes": [], "nextPageToken": token,
-    })
+    drive.changes.return_value.list.side_effect = [
+        _request({"changes": [], "nextPageToken": token}),
+        _request({"changes": [], "newStartPageToken": "next-token"}),
+    ]
 
     with pytest.raises(ValueError, match="page token"):
         load_drive_changes(drive, "saved-token", [])
+    assert drive.changes.return_value.list.call_count == 1
 
 
 @pytest.mark.parametrize("token", [17, [], {}])
@@ -113,10 +115,12 @@ def test_truthy_non_string_permission_page_tokens_are_rejected(token):
     })
     drive.permissions.return_value.list.side_effect = [
         _request({"permissions": [], "nextPageToken": token}),
+        _request({"permissions": [{"type": "anyone"}]}),
     ]
 
     with pytest.raises(ValueError, match="page token"):
         load_drive_changes(drive, "saved-token", ["file-1"])
+    assert drive.permissions.return_value.list.call_count == 1
 
 
 def test_truthy_non_string_file_ids_are_rejected_before_snapshot_fetch():
