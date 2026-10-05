@@ -32,8 +32,6 @@ jobs:
 
   mutation-score:
     runs-on: ubuntu-latest
-    # report-only until the ~119 surviving mutants are reviewed; flip to blocking after
-    continue-on-error: true
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
@@ -47,7 +45,10 @@ jobs:
           docker run --rm --volume "$PWD:/src" --workdir /src python:3.12-slim \
             sh -eu -c 'apt-get update; apt-get install -y --no-install-recommends git; python -m pip install -r requirements-dev.txt; mutmut run --max-children 1; mutmut export-cicd-stats' 2>&1 | tee mutation-run.log
       - name: Validate the complete mutation report
-        run: python scripts/check_mutations.py mutants/mutmut-cicd-stats.json --mutants-dir mutants
+        # every survivor must be a reviewed, hash-pinned equivalent; any new survivor fails the build
+        run: >-
+          python scripts/check_mutations.py mutants/mutmut-cicd-stats.json --mutants-dir mutants
+          --equivalents mutation_equivalents.json --source-root .
       - uses: actions/upload-artifact@v4
         if: always()
         with:

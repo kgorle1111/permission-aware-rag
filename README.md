@@ -142,7 +142,9 @@ deployable service:
 | Shipping | Render one-click | Docker image (non-root), container smoke CI |
 
 The platform has its own CI in [`.github/workflows/platform.yml`](.github/workflows/platform.yml).
-Its mutation-score job is report-only until the remaining surviving mutants are reviewed.
+Its mutation gate is blocking: of 1,300 mutants, every survivor was either killed by a test
+or recorded as a reviewed equivalent in [`platform/mutation_equivalents.json`](platform/mutation_equivalents.json),
+pinned by source and mutant hash, so any new survivor fails the build.
 
 ## Threat model (what's handled, what's not)
 

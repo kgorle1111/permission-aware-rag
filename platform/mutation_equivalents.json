@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "mutants": {
+    "app.audit.x_denied_heatmap__mutmut_10": {
+      "source_sha256": "93b2a3561e89c3772b7ca5c9a70de9a3248dcf8734355b16faa7c0fdb33cca87",
+      "mutant_sha256": "43dd4bc3f3cbedf1554cc3eea1d4c2e2cb2f2a2a8c6f0703768c59ee7dabfd0e",
+      "reason": "func.count(None) renders count(*); id is a non-null primary key, so count(*) == count(id) per group."
+    },
+    "app.audit.x_denied_heatmap__mutmut_26": {
+      "source_sha256": "93b2a3561e89c3772b7ca5c9a70de9a3248dcf8734355b16faa7c0fdb33cca87",
+      "mutant_sha256": "218618a85528a0290bfed22cf22d3bbc55c73f5da9d9b75313ebb9cf14cd076f",
+      "reason": "The denied_count > 0 filter makes SUM always a positive int, so the `d or N` fallback never fires."
+    },
+    "app.connectors.gdrive.x__permissions_for_file__mutmut_2": {
+      "source_sha256": "6bbf490c02f1126e72bcfd0d95f173765c6267aa66630a086686193e3abf9d01",
+      "mutant_sha256": "9bd8a34d397edf2179576afb0eecf1bf17307f8697b6f194d205152fd07c77dc",
+      "reason": "page_token None vs '' is only read by `if page_token:` (both falsy) before reassignment: identical Drive requests."
+    },
+    "app.embeddings.x__hash_embed__mutmut_36": {
+      "source_sha256": "1943ec463026c64d6fbc97f4fa2284d196dd0ab4521517258c89f3b5ce19e9fe",
+      "mutant_sha256": "01fcef7db2ea33ae87d8e1dc1a6d9d954dde9696a63477cd77e278af8b11d707",
+      "reason": "int.from_bytes byteorder defaults to 'big' on Python >= 3.11; CI, Docker and mutmut run only 3.11/3.12."
+    },
+    "app.embeddings.x__hash_embed__mutmut_57": {
+      "source_sha256": "1943ec463026c64d6fbc97f4fa2284d196dd0ab4521517258c89f3b5ce19e9fe",
+      "mutant_sha256": "f0daf2866180eb6d082aaf90beba821b81b71576f7352a6f316b3685339872dc",
+      "reason": "The `or` fallback only applies when the norm is 0, i.e. every component is 0.0, and 0.0/1.0 == 0.0/2.0."
+    },
+    "app.identity.x_principal_from_request__mutmut_7": {
+      "source_sha256": "9d7f2496c79c76f93ac76ef70a111669f2fd5b0215f0a1ac04d7486d59be83f6",
+      "mutant_sha256": "28e380a8a13b9a38438d06014a8dcc2f58d8603684a0fb0c426e5921689c4c23",
+      "reason": "Starlette Headers.get is case-insensitive, so 'AUTHORIZATION' reads the same header as 'authorization'."
+    },
+    "app.identity.x_principal_from_request__mutmut_8": {
+      "source_sha256": "9d7f2496c79c76f93ac76ef70a111669f2fd5b0215f0a1ac04d7486d59be83f6",
+      "mutant_sha256": "3bb890fde30db9f71dcb172e1f1c9f8e57a5911616714d0f903b7ee9e2200913",
+      "reason": "Missing header default 'XXXX' fails startswith('Bearer ') exactly like '' and raises the same 401 'missing bearer token'."
+    },
+    "app.ingest.x_chunk_document__mutmut_4": {
+      "source_sha256": "1aa8864893916a97d6a8c359714204fd64f0936a84850bcd511199381140b864",
+      "mutant_sha256": "8f6e6e101ed2f0cbf2f3cb8f15248a980b4a36a42f575c7336d4edca2deeab24",
+      "reason": "validate_acl(None) returns [] (non-list) and validate_acl([]) returns [] (empty clean list): identical doc ACL."
+    },
+    "app.ingest.x_chunk_document__mutmut_6": {
+      "source_sha256": "1aa8864893916a97d6a8c359714204fd64f0936a84850bcd511199381140b864",
+      "mutant_sha256": "345c4963319353efee269b2a3e86a587d05f3a902f7d27f071482d9057033e40",
+      "reason": "doc.get('acl') defaults to None; validate_acl(None) and validate_acl([]) both return [], so the doc ACL is identical."
+    },
+    "app.retrieval.x_retrieve__mutmut_100": {
+      "source_sha256": "a73567a282d12714fce87cf32e4ea6ab179021c5f7ab80e546da06ea7c9c1a12",
+      "mutant_sha256": "ac3bbcc14d7728d919c0576472894b9df0de33c385154f1fe4056ad1bde82776",
+      "reason": "OrderedDict.popitem(last=None): None is falsy, so it pops FIFO exactly like last=False."
+    },
+    "app.store.x_init_db__mutmut_10": {
+      "source_sha256": "59c98b74ef183ae807b4d8d1f05dc6b3e20177c669a08c95c7d6121527b7c94c",
+      "mutant_sha256": "ac8eee19961484a6036db665865015e2440034ac4c44ec51fdfd8c2e1de26583",
+      "reason": "SQLAlchemy applies the column default (0) when revision=None is passed; probed: row persists revision 0, pending True."
+    },
+    "app.store.x_init_db__mutmut_11": {
+      "source_sha256": "59c98b74ef183ae807b4d8d1f05dc6b3e20177c669a08c95c7d6121527b7c94c",
+      "mutant_sha256": "4b1e3e7ff0bab50807f22c1a3ea2d05bcdae25f33c91efa4af275ec79173cd88",
+      "reason": "SQLAlchemy applies the column default (True) when pending=None is passed; probed: row persists revision 0, pending True."
+    },
+    "app.store.x_init_db__mutmut_13": {
+      "source_sha256": "59c98b74ef183ae807b4d8d1f05dc6b3e20177c669a08c95c7d6121527b7c94c",
+      "mutant_sha256": "9804df1ab397bbcd112276564072c4c56ab5b9d835838a48326e838a7db557f7",
+      "reason": "Omitting revision uses Column(default=0); probed on SQLite: persisted row identical to revision=0."
+    },
+    "app.store.x_init_db__mutmut_14": {
+      "source_sha256": "59c98b74ef183ae807b4d8d1f05dc6b3e20177c669a08c95c7d6121527b7c94c",
+      "mutant_sha256": "1e00a75e2fd140b3e596ef1d1cf8b2ce1eaeb16049771a77e950f7f0b7638921",
+      "reason": "Omitting pending uses Column(default=True); probed on SQLite: persisted row identical to pending=True."
+    },
+    "app.sync.x_sync_once__mutmut_17": {
+      "source_sha256": "e076a27ca3b1754017a101c633575fd67b2f908bec04fdb748b57db699b909f5",
+      "mutant_sha256": "87e38376c49644f9287f449c23ef4c4b683cca57ba8828c5b0e57275f28bcb2a",
+      "reason": "checkpoint None vs '' is only read inside the gdrive branch, after `checkpoint = s.get(...)` reassigns it."
+    }
+  }
+}
