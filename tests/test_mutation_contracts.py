@@ -97,3 +97,17 @@ def test_generation_provider_receives_complete_context_and_request_contract(monk
         "messages": [{"role": "user", "content":
                       "Context:\n[one] first permitted chunk\n\n[two] second permitted chunk\n\nQuestion: question"}],
     }
+
+
+@pytest.mark.parametrize("body, expected", [
+    ({"content": [{"text": "first"}, {"type": "metadata"}, {"text": "second"}]}, "firstsecond"),
+    ({}, ""),
+])
+def test_generation_handles_multiple_text_blocks_and_empty_provider_content(monkeypatch, body, expected):
+    import httpx
+    from unittest.mock import Mock
+    from app import config, generation
+    monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "fixture-key")
+    monkeypatch.setattr(generation.httpx, "post", Mock(return_value=httpx.Response(
+        200, request=httpx.Request("POST", "https://provider.example.test"), json=body)))
+    assert generation.answer("question", [{"doc_id": "one", "text": "permitted"}]) == expected

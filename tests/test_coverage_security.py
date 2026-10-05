@@ -322,6 +322,12 @@ def test_sync_rejects_missing_gdrive_checkpoint_and_unsupported_backend(client, 
 
 
 def test_sync_watch_rejects_zero_interval_and_logs_failed_pass(monkeypatch):
+    # An invalid interval must fail before entering the polling loop. Bound
+    # the test even when a mutation removes the boundary check.
+    def unexpected_work(*args):
+        pytest.fail("zero interval entered polling")
+    monkeypatch.setattr(sync, "sync_once", unexpected_work)
+    monkeypatch.setattr(sync.time, "sleep", unexpected_work)
     with pytest.raises(ValueError, match="poll interval must be positive"):
         sync.watch(0)
 
