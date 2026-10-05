@@ -11,6 +11,7 @@ pg = ["psycopg[binary]>=3.1"]  # only for the pgvector/RLS backend; core stays s
 [tool.ruff]
 line-length = 110
 target-version = "py312"
+extend-exclude = ["platform"]  # separate subproject with its own CI gates (.github/workflows/platform.yml)
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B"]
