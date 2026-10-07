@@ -1,0 +1,149 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Synthetic retrieval-only demo with managed HTTPS and one App Runner instance.",
+  "Parameters": {
+    "ImageUri": {
+      "Type": "String",
+      "Description": "Private ECR image URI with immutable Git commit tag."
+    },
+    "RepositoryArn": {
+      "Type": "String",
+      "Description": "ARN of the private registry repository."
+    }
+  },
+  "Resources": {
+    "ImagePullRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "build.apprunner.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "PullDemoImage",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "ecr:GetAuthorizationToken",
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ecr:BatchGetImage",
+                    "ecr:GetDownloadUrlForLayer",
+                    "ecr:BatchCheckLayerAvailability",
+                    "ecr:DescribeImages"
+                  ],
+                  "Resource": {
+                    "Ref": "RepositoryArn"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "SingleInstance": {
+      "Type": "AWS::AppRunner::AutoScalingConfiguration",
+      "Properties": {
+        "MinSize": 1,
+        "MaxSize": 1,
+        "MaxConcurrency": 20
+      }
+    },
+    "Service": {
+      "Type": "AWS::AppRunner::Service",
+      "Properties": {
+        "ServiceName": {
+          "Ref": "AWS::StackName"
+        },
+        "AutoScalingConfigurationArn": {
+          "Fn::GetAtt": [
+            "SingleInstance",
+            "AutoScalingConfigurationArn"
+          ]
+        },
+        "InstanceConfiguration": {
+          "Cpu": "256",
+          "Memory": "512"
+        },
+        "SourceConfiguration": {
+          "AutoDeploymentsEnabled": false,
+          "AuthenticationConfiguration": {
+            "AccessRoleArn": {
+              "Fn::GetAtt": [
+                "ImagePullRole",
+                "Arn"
+              ]
+            }
+          },
+          "ImageRepository": {
+            "ImageIdentifier": {
+              "Ref": "ImageUri"
+            },
+            "ImageRepositoryType": "ECR",
+            "ImageConfiguration": {
+              "Port": "8080",
+              "RuntimeEnvironmentVariables": [
+                {
+                  "Name": "HOST",
+                  "Value": "0.0.0.0"
+                },
+                {
+                  "Name": "PORT",
+                  "Value": "8080"
+                },
+                {
+                  "Name": "SHOW_DENIED",
+                  "Value": "1"
+                }
+              ]
+            }
+          }
+        },
+        "HealthCheckConfiguration": {
+          "Protocol": "HTTP",
+          "Path": "/",
+          "Interval": 10,
+          "Timeout": 5,
+          "HealthyThreshold": 1,
+          "UnhealthyThreshold": 5
+        },
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "permission-aware-rag-demo"
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "ServiceUrl": {
+      "Value": {
+        "Fn::Sub": "https://${Service.ServiceUrl}"
+      }
+    },
+    "ServiceArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Service",
+          "ServiceArn"
+        ]
+      }
+    }
+  }
+}

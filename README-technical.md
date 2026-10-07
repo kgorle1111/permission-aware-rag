@@ -226,3 +226,11 @@ checkpoint with that trusted digest. Do not compute a replacement checkpoint
 from a log suspected of tampering. A crash between append and checkpoint update
 also fails closed; recovery requires checking the log against trusted evidence.
 The reference JSONL writer supports one process per audit file.
+
+### AWS showcase deployment
+
+The reference workbench has an [AWS App Runner deployment](deploy/aws/README.md)
+with a private ECR image, managed HTTPS, one instance maximum and a local smoke
+check. It uses synthetic documents and retrieval-only answers. The templates and
+container are prepared locally; live AWS deployment requires account setup and
+verification.

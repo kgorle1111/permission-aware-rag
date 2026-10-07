@@ -1,0 +1,11 @@
+# Allowlist: local credentials, private planning and audit history never enter context.
+**
+!app/
+!app/underwriter_server.py
+!app/permission_rag.py
+!app/llm.py
+!app/ui.html
+!app/presets.json
+!deploy/
+!deploy/aws/
+!deploy/aws/Dockerfile
