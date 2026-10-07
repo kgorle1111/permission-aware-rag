@@ -125,6 +125,15 @@ def test_audit_hash_chain_tamper_detection():
     assert not rag.verify_audit_chain()
 
 
+def test_newest_audit_entry_tamper():
+    rag = _fresh()
+    rag.retrieve("vacation", GUEST)
+    assert rag.verify_audit_chain()
+    with psycopg.connect(ADMIN, autocommit=True) as conn:
+        conn.execute("UPDATE audit SET line = replace(line, 'vacation', 'salaries')")
+    assert not rag.verify_audit_chain()
+
+
 def test_underwriter_eval_leak_gate():
     """Same 20-case leak gate as the in-memory backend, over RLS + pgvector."""
     from underwriter_server import CORPUS, USERS

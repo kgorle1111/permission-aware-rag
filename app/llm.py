@@ -13,6 +13,7 @@ No API key set -> ask() returns None and callers fall back to retrieval-only.
 Stdlib urllib only — no anthropic SDK dependency.
 """
 
+import html
 import json
 import os
 import re
@@ -74,7 +75,11 @@ def ask(question: str, chunks: list[dict], timeout: float = 60) -> dict | None:
     if not key:
         return None
     context = (
-        "\n\n".join(f'<document id="{c["doc_id"]}">\n{c["text"]}\n</document>' for c in chunks)
+        "\n\n".join(
+            f'<document id="{html.escape(c["doc_id"], quote=True)}">\n'
+            f"{html.escape(c['text'], quote=True)}\n</document>"
+            for c in chunks
+        )
         or "(no accessible documents matched)"
     )
     body = {
@@ -92,6 +97,6 @@ def ask(question: str, chunks: list[dict], timeout: float = 60) -> dict | None:
         raise RuntimeError(f"unexpected API response shape: {str(data)[:200]}") from None
     # post-hoc grounding check: any [doc-id] cited that we never retrieved is
     # either hallucinated or aggregation leakage — surface it, don't hide it
-    cited = set(re.findall(r"\[([\w.-]+)\]", answer))
+    cited = set(re.findall(r"\[([^\[\]\r\n]+)\]", answer))
     unverified = sorted(cited - {c["doc_id"] for c in chunks})
     return {"answer": answer, "usage": data.get("usage", {}), "unverified_citations": unverified}

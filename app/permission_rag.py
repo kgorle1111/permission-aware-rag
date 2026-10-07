@@ -9,8 +9,10 @@ ACL entries: "user:<id>", "group:<name>", or "*" (public).
 import hashlib
 import json
 import math
+import os
 import pathlib
 import re
+import tempfile
 import threading
 import time
 from collections import Counter
@@ -51,6 +53,10 @@ class PermissionRAG:
         self.audit_path = pathlib.Path(audit_path) if audit_path else None
         self._audit_lock = threading.Lock()  # servers run threaded; keep JSONL lines whole
         self._last_hash = ""  # tamper-evident chain: each entry carries prev line's sha256
+        self._audit_failed = False
+        if self.audit_path and (self.audit_path.exists() or self.audit_head_path(self.audit_path).exists()):
+            if not self.verify_audit_chain(self.audit_path):
+                raise ValueError("audit log or head checkpoint is missing, corrupt, or unanchored")
         if self.audit_path and self.audit_path.exists():
             with self.audit_path.open() as f:
                 lines = [line.rstrip("\n") for line in f if line.strip()]
@@ -139,6 +145,8 @@ class PermissionRAG:
         cannot leak through relative scores or result ordering.
         """
         t0 = time.perf_counter()
+        if self._audit_failed:
+            raise RuntimeError("audit persistence failed; recovery required")
         visible = [c for c in self.chunks if self.can_read(user, c["acl"])]
         denied = len(self.chunks) - len(visible)
         # IDF over the visible set only: a hidden doc must not shift visible scores
@@ -165,27 +173,71 @@ class PermissionRAG:
             "elapsed_ms": round((time.perf_counter() - t0) * 1000, 2),
         }
         with self._audit_lock:
+            if self._audit_failed:
+                raise RuntimeError("audit persistence failed; recovery required")
             entry["prev_sha256"] = self._last_hash
             line = json.dumps(entry)
-            self._last_hash = hashlib.sha256(line.encode()).hexdigest()
+            head = hashlib.sha256(line.encode()).hexdigest()
+            if self.audit_path:
+                try:
+                    with self.audit_path.open("a") as f:
+                        f.write(line + "\n")
+                        f.flush()
+                        os.fsync(f.fileno())
+                    self._write_audit_head(head)
+                except OSError:
+                    self._audit_failed = True
+                    raise
+            self._last_hash = head
             self.audit.append(entry)
             if len(self.audit) > self.AUDIT_MAX:
                 del self.audit[: -self.AUDIT_MAX]
-            if self.audit_path:
-                with self.audit_path.open("a") as f:
-                    f.write(line + "\n")
         return results
 
     @staticmethod
-    def verify_audit_chain(path: str | pathlib.Path) -> bool:
-        """True iff the JSONL audit log's hash chain is intact (no edited/removed lines)."""
+    def audit_head_path(path: str | pathlib.Path) -> pathlib.Path:
+        return pathlib.Path(str(path) + ".head")
+
+    def _write_audit_head(self, head: str) -> None:
+        """Replace the local checkpoint only after the append has been flushed.
+
+        A crash between the two writes fails closed on restart. This checkpoint
+        detects tail edits/truncation, but an attacker who rewrites BOTH files
+        requires an independently retained expected_head to be detected.
+        """
+        target = self.audit_head_path(self.audit_path)
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(mode="w", dir=target.parent, delete=False) as f:
+                temporary = pathlib.Path(f.name)
+                f.write(head)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(temporary, target)
+        finally:
+            if temporary and temporary.exists():
+                temporary.unlink()
+
+    @staticmethod
+    def verify_audit_chain(path: str | pathlib.Path, expected_head: str | None = None) -> bool:
+        """Verify every line AND the head; supply an external head for stronger evidence.
+
+        Without expected_head, require the local .head checkpoint. Legacy logs
+        without a checkpoint are unanchored and cannot be silently trusted.
+        """
         prev = ""
-        with pathlib.Path(path).open() as f:
-            for line in f:
-                line = line.rstrip("\n")
-                if not line.strip():
-                    continue
-                if json.loads(line).get("prev_sha256") != prev:
-                    return False
-                prev = hashlib.sha256(line.encode()).hexdigest()
-        return True
+        try:
+            if expected_head is None:
+                expected_head = PermissionRAG.audit_head_path(path).read_text()
+            with pathlib.Path(path).open() as f:
+                for line in f:
+                    if not line.endswith("\n"):
+                        return False
+                    line = line[:-1]
+                    entry = json.loads(line)
+                    if not isinstance(entry, dict) or entry.get("prev_sha256") != prev:
+                        return False
+                    prev = hashlib.sha256(line.encode()).hexdigest()
+        except (OSError, ValueError, UnicodeError):
+            return False
+        return prev == expected_head

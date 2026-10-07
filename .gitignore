@@ -4,6 +4,8 @@ __pycache__/
 .env*
 logs/
 app/audit_log.jsonl
+app/audit_log.jsonl.head
+.pytest_cache/
 uv.lock
 SETUP.md
 PLAN.md

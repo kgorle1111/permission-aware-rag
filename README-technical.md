@@ -99,7 +99,7 @@ For readers evaluating the engineering rather than the demo:
 | **Eval-driven development** | Retrieval changes gate on a per-role eval suite with *negative* assertions (must-not-return docs) — for a permissions product, the absence of a result is the spec. Runs in CI on every push. |
 | **Prompt-injection boundary** | Retrieved text is framed in `<document>` tags and declared data-not-instructions; tested by inspecting the actual assembled API payload (mocked transport, zero spend). |
 | **Hallucination containment** | Every `[doc-id]` the model cites is verified against the retrieved set; unverified citations are surfaced to the user, not hidden. |
-| **Tamper-evident audit** | Each JSONL audit entry chains a SHA-256 of the previous line; `verify_audit_chain()` detects any edited or removed entry. Trail survives restarts. |
+| **Tamper-evident audit** | Each JSONL entry chains the previous line’s SHA-256; a separate `.head` checkpoint detects edits and tail truncation. Restart verifies both files and fails closed on mismatch. Rewriting both files requires an independently retained head to detect. |
 | **Cost & latency receipts** | Every LLM answer returns `llm_ms` and `est_cost_usd` from real token usage; running totals per session. Value claims are measured, not estimated. |
 | **Production seams** | SSO-ready: one env var switches identity from demo dropdown to HS256 JWT validation (constant-time compare, expiry) — `can_read()` untouched. Rate limiting, input caps, CSP/nosniff, XSS-safe rendering throughout. |
 | **Prompt caching** | Static system prompt marked `cache_control: ephemeral`; per-request context deliberately uncached. Token usage surfaced per response to verify cache engagement. |
@@ -158,8 +158,8 @@ pinned by source and mutant hash, so any new survivor fails the build.
 | Score side channel from hidden docs | ✅ Fixed — visible-set statistics; regression-tested |
 | Prompt injection via document text | ✅ Bounded — data/instruction framing + payload tests |
 | Hallucinated citations | ✅ Detected — post-hoc verification, surfaced in UI |
-| Audit log tampering (edit/remove) | ✅ Detected — SHA-256 hash chain |
-| Audit log truncation from the tail | ⚠️ Needs an externally anchored head hash — documented, deferred |
+| Audit log tampering (edit/remove) | ✅ JSONL chain plus local head; pgvector checks stored line hashes |
+| Audit log truncation from the tail | ✅ JSONL-only truncation detected against local head; ⚠️ pgvector truncation or rewriting both JSONL files needs external anchoring |
 | Cross-doc aggregation (LLM synthesizes a conclusion no single doc supports) | ⚠️ Mitigated by citation-required prompting; needs answer-level evals |
 | Denied-count side channel | ⚙️ Deliberate demo feature; `SHOW_DENIED=0` disables it |
 
@@ -174,7 +174,8 @@ rag.add_document("salaries", "salary bands range from 90k to 250k", {"group:hr"}
 rag.retrieve("salary bands", {"id": "bob", "groups": ["hr"]}, k=3)  # → ranked chunks
 rag.retrieve("salary bands", {"id": "alice", "groups": ["eng"]})  # → [] (never scored)
 
-PermissionRAG.verify_audit_chain("audit_log.jsonl")  # → True unless tampered
+PermissionRAG.verify_audit_chain("audit_log.jsonl")  # checks chain + local .head
+# For a stronger check, pass an independently retained expected_head=...
 ```
 
 ```bash
@@ -185,7 +186,7 @@ curl -s -X POST http://127.0.0.1:8421/ask -H 'content-type: application/json' \
 ```
 
 Full surface: `POST /query` (retrieval only), `POST /ask` (adds the drafted answer,
-rate-limited), `GET /audit` (per-caller scoped; `&format=csv` to export), `GET /presets`.
+rate-limited), `GET /audit` (own queries; audit group sees others’ ids/counts with queries redacted; `&format=csv` neutralizes formula cells), `GET /presets`.
 ACL entries are `user:<id>`, `group:<name>`, or `"*"`; empty ACLs and duplicate ingests
 are rejected at write time.
 
@@ -214,3 +215,14 @@ eval gate; the commit history reads as the changelog.
 ## License
 
 Apache-2.0
+
+### Audit checkpoint compatibility
+
+Keep `audit_log.jsonl` and its `.head` checkpoint together. Legacy logs without a
+checkpoint are unanchored: startup rejects them without rewriting the history.
+To preserve one, independently verify its provenance and linkage using
+`verify_audit_chain(path, expected_head=trusted_head)` before provisioning the
+checkpoint with that trusted digest. Do not compute a replacement checkpoint
+from a log suspected of tampering. A crash between append and checkpoint update
+also fails closed; recovery requires checking the log against trusted evidence.
+The reference JSONL writer supports one process per audit file.

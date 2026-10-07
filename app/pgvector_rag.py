@@ -189,8 +189,14 @@ class PgVectorRAG:
 
     def verify_audit_chain(self) -> bool:
         prev = ""
-        for (line,) in self.conn.execute("SELECT line FROM audit ORDER BY id ASC"):
-            if json.loads(line).get("prev_sha256") != prev:
+        for line, recorded_hash in self.conn.execute("SELECT line, line_sha256 FROM audit ORDER BY id ASC"):
+            try:
+                entry = json.loads(line)
+                if not isinstance(entry, dict) or entry.get("prev_sha256") != prev:
+                    return False
+            except ValueError:
                 return False
             prev = hashlib.sha256(line.encode()).hexdigest()
+            if prev != recorded_hash:
+                return False
         return True

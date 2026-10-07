@@ -39,12 +39,7 @@ These were written before the scaled eval ran. Negative results get published th
 
 ## Next
 
-1. **Security fixes, each with a failing test first:**
-   - escape document text so it can't close its own `<document>` tag
-   - neutralize spreadsheet formulas in the audit CSV export
-   - make the newest audit entry tamper-evident ([T12](docs/THREAT_MODEL.md))
-   - verify the citation pattern accepts real document ids
-   - harden malformed request bodies
+1. **Security regressions:** document text/id breakout, CSV formulas, newest-entry edits, citation ids and malformed field types are pinned by `app/test_security.py`. List bodies already returned 400 on both endpoints; explicit validation also works with Python assertions disabled. Auditors receive other users' query text redacted. Local JSONL tail checkpoints and their storage-attacker limits are documented in [T12](docs/THREAT_MODEL.md).
 2. **Permissions that scale to 100,000 documents:** see the next section.
 3. **Real-world eval:** leak count, recall and citation validity on documents this project didn't write (an adversarial legal corpus first, then a public set with realistic permission groups), with confidence intervals.
 4. **A leak-test kit you can point at your own retriever:** the planted leak bugs, the isolation check and the scaled eval behind one small interface.
