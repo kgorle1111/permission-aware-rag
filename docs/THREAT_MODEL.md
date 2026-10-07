@@ -18,6 +18,6 @@ so nobody mistakes silence for safety.
 | T10 | Model cites a doc it wasn't given | Post-hoc citation check surfaces `unverified_citations` | `app/test_llm.py` "citation verification" | controlled |
 | T11 | Hidden-document count reveals that forbidden docs exist | `SHOW_DENIED=0` removes it outside the demo | `app/test_http.py` "SHOW_DENIED off" | accepted (on in demo by design) |
 | T12 | Audit tail truncation: deleting the last lines leaves a valid chain | Chain detects edits and removal of any non-tail line | `app/test_permission_rag.py` "tamper first entry" | accepted (anchor the head hash externally when a compliance buyer asks) |
-| T13 | SQL execution on the app connection sets `rag.mode='ingest'` / forges `rag.principals` | none yet; GUCs are settable by the app role | none — PLAN Stage 4.1 | open |
-| T14 | Signed JWT with a comma in a group → unhandled 500 on pgvector | Fails closed (no rows), but not a clean 401 | none — PLAN 0.3b | open |
+| T13 | SQL execution on the app connection sets `rag.mode='ingest'` / forges `rag.principals` | none yet; GUCs are settable by the app role | none — ROADMAP Next 10 | open |
+| T14 | Signed JWT with a comma in a group → unhandled 500 on pgvector | Fails closed (no rows), but not a clean 401 | none — ROADMAP B06 | open |
 | T15 | Aggregation: combining permitted docs to infer a forbidden fact | Out of scope for retrieval ACLs; human review of drafts | none | open |
