@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" width="1200" height="620" role="img" aria-label="Permission-aware RAG: one document archive flows through a permission check that runs before ranking; a junior underwriter sees 3 of 6 files, a senior 5 of 6, compliance 4 of 6. Measured: 0 leaks in 1,350 probes, 6 of 6 planted leak bugs caught, enforced in Postgres row-level security too.">
+<style>
+text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif}
+.m{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace}
+.flow{fill:none;stroke-width:2.5;stroke-linecap:round;stroke-dasharray:4 12;animation:flow 1.6s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-32}}
+@keyframes pulse{0%,100%{opacity:.18}50%{opacity:.55}}
+.halo{animation:pulse 2.4s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0a1324"/><stop offset="1" stop-color="#14254a"/></linearGradient>
+<pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#ffffff" stroke-opacity=".035"/></pattern>
+<g id="lock"><rect x="-6" y="-2" width="12" height="9" rx="2" fill="none" stroke="#5d7298" stroke-width="1.6"/><path d="M-3.5,-2 V-5 a3.5,3.5 0 0 1 7,0 V-2" fill="none" stroke="#5d7298" stroke-width="1.6"/></g>
+</defs>
+<rect width="1200" height="620" rx="18" fill="url(#bg)"/>
+<rect width="1200" height="620" rx="18" fill="url(#grid)"/>
+
+<text x="60" y="88" font-size="46" font-weight="800" fill="#ffffff">Ask anything.</text>
+<text x="60" y="128" font-size="24" fill="#a9bad6">See only what you're cleared to see, down to the ranking math.</text>
+<text class="m" x="1140" y="62" font-size="13" fill="#6f86ad" text-anchor="end">UNDERWRITING WORKBENCH · PERMISSION-AWARE RAG</text>
+
+<rect x="60" y="170" width="300" height="320" rx="14" fill="#11203b" stroke="#22365a"/>
+<text class="m" x="78" y="197" font-size="12" fill="#7f95ba">ONE SHARED ARCHIVE</text>
+<g>
+<rect x="75" y="210" width="130" height="82" rx="10" fill="#172a4b" stroke="#2a4170"/><rect x="85" y="220" width="62" height="18" rx="9" fill="#2bb39a"/><text x="116" y="233" font-size="10" font-weight="700" fill="#06231d" text-anchor="middle">POLICY</text><text class="m" x="85" y="256" font-size="10" fill="#8aa0c4">acl underwriting</text><rect x="85" y="266" width="100" height="5" rx="2.5" fill="#263a5e"/><rect x="85" y="276" width="70" height="5" rx="2.5" fill="#263a5e"/>
+<rect x="215" y="210" width="130" height="82" rx="10" fill="#172a4b" stroke="#2a4170"/><rect x="225" y="220" width="62" height="18" rx="9" fill="#2bb39a"/><text x="256" y="233" font-size="10" font-weight="700" fill="#06231d" text-anchor="middle">CLAIMS</text><text class="m" x="225" y="256" font-size="10" fill="#8aa0c4">acl underwriting</text><rect x="225" y="266" width="100" height="5" rx="2.5" fill="#263a5e"/><rect x="225" y="276" width="60" height="5" rx="2.5" fill="#263a5e"/>
+<rect x="75" y="302" width="130" height="82" rx="10" fill="#172a4b" stroke="#2a4170"/><rect x="85" y="312" width="94" height="18" rx="9" fill="#4c8df6"/><text x="132" y="325" font-size="10" font-weight="700" fill="#071a3d" text-anchor="middle">BANK PROFILE</text><text class="m" x="85" y="348" font-size="10" fill="#8aa0c4">acl banking</text><rect x="85" y="358" width="100" height="5" rx="2.5" fill="#263a5e"/><rect x="85" y="368" width="80" height="5" rx="2.5" fill="#263a5e"/>
+<rect x="215" y="302" width="130" height="82" rx="10" fill="#172a4b" stroke="#2a4170"/><rect x="225" y="312" width="92" height="18" rx="9" fill="#9b7bf2"/><text x="271" y="325" font-size="10" font-weight="700" fill="#1d1142" text-anchor="middle">CREDIT MEMO</text><text class="m" x="225" y="348" font-size="10" fill="#8aa0c4">acl senior</text><rect x="225" y="358" width="100" height="5" rx="2.5" fill="#263a5e"/><rect x="225" y="368" width="54" height="5" rx="2.5" fill="#263a5e"/>
+<rect x="75" y="394" width="130" height="82" rx="10" fill="#172a4b" stroke="#2a4170"/><rect x="85" y="404" width="84" height="18" rx="9" fill="#f0705a"/><text x="127" y="417" font-size="10" font-weight="700" fill="#3d0f07" text-anchor="middle">WATCHLIST</text><text class="m" x="85" y="440" font-size="10" fill="#8aa0c4">acl compliance</text><rect x="85" y="450" width="100" height="5" rx="2.5" fill="#263a5e"/><rect x="85" y="460" width="66" height="5" rx="2.5" fill="#263a5e"/>
+<rect x="215" y="394" width="130" height="82" rx="10" fill="#172a4b" stroke="#2a4170"/><rect x="225" y="404" width="88" height="18" rx="9" fill="#8b9bb4"/><text x="269" y="417" font-size="10" font-weight="700" fill="#172235" text-anchor="middle">GUIDELINES</text><text class="m" x="225" y="440" font-size="10" fill="#8aa0c4">acl everyone</text><rect x="225" y="450" width="100" height="5" rx="2.5" fill="#263a5e"/><rect x="225" y="460" width="76" height="5" rx="2.5" fill="#263a5e"/>
+</g>
+
+<path class="flow" stroke="#5b7bb0" d="M360,251 C405,251 410,262 452,262"/>
+<path class="flow" stroke="#5b7bb0" d="M360,343 C405,343 410,330 452,330"/>
+<path class="flow" stroke="#5b7bb0" d="M360,435 C405,435 410,398 452,398"/>
+
+<rect class="halo" x="445" y="183" width="90" height="294" rx="45" fill="none" stroke="#3fd0b0" stroke-width="12"/>
+<rect x="455" y="193" width="70" height="274" rx="35" fill="#0d1a31" stroke="#3fd0b0" stroke-width="2.5"/>
+<g transform="translate(490,318) scale(2.6)"><rect x="-6" y="-2" width="12" height="9" rx="2" fill="none" stroke="#3fd0b0" stroke-width="1.5"/><path d="M-3.5,-2 V-5 a3.5,3.5 0 0 1 7,0 V-2" fill="none" stroke="#3fd0b0" stroke-width="1.5"/></g>
+<text class="m" x="490" y="236" font-size="11" fill="#3fd0b0" text-anchor="middle">ACL</text>
+<text class="m" x="490" y="410" font-size="11" fill="#3fd0b0" text-anchor="middle">FIRST</text>
+<text x="490" y="512" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">Permission check</text>
+<text x="490" y="531" font-size="12" fill="#8aa0c4" text-anchor="middle">runs before ranking</text>
+
+<path class="flow" stroke="#3fd0b0" d="M525,262 C580,262 590,229 636,229"/>
+<path class="flow" stroke="#3fd0b0" d="M525,330 C580,330 590,325 636,325"/>
+<path class="flow" stroke="#3fd0b0" d="M525,398 C580,398 590,421 636,421"/>
+
+<g class="r1">
+<rect x="640" y="190" width="500" height="78" rx="14" fill="#11203b" stroke="#22365a"/>
+<circle cx="680" cy="229" r="22" fill="#1e3a66"/><text x="680" y="235" font-size="16" font-weight="800" fill="#cfe0ff" text-anchor="middle">J</text>
+<text x="714" y="223" font-size="15" font-weight="700" fill="#ffffff">Junior underwriter</text><text x="714" y="243" font-size="12" fill="#8aa0c4">sees 3 of 6</text>
+<rect x="862" y="210" width="38" height="38" rx="8" fill="#2bb39a"/><text x="881" y="234" font-size="14" font-weight="800" fill="#06231d" text-anchor="middle">P</text>
+<rect x="908" y="210" width="38" height="38" rx="8" fill="#2bb39a"/><text x="927" y="234" font-size="14" font-weight="800" fill="#06231d" text-anchor="middle">C</text>
+<rect x="954" y="210" width="38" height="38" rx="8" fill="none" stroke="#33476b" stroke-dasharray="4 3"/><use href="#lock" x="973" y="229"/>
+<rect x="1000" y="210" width="38" height="38" rx="8" fill="none" stroke="#33476b" stroke-dasharray="4 3"/><use href="#lock" x="1019" y="229"/>
+<rect x="1046" y="210" width="38" height="38" rx="8" fill="none" stroke="#33476b" stroke-dasharray="4 3"/><use href="#lock" x="1065" y="229"/>
+<rect x="1092" y="210" width="38" height="38" rx="8" fill="#8b9bb4"/><text x="1111" y="234" font-size="14" font-weight="800" fill="#172235" text-anchor="middle">G</text>
+</g>
+<g class="r2">
+<rect x="640" y="286" width="500" height="78" rx="14" fill="#11203b" stroke="#22365a"/>
+<circle cx="680" cy="325" r="22" fill="#2c2a66"/><text x="680" y="331" font-size="16" font-weight="800" fill="#e2dcff" text-anchor="middle">S</text>
+<text x="714" y="319" font-size="15" font-weight="700" fill="#ffffff">Senior underwriter</text><text x="714" y="339" font-size="12" fill="#8aa0c4">sees 5 of 6</text>
+<rect x="862" y="306" width="38" height="38" rx="8" fill="#2bb39a"/><text x="881" y="330" font-size="14" font-weight="800" fill="#06231d" text-anchor="middle">P</text>
+<rect x="908" y="306" width="38" height="38" rx="8" fill="#2bb39a"/><text x="927" y="330" font-size="14" font-weight="800" fill="#06231d" text-anchor="middle">C</text>
+<rect x="954" y="306" width="38" height="38" rx="8" fill="#4c8df6"/><text x="973" y="330" font-size="14" font-weight="800" fill="#071a3d" text-anchor="middle">B</text>
+<rect x="1000" y="306" width="38" height="38" rx="8" fill="#9b7bf2"/><text x="1019" y="330" font-size="14" font-weight="800" fill="#1d1142" text-anchor="middle">M</text>
+<rect x="1046" y="306" width="38" height="38" rx="8" fill="none" stroke="#33476b" stroke-dasharray="4 3"/><use href="#lock" x="1065" y="325"/>
+<rect x="1092" y="306" width="38" height="38" rx="8" fill="#8b9bb4"/><text x="1111" y="330" font-size="14" font-weight="800" fill="#172235" text-anchor="middle">G</text>
+</g>
+<g class="r3">
+<rect x="640" y="382" width="500" height="78" rx="14" fill="#11203b" stroke="#22365a"/>
+<circle cx="680" cy="421" r="22" fill="#5a2a2a"/><text x="680" y="427" font-size="16" font-weight="800" fill="#ffd9d2" text-anchor="middle">C</text>
+<text x="714" y="415" font-size="15" font-weight="700" fill="#ffffff">Compliance officer</text><text x="714" y="435" font-size="12" fill="#8aa0c4">sees 4 of 6</text>
+<rect x="862" y="402" width="38" height="38" rx="8" fill="#2bb39a"/><text x="881" y="426" font-size="14" font-weight="800" fill="#06231d" text-anchor="middle">P</text>
+<rect x="908" y="402" width="38" height="38" rx="8" fill="#2bb39a"/><text x="927" y="426" font-size="14" font-weight="800" fill="#06231d" text-anchor="middle">C</text>
+<rect x="954" y="402" width="38" height="38" rx="8" fill="none" stroke="#33476b" stroke-dasharray="4 3"/><use href="#lock" x="973" y="421"/>
+<rect x="1000" y="402" width="38" height="38" rx="8" fill="none" stroke="#33476b" stroke-dasharray="4 3"/><use href="#lock" x="1019" y="421"/>
+<rect x="1046" y="402" width="38" height="38" rx="8" fill="#f0705a"/><text x="1065" y="426" font-size="14" font-weight="800" fill="#3d0f07" text-anchor="middle">W</text>
+<rect x="1092" y="402" width="38" height="38" rx="8" fill="#8b9bb4"/><text x="1111" y="426" font-size="14" font-weight="800" fill="#172235" text-anchor="middle">G</text>
+</g>
+<text x="1140" y="486" font-size="12" fill="#6f86ad" text-anchor="end">locked files are never scored, so they can't shape the answer</text>
+
+<rect x="60" y="552" width="380" height="44" rx="22" fill="#11203b" stroke="#22365a"/>
+<text x="250" y="580" font-size="14" fill="#c9d5ea" text-anchor="middle"><tspan font-size="17" font-weight="800" fill="#3fd0b0">0 leaks</tspan> in 1,350 probes · 95% bound 0.28%</text>
+<rect x="455" y="552" width="320" height="44" rx="22" fill="#11203b" stroke="#22365a"/>
+<text x="615" y="580" font-size="14" fill="#c9d5ea" text-anchor="middle"><tspan font-size="17" font-weight="800" fill="#3fd0b0">6 / 6</tspan> planted leak bugs caught</text>
+<rect x="790" y="552" width="350" height="44" rx="22" fill="#11203b" stroke="#22365a"/>
+<text x="965" y="580" font-size="14" fill="#c9d5ea" text-anchor="middle"><tspan font-size="17" font-weight="800" fill="#3fd0b0">Postgres RLS</tspan> enforces it in the database too</text>
+</svg>
