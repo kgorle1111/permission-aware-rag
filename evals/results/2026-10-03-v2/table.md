@@ -9,7 +9,7 @@ like `group:banking*`), 630 probe phrasings × 4 roles. Intervals are Wilson 95%
 | in-memory BM25 | 210 | 0/1350 | 0.28% | 1170/1170 = 100.0% | 99.7%–100.0% | `db6b5dcb51a5` |
 | pgvector + RLS | 210 | 0/1350 | 0.28% | 1167/1170 = 99.7% | 99.2%–99.9% | `db6b5dcb51a5` |
 
-## Pre-registered claims (PLAN.md PREREG)
+## Pre-registered claims ([ROADMAP](../../../ROADMAP.md#pre-registered-claims))
 
 - **E1, zero leaks at scale: shown for in-memory.** 0/1350 at n ≥ 1,000, with a UB of 0.28% (< 0.5%).
 - **E3, pgvector matches: shown.** It has 0 leaks on the same frozen set, under Postgres RLS (CI run
@@ -40,4 +40,4 @@ the side channels.
 
 - The probes aren't independent. They share 30 accounts and one retriever, so treat the
   bound as a bound on *this distribution*, not on arbitrary corpora.
-- The corpus is synthetic and generated from templates. A real-corpus held-out run (PLAN 2.5) is still open.
+- The corpus is synthetic and generated from templates. A real-corpus held-out run (ROADMAP: Next, real-world eval) is still open.

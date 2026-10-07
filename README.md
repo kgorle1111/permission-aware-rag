@@ -1,79 +1,127 @@
-# Permission-Aware RAG
+<div align="center">
 
-**Retrieval-augmented generation that cannot leak documents the caller isn't allowed to see — enforced by construction, proven by an automated leak-rate gate on every commit.**
+# Permission-aware RAG: AI answers that only see what you're cleared to see
 
-[![CI](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/kgorle1111/permission-aware-rag/actions)
-![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
-![Dependencies: zero](https://img.shields.io/badge/dependencies-zero-brightgreen)
-![License](https://img.shields.io/badge/license-Apache--2.0-lightgrey)
+<img src="docs/assets/hero.svg" alt="One shared document archive flows through a permission check that runs before ranking. A junior underwriter sees 3 of 6 files, a senior 5, compliance 4. Measured: 0 leaks in 1,350 probes." width="100%">
 
-A working vertical-AI product, not a toy: an **insurance underwriting workbench** where a
-junior underwriter, a senior, a compliance officer, and an auditor ask the same question
-and each sees only what their role permits — down to the ranking math. One structured LLM
-call drafts cited findings on top; a human always makes the decision.
+[![CI](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/ci.yml)
+[![platform](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/platform.yml/badge.svg)](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/platform.yml)
+![leaks 0 of 1,350](https://img.shields.io/badge/leaks-0%20of%201%2C350-brightgreen)
+![coverage 98.85%](https://img.shields.io/badge/platform%20coverage-98.85%25-brightgreen)
+![python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776ab)
+![license Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)
 
-**Built end-to-end in Python stdlib only.** No vector database, no framework, no
-dependencies — every security property is in ~600 lines you can actually read.
+**The full technical tour: [README-technical.md](README-technical.md)**
 
-![Same question, four roles — sources and permission badges change with each role](docs/workbench.gif)
+</div>
 
-*The same question asked as Junior → Senior → Compliance → Auditor. Sources appear and
-vanish with the role — a junior sees 2 sources with 3 chunks hidden; a senior sees the
-banking and credit-memo files (4 sources, 1 hidden). The hidden-badge tooltip names the
-missing data classes and who to escalate to. Static shot: [docs/workbench.png](docs/workbench.png).*
+## 🚦 The one-minute pitch
 
----
+Every company wants to point AI at its documents. The catch is that not everyone is allowed
+to read everything. An AI assistant that has indexed every file can leak the wrong one
+through its answer, through a citation, or more quietly, through the way it ranks the
+files you *are* allowed to see.
 
-## The problem
+This project is an **underwriting workbench** that closes that leak at the root:
 
-Enterprise RAG has a well-known failure mode: the retrieval index doesn't know about
-document permissions. Index everything, and any employee can phrase a query that surfaces
-the salary file or the compliance watchlist — through the answer, the citations, or even
-the *relevance scores* of documents they're allowed to see.
+1. 🔒 **The permission check runs before search ranks anything.** Files you can't read are never scored.
+2. 📐 **Ranking math only counts what you can see**, so a hidden file can't nudge the results.
+3. ✍️ **One AI call drafts cited findings**, and every citation is checked against what was actually retrieved.
+4. 🧾 **Every question lands on a tamper-evident audit trail**: who asked, what came back, what was withheld.
 
-Most implementations "fix" this by post-filtering: rank everything, then drop forbidden
-results. That still leaks — through score shifts, result ordering, and count side channels
-tied to specific queries.
+The AI drafts. The underwriter decides.
 
-## The guarantee
+## 🎬 See it run
 
-This system makes the leak **structurally impossible** rather than filtered-after-the-fact:
+![The same question asked as four roles; sources and permission badges change with each role](docs/workbench.gif)
 
-1. **Pre-filtering** — chunks the caller cannot read are removed *before* ranking.
-   Forbidden content is never scored, so it cannot influence ordering or citations.
-2. **Visible-set statistics** — BM25's df / corpus-size / average-length are computed over
-   the caller-visible set only, closing the subtler side channel where a hidden document's
-   term frequencies shift the scores of visible ones. (This bug existed in v1 — it was
-   found by an adversarial self-review, reproduced with a failing test, fixed, and the
-   regression test asserts byte-identical scores with and without a hidden document.)
-3. **A leak gate in CI** — a 20-case eval suite asserts, per role, both *expected* documents
-   (recall@4: 14/14) and *must-never-return* documents (leak rate: 0). Any leak fails the
-   build. Retrieval-quality changes (TF-IDF → BM25, chunking rewrite) merged only after
-   this gate passed unchanged.
-4. **Evidence that scales** — a frozen 210-doc generated corpus gives **0/1,350 leaks
-   (95% upper bound 0.28%)**, and an isolation check (results must be identical to a
-   corpus holding only the caller's readable docs) catches all 6 deliberately leaky
-   retrievers in [`app/mutants.py`](app/mutants.py). Hand-labeled cases alone caught 1 of 6.
-   [Results](evals/results/2026-10-03-v2/table.md) · [Threat model](docs/THREAT_MODEL.md) ·
-   [Decisions](docs/DECISIONS.md)
+The same question, asked as a junior underwriter, a senior, a compliance officer and an
+auditor. Sources appear and vanish with the role, and the UI says which data classes are
+hidden and who to escalate to.
 
+## 🧨 The problem we kept finding
+
+The obvious fix is to search everything, then drop what the user can't see. **It still
+leaks.** Hidden documents shift the relevance scores of the visible ones. That exact bug
+was in this project's first version. An adversarial self-review found it, a failing test
+reproduced it, and a regression test now proves scores are identical with and without a
+hidden document.
+
+Then we tested our own test. The original leak check was 20 hand-written cases, and it
+reported zero leaks. So we planted six realistic leak bugs in copies of the retriever:
+- no permission filter at all
+- statistics computed over hidden files
+- filtering after ranking
+- `*` treated as "public" anywhere in a group name
+- group names matched by prefix
+- a results cache shared between users
+
+**The hand-written check caught 1 of the 6.** A green test that has never been seen to fail
+proves very little.
+
+## 🧪 We measure, and we publish the "no"
+
+So we built evidence that can fail:
+
+| What we checked | Result |
+|---|---|
+| Leak probes on a frozen, hashed 210-document corpus (in-memory search) | **0 of 1,350** |
+| The same probes against Postgres with row-level security | **0 of 1,350** |
+| Planted leak bugs caught by the original hand-written check | 1 of 6 |
+| Planted leak bugs caught with the new isolation check | **6 of 6** |
+
+In plain numbers: **0/1,350 leaks (95% upper bound 0.28%)**, and the hand-labeled gate
+still holds at recall@4: 14/14 with zero leaks. The isolation check needs no labels. For
+every role, the results over the full archive must be identical, scores included, to the
+results over an archive holding only that role's files.
+
+Kept on purpose: the corpus is synthetic, probes reuse the documents' own wording (so this
+measures exact-wording recall, not semantic recall), and the probes aren't independent.
+A real-world document set is next on the [roadmap](ROADMAP.md).
+[Full results](evals/results/2026-10-03-v2/table.md) · [pre-registered claims](ROADMAP.md#pre-registered-claims)
+
+## 🔭 How it flows
+
+```mermaid
+flowchart LR
+  A["❓ Question"] --> B["🪪 Who is asking?<br/>role picker or signed token"]
+  B --> C["🔒 Permission check<br/>before ranking"]
+  C --> D["📐 Rank only<br/>what you can see"]
+  D --> E["✍️ One AI call drafts<br/>cited findings"]
+  E --> F["✅ Citations checked"]
+  F --> G["🧑‍⚖️ Underwriter decides"]
+  C -.-> H["🧾 Hash-chained audit trail"]
 ```
-User question ──► ACL pre-filter ──► BM25 over visible set ──► top-k chunks
-                     │                                            │
-                     ▼                                            ▼
-              hash-chained audit log              one structured LLM call (Haiku 4.5)
-         (who / what / returned / denied)         grounded-only · citations required
-                                                  citations verified post-hoc
-                                                            │
-                                                            ▼
-                                          "Draft findings — verify before acting"
-                                              (the human makes the decision)
-```
 
-## Try it in 60 seconds
+## ✨ Why it's different
+
+| | |
+|---|---|
+| 🔒 **Permission first, not filter after** | Forbidden text never enters ranking, so it can't shape the answer, the order or the citations. |
+| 🐘 **The database enforces it too** | In the Postgres backend, row-level security returns only permitted rows, even if a query forgets its filter. |
+| 🧪 **Tests that are proven to fail** | Planted leak bugs, a 1,300-mutant mutation gate, and docs that break the build when they drift from the code. |
+| 🧾 **Receipts on every answer** | Latency and estimated cost per answer (about $0.002 on Claude Haiku 4.5), plus an audit log that detects edits. |
+
+## 🧑‍💼 What this shows, if you're hiring
+
+- **Security-minded AI engineering:** permission-aware retrieval, a prompt-injection boundary, citation verification and a written [threat model](docs/THREAT_MODEL.md) where each row names its test.
+- **Evals before opinions:** pre-registered claims, confidence intervals, and negative results published next to the positive ones.
+- **Production engineering:** a FastAPI service in [`platform/`](platform/README.md) with RS256/JWKS identity, Google Drive permission sync, a non-root Docker image and container smoke tests in CI.
+- **Product judgment:** a [case file](CASE_FILE.md) with a risk register, an [integration map](INTEGRATION.md) for a real underwriting shop, and a [roadmap](ROADMAP.md) that lists what we chose *not* to build.
+
+## 🛠️ How it's engineered
+
+- **Two layers.** A reference core in Python stdlib only (~600 readable lines, no dependencies), plus [`platform/`](platform/README.md), the same design as a deployable service on FastAPI, Qdrant, SQLAlchemy and PyJWT.
+- **Two search backends.** BM25 in memory, or pgvector on Postgres with row-level security. Both run the leak gates in CI.
+- **304 platform tests at 98.85% branch coverage**, with a 96% floor enforced in CI.
+- **A blocking mutation gate.** 1,300 mutants: every survivor is either killed by a test or pinned as a reviewed equivalent with a written reason.
+- **Docs that can't drift.** Tests fail if a [decision](docs/DECISIONS.md), threat row or roadmap entry cites a test that no longer exists, or if this README's numbers stop matching a fresh eval run.
+- **LLM hygiene:** one structured, grounded call; prompt caching on the static system prompt; graceful fallback to retrieval-only when the model is unavailable.
+
+## 🚀 Try it in 60 seconds
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/kgorle1111/permission-aware-rag)
-&nbsp;— one-click free-tier deploy, or run it locally:
+&nbsp;one-click free-tier deploy, or run it locally (no install step):
 
 ```bash
 git clone https://github.com/kgorle1111/permission-aware-rag && cd permission-aware-rag/app
@@ -81,131 +129,27 @@ python3 run_evals.py                # the leak gate: 20 cases | recall@4: 14/14 
 python3 underwriter_server.py 8421  # open http://127.0.0.1:8421
 ```
 
-No install step — stdlib only. Switch roles with keys `1–4` and re-ask the same question:
-sources appear and disappear with the role, and the UI explains exactly which data
-classes are hidden and who to escalate to. Set `ANTHROPIC_API_KEY` to enable drafted
-answers (~$0.002/query on Haiku 4.5; degrades gracefully to retrieval-only without it).
+Switch roles with keys `1`–`4` and re-ask the same question. Set `ANTHROPIC_API_KEY` to turn
+on drafted answers; without it, the workbench runs retrieval-only.
 
-## Engineering highlights
+## 🧭 Honest limits
 
-For readers evaluating the engineering rather than the demo:
+- **Synthetic data.** It hasn't been deployed at a real underwriting shop yet.
+- **Row-level security stops a forgotten filter, not SQL injection.** The app's database role can still change its own session settings ([T13](docs/THREAT_MODEL.md)); a separate ingest role is on the roadmap.
+- **Recall is measured on exact wording.** Semantic recall on real documents is unmeasured.
+- **Cross-document reasoning isn't solved.** The AI could combine permitted files into a conclusion no single file supports. Citations and a human decision are the guard.
+- **The newest audit entries can be deleted without detection.** Edits anywhere are caught, but trimming the tail isn't ([T12](docs/THREAT_MODEL.md)).
 
-| Area | What's here |
-|---|---|
-| **Eval-driven development** | Retrieval changes gate on a per-role eval suite with *negative* assertions (must-not-return docs) — for a permissions product, the absence of a result is the spec. Runs in CI on every push. |
-| **Prompt-injection boundary** | Retrieved text is framed in `<document>` tags and declared data-not-instructions; tested by inspecting the actual assembled API payload (mocked transport, zero spend). |
-| **Hallucination containment** | Every `[doc-id]` the model cites is verified against the retrieved set; unverified citations are surfaced to the user, not hidden. |
-| **Tamper-evident audit** | Each JSONL audit entry chains a SHA-256 of the previous line; `verify_audit_chain()` detects any edited or removed entry. Trail survives restarts. |
-| **Cost & latency receipts** | Every LLM answer returns `llm_ms` and `est_cost_usd` from real token usage; running totals per session. Value claims are measured, not estimated. |
-| **Production seams** | SSO-ready: one env var switches identity from demo dropdown to HS256 JWT validation (constant-time compare, expiry) — `can_read()` untouched. Rate limiting, input caps, CSP/nosniff, XSS-safe rendering throughout. |
-| **Prompt caching** | Static system prompt marked `cache_control: ephemeral`; per-request context deliberately uncached. Token usage surfaced per response to verify cache engagement. |
-| **Test discipline** | Four test files: exact-content leak tests, role ACL tests, mocked-LLM payload tests, and HTTP endpoint tests against a real in-process server (auth, rate-limit 429s, CSV export). Plus ruff lint + format gating CI. |
-| **Frontend** | Single-file vanilla-JS workbench on a token-based design system (dark + light, WCAG-checked), inline SVG icons, strict CSP with zero external origins. Deep links, keyboard-first, audit trail with CSV export. |
+## 🗺️ What's next
 
-## Two backends, one guarantee
+- Security fixes, each with a failing test first: document-tag escaping, spreadsheet-formula-safe CSV export, tamper-evident newest audit entry
+- Permissions that scale to 100,000 documents, with a benchmark to prove it
+- An eval on real documents this project didn't write
+- A leak-test kit you can point at your own retriever
+- A live demo link
 
-| | In-memory (default) | Postgres + pgvector |
-|---|---|---|
-| Ranking | BM25 (stdlib) | pgvector cosine over embeddings |
-| ACL enforcement | Python pre-filter | **Postgres Row-Level Security** — the database refuses to return hidden rows even when an app query forgets its filter (not yet SQL-injection-proof: [T13](docs/THREAT_MODEL.md)) |
-| Score side channel | Closed (visible-set statistics) | No analogue — embedding distance is per-row, no corpus statistics |
-| Audit | Hash-chained JSONL | Hash-chained `audit` table |
-| Dependencies | Zero | `psycopg` (`pip install -e ".[pg]"`) |
+Everything else: [ROADMAP.md](ROADMAP.md).
 
-The pgvector backend ([`app/pgvector_rag.py`](app/pgvector_rag.py)) is the production
-answer to "where should ACLs live?": in the database that already has them. Chunks carry
-an `acl text[]`; an RLS policy admits a row only when it overlaps the caller's principals
-(set per-transaction via a parameterized `set_config`); the app connects as a
-non-superuser role, so with no principals set the table is *empty*. CI proves it with the
-same 20-case leak gate plus an RLS-specific test: a raw `SELECT *` as the app role
-returns only what the policy allows — no application `WHERE` clause involved.
+## 📄 License
 
-Embeddings default to a deterministic stdlib feature-hash
-([`app/embedding.py`](app/embedding.py)) so the whole path runs with no model and no
-network; swap `embed()` for Voyage AI or sentence-transformers for semantic recall — the
-RLS logic doesn't change. Run against the server with
-`RAG_BACKEND=pgvector DATABASE_URL=postgres://... python3 underwriter_server.py`.
-
-## The production platform ([`platform/`](platform/))
-
-The root of this repo is the zero-dependency reference: small enough to read in one sitting.
-[`platform/`](platform/README.md) is the same permission-before-ranking design built as a
-deployable service:
-
-| | Root (reference) | `platform/` (service) |
-|---|---|---|
-| API | stdlib HTTP server | FastAPI |
-| Vectors | BM25 / pgvector + RLS | Qdrant + SQL store |
-| Identity | demo roles / HS256 seam | RS256 JWT, verified per request |
-| Source sync | static corpus | Google Drive delta + webhook, permission revocation |
-| Tests | leak evals, mutants, isolation oracle | 273 tests, 98.85% branch coverage (≥96% gate), mutmut |
-| Shipping | Render one-click | Docker image (non-root), container smoke CI |
-
-The platform has its own CI in [`.github/workflows/platform.yml`](.github/workflows/platform.yml).
-Its mutation gate is blocking: of 1,300 mutants, every survivor was either killed by a test
-or recorded as a reviewed equivalent in [`platform/mutation_equivalents.json`](platform/mutation_equivalents.json),
-pinned by source and mutant hash, so any new survivor fails the build.
-
-## Threat model (what's handled, what's not)
-
-| Vector | Status |
-|---|---|
-| Forbidden doc in results/citations | ✅ Impossible — excluded before ranking |
-| Score side channel from hidden docs | ✅ Fixed — visible-set statistics; regression-tested |
-| Prompt injection via document text | ✅ Bounded — data/instruction framing + payload tests |
-| Hallucinated citations | ✅ Detected — post-hoc verification, surfaced in UI |
-| Audit log tampering (edit/remove) | ✅ Detected — SHA-256 hash chain |
-| Audit log truncation from the tail | ⚠️ Needs an externally anchored head hash — documented, deferred |
-| Cross-doc aggregation (LLM synthesizes a conclusion no single doc supports) | ⚠️ Mitigated by citation-required prompting; needs answer-level evals |
-| Denied-count side channel | ⚙️ Deliberate demo feature; `SHOW_DENIED=0` disables it |
-
-## API
-
-```python
-from permission_rag import PermissionRAG
-
-rag = PermissionRAG(audit_path="audit_log.jsonl")
-rag.add_document("salaries", "salary bands range from 90k to 250k", {"group:hr"})
-
-rag.retrieve("salary bands", {"id": "bob", "groups": ["hr"]}, k=3)  # → ranked chunks
-rag.retrieve("salary bands", {"id": "alice", "groups": ["eng"]})  # → [] (never scored)
-
-PermissionRAG.verify_audit_chain("audit_log.jsonl")  # → True unless tampered
-```
-
-```bash
-curl -s -X POST http://127.0.0.1:8421/ask -H 'content-type: application/json' \
-  -d '{"user":"senior","q":"can we bind Delgado above 1 million?"}'
-# → {"results": [...], "answer": "...", "llm_ms": 840, "est_cost_usd": 0.0019,
-#    "unverified_citations": [], "denied_chunks": 1}
-```
-
-Full surface: `POST /query` (retrieval only), `POST /ask` (adds the drafted answer,
-rate-limited), `GET /audit` (per-caller scoped; `&format=csv` to export), `GET /presets`.
-ACL entries are `user:<id>`, `group:<name>`, or `"*"`; empty ACLs and duplicate ingests
-are rejected at write time.
-
-## Scope and honest limitations
-
-- **Ranking is BM25, on purpose.** The contribution is the permission model; `_score()` is
-  one function to swap for embedding cosine, and the ACL logic doesn't change. The eval
-  gate is what makes that swap safe.
-- **Synthetic corpus.** Seven documents across four data classes — enough to demonstrate
-  and test every property. The production path (ACLs from systems of record, IdP-issued
-  JWTs, TLS) is designed and documented, not built.
-- **Single-process.** Rate limits and cost totals are in-memory; the audit log is a local
-  JSONL. Appropriate for the pilot scale this targets.
-
-## Development process
-
-This repo was built as a disciplined seven-wave cycle and the artifacts are public:
-an adversarial security review of the first prototype ([`BACKLOG.md`](BACKLOG.md) — five
-findings, two of which broke the product's core claim, all fixed with regression tests),
-a product case file with a risk register ([`CASE_FILE.md`](CASE_FILE.md)), and an
-integration map for fitting a real underwriting shop
-([`INTEGRATION.md`](INTEGRATION.md)). Every wave shipped behind the test suite and the
-eval gate; the commit history reads as the changelog.
-
-## License
-
-Apache-2.0
+Apache License 2.0. See [LICENSE](LICENSE).

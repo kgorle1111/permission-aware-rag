@@ -4,7 +4,7 @@ A small reference application for JWT-authenticated, permission-filtered retriev
 
 ## Run locally
 
-Requires Python 3.11 or 3.12. See [SETUP.md](SETUP.md) for setup, configuration, sync, and migration notes.
+Requires Python 3.11 or 3.12.
 
 ```sh
 python3 -m venv .venv
@@ -15,9 +15,23 @@ python scripts/ingest.py
 DEMO_MODE=1 uvicorn app.main:app --port 8090
 ```
 
-The demo UI is at <http://localhost:8090>. In another terminal, `python scripts/demo.py` runs the scripted example against the running API. `DEMO_MODE=1` enables development token minting and must not be used for a real deployment. See [SETUP.md](SETUP.md) for test, coverage, and mutation-check commands.
+The demo UI is at <http://localhost:8090>. In another terminal, `python scripts/demo.py` runs the scripted example against the running API. `DEMO_MODE=1` enables development token minting and must not be used for a real deployment.
 
-For a containerized local run, use `docker compose up --build`. The container initializes the corpus and signing keypair on first start and stores SQL, Qdrant data, and runtime keys in the persistent `rag-data` volume mounted at `/data`. Demo token minting remains off unless you explicitly set `DEMO_MODE=1`. See [SETUP.md](SETUP.md) for the volume lifecycle and public-key-only configuration.
+For a containerized local run, use `docker compose up --build`. The container initializes the corpus and signing keypair on first start and stores SQL, Qdrant data, and runtime keys in the persistent `rag-data` volume mounted at `/data`. Demo token minting remains off unless you explicitly set `DEMO_MODE=1`. `docker compose down` keeps the volume; `docker compose down -v` deletes the data and runtime keys.
+
+## Test
+
+```sh
+pip install -r requirements-dev.txt
+python -m pytest tests/ -q --cov=app --cov=scripts --cov-branch --cov-fail-under=96
+mutmut run --max-children 1 && mutmut export-cicd-stats
+python scripts/check_mutations.py mutants/mutmut-cicd-stats.json --mutants-dir mutants \
+  --equivalents mutation_equivalents.json --source-root .
+```
+
+The mutation check fails on any surviving mutant that isn't a reviewed, hash-pinned
+equivalent in `mutation_equivalents.json`. CI runs all three on every push
+(`.github/workflows/platform.yml` at the repo root).
 
 ## Current behavior and boundaries
 

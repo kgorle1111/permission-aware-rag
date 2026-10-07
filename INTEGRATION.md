@@ -12,8 +12,9 @@ Everything below plugs in at one of three seams: **identity in**, **documents in
 
 Integration cost: **already a config change** — set `UNDERWRITER_JWT_SECRET` and identity
 comes from a signed HS256 bearer token (`sub` + `groups` claims); the demo dropdown is
-ignored. `can_read()` is unchanged. Remaining production work: point validation at the
-IdP's keys (RS256/JWKS) instead of a shared secret.
+ignored. `can_read()` is unchanged. For IdP-issued tokens, [`platform/`](platform/README.md)
+already verifies RS256 against a mounted public key or the IdP's JWKS (`JWKS_URL`,
+`JWT_AUDIENCE`, `JWT_ISSUER`).
 
 ## 2. Documents in (what it can retrieve)
 
@@ -31,6 +32,11 @@ system of record — never invented here:
 
 Sync pattern: nightly batch pull per system → `add_document(doc_id, text, acl)`.
 Start with read-only exports (CSV/PDF-to-text); no write access to any source system, ever.
+
+For Google Drive, `platform/` goes further than a nightly batch. It reconciles permission
+changes through the Drive Changes API (plus an optional webhook), so a revoked share stops
+being readable at the next sync pass. While reconciliation is pending, reads return
+nothing.
 
 ## 3. Answers out (where results land)
 

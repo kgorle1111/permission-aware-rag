@@ -1,6 +1,6 @@
 """Ledgers are enforced, not decorative: every cited check must still exist.
 
-DECISIONS (D), THREAT_MODEL (T), and BACKLOG (B) rows cite evidence as
+DECISIONS (D), THREAT_MODEL (T), and ROADMAP (B) rows cite evidence as
 `path` "anchor". Deleting the cited file or the anchor text fails this test,
 and so does a code shortcut (kn:/ponytail:) with no backlog row.
 """
@@ -48,13 +48,13 @@ def test_threat_model():
 
 
 def test_backlog_covers_every_shortcut():
-    backlog = check_citations("BACKLOG.md", "B", 1)
+    backlog = check_citations("ROADMAP.md", "B", 1)
     anchors = [a for _, line in backlog for _, a in CITE.findall(line)]
     for f in sorted((ROOT / "app").glob("*.py")):
         for n, line in enumerate(f.read_text().splitlines(), 1):
             if re.search(r"\b(kn|ponytail): ", line):
                 assert any(a in line for a in anchors), (
-                    f"app/{f.name}:{n} shortcut has no BACKLOG row: {line.strip()}"
+                    f"app/{f.name}:{n} shortcut has no ROADMAP row: {line.strip()}"
                 )
 
 

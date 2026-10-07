@@ -1,6 +1,6 @@
 # Case File: Permission-Aware Underwriting Assistant
 
-**Date:** 2026-07-20 · **Status:** Prototype (local, synthetic data) · **Owner:** Kannishk
+**Date:** 2026-07-20, updated 2026-10-07 · **Status:** Reference app plus the [`platform/`](platform/README.md) service; synthetic data, not yet deployed at a real shop · **Owner:** Kannishk
 
 ## The use case
 
@@ -51,23 +51,29 @@ decisions) → audit trail (every retrieval logs who/what/returned/denied-count)
 ## What's synthetic vs. what's real for production
 
 Real corpus would come from policy admin systems, claims platforms, core banking, and
-compliance case tools. Before any real data: (1) identity from SSO, not a dropdown;
-(2) ACLs sourced from the systems of record, not hand-written; (3) TLS + authn on the
-HTTP surface; (4) persistent audit log; (5) eval set of ~20 hand-labeled Q/A pairs per
-role before any prompt iteration.
+compliance case tools. Readiness for real data:
+
+| Prerequisite | Status |
+|---|---|
+| Identity from SSO, not a dropdown | Seam built: HS256 JWT in the reference app; RS256 against a public key or JWKS in `platform/` |
+| ACLs sourced from systems of record | `platform/` syncs Google Drive permissions continuously; other sources still need connectors |
+| TLS + authn on the HTTP surface | Authn done in `platform/`; TLS comes from the host's proxy |
+| Persistent audit log | Done: hash-chained JSONL (reference) and SQL audit (`platform/`) |
+| Evals before prompt iteration | Retrieval leak and recall evals gate CI; answer-level evals are still open ([ROADMAP](ROADMAP.md)) |
 
 ## Risks / open questions
 
 - **Aggregation risk:** a senior sees banking + credit docs individually fine, but the
   LLM synthesizing across them may produce conclusions no single doc supports. Mitigated
-  by citation-required prompting; needs eval coverage.
+  by citation-required prompting; needs eval coverage. Tracked as T15 in the
+  [threat model](docs/THREAT_MODEL.md).
 - **IDF side channel (FIXED 2026-07-28):** df/n are now computed over the
   caller-visible set at query time, so hidden docs cannot shift visible scores.
-  Regression-tested in `test_permission_rag.py`. Was BACKLOG.md S1.
+  Regression-tested in `test_permission_rag.py`. Was security finding S1 ([ROADMAP](ROADMAP.md)).
 - **"N chunks hidden" side channel:** the denied count is shown in the UI. Deliberate for
-  the demo (it sells the feature); consider hiding per-query counts in production.
-- **BM25 ceiling:** exact-word matching only; swap `_score` for embedding cosine when
-  recall matters. ACL logic is unchanged by that swap.
+  the demo (it sells the feature); `SHOW_DENIED=0` removes it outside the demo.
+- **BM25 ceiling:** exact-word matching only. The pgvector backend and `platform/` rank by
+  embedding cosine instead, with the ACL logic unchanged.
 - **Regulatory:** if this touches real consumer credit decisions, ECOA/FCRA adverse-action
   territory — one more reason output stays "findings for human review."
 
@@ -78,3 +84,4 @@ role before any prompt iteration.
 2. ~~Build the 20-case eval harness~~ Done — `app/run_evals.py`, gates CI.
 3. Value receipts: per-query `llm_ms` + `est_cost_usd` now ship in every /ask and roll
    up in `/audit.llm_summary`; add a time-saved estimate for the pilot pitch.
+4. Everything else that's planned lives in [ROADMAP.md](ROADMAP.md).
