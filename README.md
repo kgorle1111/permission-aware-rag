@@ -143,9 +143,10 @@ on drafted answers; without it, the workbench runs retrieval-only.
 ## 🗺️ What's next
 
 - Security fixes, each with a failing test first: document-tag escaping, spreadsheet-formula-safe CSV export, tamper-evident newest audit entry
-- Request logs for latency, cost and retrieval failures, plus a daily spend cap
-- PII redaction, and an index that refuses a mismatched embedding model
-- An eval on a real-world document set this project didn't write
+- Permissions that scale to 100,000 documents, with a benchmark to prove it
+- An eval on real documents this project didn't write
+- A leak-test kit you can point at your own retriever
+- A live demo link
 
 Everything else: [ROADMAP.md](ROADMAP.md).
 

@@ -40,4 +40,4 @@ the side channels.
 
 - The probes aren't independent. They share 30 accounts and one retriever, so treat the
   bound as a bound on *this distribution*, not on arbitrary corpora.
-- The corpus is synthetic and generated from templates. A real-corpus held-out run (ROADMAP Next 8) is still open.
+- The corpus is synthetic and generated from templates. A real-corpus held-out run (ROADMAP: Next, real-world eval) is still open.

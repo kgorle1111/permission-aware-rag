@@ -45,32 +45,12 @@ These were written before the scaled eval ran. Negative results get published th
    - make the newest audit entry tamper-evident ([T12](docs/THREAT_MODEL.md))
    - verify the citation pattern accepts real document ids
    - harden malformed request bodies
-2. **README accuracy:** the reference core is stdlib-only; `platform/` adds FastAPI and Qdrant.
-3. **Generation hardening:** repeat the data-not-instructions rule after the documents, and pin the model to a dated version instead of an alias.
-4. **Embedding fingerprint:** the index records which embedding model built it, and the service refuses to query with a different one (prevents silent mismatches).
-5. **PII redaction** at ingest and on output.
-6. **Spend cap** per day, plus a red-team suite of 50+ injection and exfiltration attacks in CI.
-7. **Request logs for latency, cost and retrieval failures:** one structured line per request (request id, outcome, per-stage latency, tokens, estimated cost, failure reason) in both apps, with p50/p95 latency, daily cost and failure rate in `/audit`. Logs hold ids and counts only, never query or document text.
-8. **Real-world eval:** leak count, recall and citation validity on a document set this project didn't write, with confidence intervals.
-9. **Model SDK contract test** against the real API in CI.
-10. **Ingest through a separate database role** ([T13](docs/THREAT_MODEL.md)), so the app role can't write chunks.
+2. **Permissions that scale to 100,000 documents:** see the next section.
+3. **Real-world eval:** leak count, recall and citation validity on documents this project didn't write (an adversarial legal corpus first, then a public set with realistic permission groups), with confidence intervals.
+4. **A leak-test kit you can point at your own retriever:** the planted leak bugs, the isolation check and the scaled eval behind one small interface.
+5. **A live demo link.**
 
-## Open shortcuts (test-enforced)
-
-Every deliberate shortcut in code (a `kn:` or `ponytail:` comment) must appear here with
-its upgrade trigger. `app/test_ledgers.py` fails if a shortcut comment has no row.
-
-| Id | Status | Item | Trigger to build | Where |
-|---|---|---|---|---|
-| B01 | open | In-memory BM25 index, linear scan per query | Corpus past ~50k chunks, or p95 retrieve > 200 ms | `app/permission_rag.py` "in-memory BM25 ranking" |
-| B02 | open | Feature-hash embedder in place of a real model | E4 (recall lower bound ≥ 0.70) fails on non-lexical probes | `app/embedding.py` "placeholder embedder" |
-| B03 | open | Rate limiter is in-memory, per process | More than one server process or host | `app/underwriter_server.py` "in-memory per-process" |
-| B04 | open | Smallest model tier (Haiku) for grounded answers | An answer-quality eval shows Haiku below bar | `app/llm.py` "smallest tier" |
-| B05 | open | RLS ingest gated by a forgeable GUC, not a DB role | Before any deployment that runs untrusted SQL paths (THREAT_MODEL T13) | `app/pgvector_rag.py` "rag.mode" |
-| B06 | open | JWT group with a comma → 500 on pgvector | First real IdP integration (THREAT_MODEL T14) | `app/pgvector_rag.py` "contain no comma" |
-| B07 | open | Held-out real-corpus leak eval | Real corpus available | `evals/results/2026-10-03-v2/table.md` "real-corpus held-out run" |
-
-## Next up: permissions that scale to 100,000 documents
+## Permissions that scale to 100,000 documents
 
 **The target:** ~100k documents, roughly 1.5M chunks, on one vector-database node.
 
@@ -84,7 +64,19 @@ its upgrade trigger. `app/test_ledgers.py` fails if a shortcut comment has no ro
 
 These are design targets until a 100k-document benchmark measures them. The goals: retrieval p95 under 100 ms at every selectivity level, a 10k-document folder revocation in under 60 seconds, and zero leaks. Misses get published.
 
-## Later: the full RAG build-out, one measured rung at a time
+## Scoped, not scheduled
+
+Designed and scoped on purpose, but not scheduled. Each waits for a reason to build it: a measured gap, a reviewer's question, or real use.
+
+- **Generation hardening:** repeat the data-not-instructions rule after the documents, and pin the model to a dated version instead of an alias.
+- **Embedding fingerprint:** the index records which embedding model built it, and the service refuses to query with a different one (prevents silent mismatches).
+- **PII redaction** at ingest and on output.
+- **Spend cap** per day, plus a red-team suite of 50+ injection and exfiltration attacks in CI.
+- **Request logs for latency, cost and retrieval failures:** one structured line per request (request id, outcome, per-stage latency, tokens, estimated cost, failure reason) in both apps, with p50/p95 latency, daily cost and failure rate in `/audit`. Logs hold ids and counts only, never query or document text.
+- **Model SDK contract test** against the real API in CI.
+- **Ingest through a separate database role** ([T13](docs/THREAT_MODEL.md)), so the app role can't write chunks.
+
+### The full RAG build-out, one measured rung at a time
 
 Planned for `platform/`. Each step is a rung on a ladder. It's measured on a golden set before and
 after, and kept only if it moves the metric it targets. **Every rung must also pass the same leak
@@ -109,6 +101,21 @@ retriever that leaks is a regression. The comparison table gets published, inclu
    multi-agent pipeline only if a single agent measurably falls short.
 6. **Beyond text:** PDF tables and OCR, selective chart descriptions, and text-to-SQL under
    row-level security for policy-system data, after the database-role fix ([T13](docs/THREAT_MODEL.md)).
+
+## Open shortcuts (test-enforced)
+
+Every deliberate shortcut in code (a `kn:` or `ponytail:` comment) must appear here with
+its upgrade trigger. `app/test_ledgers.py` fails if a shortcut comment has no row.
+
+| Id | Status | Item | Trigger to build | Where |
+|---|---|---|---|---|
+| B01 | open | In-memory BM25 index, linear scan per query | Corpus past ~50k chunks, or p95 retrieve > 200 ms | `app/permission_rag.py` "in-memory BM25 ranking" |
+| B02 | open | Feature-hash embedder in place of a real model | E4 (recall lower bound ≥ 0.70) fails on non-lexical probes | `app/embedding.py` "placeholder embedder" |
+| B03 | open | Rate limiter is in-memory, per process | More than one server process or host | `app/underwriter_server.py` "in-memory per-process" |
+| B04 | open | Smallest model tier (Haiku) for grounded answers | An answer-quality eval shows Haiku below bar | `app/llm.py` "smallest tier" |
+| B05 | open | RLS ingest gated by a forgeable GUC, not a DB role | Before any deployment that runs untrusted SQL paths (THREAT_MODEL T13) | `app/pgvector_rag.py` "rag.mode" |
+| B06 | open | JWT group with a comma → 500 on pgvector | First real IdP integration (THREAT_MODEL T14) | `app/pgvector_rag.py` "contain no comma" |
+| B07 | open | Held-out real-corpus leak eval | Real corpus available | `evals/results/2026-10-03-v2/table.md` "real-corpus held-out run" |
 
 ## Deliberately not building
 

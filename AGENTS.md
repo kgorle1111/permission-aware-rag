@@ -4,6 +4,18 @@ Instructions for AI coding agents (and humans) working in this repository. Read 
 changing anything. The product's one promise is that **nobody ever retrieves a document they
 aren't allowed to read**, and every rule below exists to keep that promise.
 
+## Purpose and priorities
+
+This is a reference and portfolio project. Its job is to show, with evidence a stranger can
+reproduce, that permission-aware retrieval can be built so it doesn't leak. It is not a product
+with customers. So the test for any change is: **does it make the evidence stronger, more
+reproducible, or easier for a reviewer to verify?**
+
+- Work from `ROADMAP.md` → **Next**. Items under **Scoped, not scheduled** are designed but wait
+  for a reason (a measured gap, a reviewer's question, real use). Don't start one unprompted.
+- Prefer one measured, verifiable improvement over several unmeasured features.
+- A negative result (a rung that didn't help, a gate that missed a bug) is published, not hidden.
+
 ## Layout
 
 | Path | What it is | Rules |
@@ -87,6 +99,13 @@ python scripts/check_mutations.py mutants/mutmut-cicd-stats.json --mutants-dir m
   Branch per concern; open a PR; never push to `main` and never force-push.
 - **Shortcuts:** mark deliberate ones with a `kn:` or `ponytail:` comment naming the ceiling and
   the upgrade trigger, and add the matching `ROADMAP.md` row.
+
+## Session state
+
+Agents working locally keep two gitignored files at the repo root: `PLAN.md` is the single
+source of truth for plans, decisions and history; `HANDOFF.md` is a short resume snapshot
+(branch, open PRs, uncommitted work, next action, blockers). Read `HANDOFF.md` first when
+resuming, and update it before ending a session or running out of budget.
 
 ## Never commit
 
