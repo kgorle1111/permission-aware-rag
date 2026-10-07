@@ -5,7 +5,9 @@ links to a test, a committed result, or a ledger row:
 [decisions](docs/DECISIONS.md) · [threat model](docs/THREAT_MODEL.md) ·
 [eval results](evals/results/2026-10-03-v2/table.md).
 
-## Shipped
+Current implementation work is in [PR #6](https://github.com/kgorle1111/permission-aware-rag/pull/6), open and awaiting CI/review. The 2026-10-07 rows below describe locally verified work on that branch; they are not merged yet. The AWS demo is already live on the prior stable reference image.
+
+## Shipped and implemented
 
 | When | What | Evidence |
 |---|---|---|
@@ -40,12 +42,15 @@ These were written before the scaled eval ran. Negative results get published th
 | E3 | pgvector + RLS matches in-memory on leaks | any leak on either backend | **shown**: 0/1,350 on both |
 | E4 | Recall is useful, not just safe | recall@4 lower bound < 0.70 on the frozen set | shown, but weak: probes are lexical |
 
+### Completed security regressions
+
+**Security regressions:** document text/id breakout, CSV formulas, newest-entry edits, citation ids and malformed field types are pinned by `app/test_security.py`. List bodies already returned 400 on both endpoints; explicit validation also works with Python assertions disabled. Auditors receive other users' query text redacted. Local JSONL tail checkpoints and their storage-attacker limits are documented in [T12](docs/THREAT_MODEL.md).
 ## Next
 
-1. **Security regressions:** document text/id breakout, CSV formulas, newest-entry edits, citation ids and malformed field types are pinned by `app/test_security.py`. List bodies already returned 400 on both endpoints; explicit validation also works with Python assertions disabled. Auditors receive other users' query text redacted. Local JSONL tail checkpoints and their storage-attacker limits are documented in [T12](docs/THREAT_MODEL.md).
-2. **Permissions that scale to 100,000 documents:** see the next section.
-3. **Real-world eval:** leak count, recall and citation validity on documents this project didn't write (an adversarial legal corpus first, then a public set with realistic permission groups), with confidence intervals.
-4. **A leak-test kit you can point at your own retriever:** the planted leak bugs, the isolation check and the scaled eval behind one small interface.
+1. **Review and complete CI for PR #6.** The ACL and storage prerequisites have passed local gates; a live-demo update remains separate.
+2. **100,000-document benchmark:** measure ingest, memory, retrieval latency at multiple selectivities and revocation time. Publish misses against the targets below.
+3. **Real-world eval:** leak count, recall and citation validity on documents this project did not write, with realistic permission groups and confidence intervals.
+4. **A leak-test kit you can point at your own retriever:** independent ACL fixtures and an isolation oracle, with adapters to established evaluation runners.
 5. **Write-up and interview walkthrough**, using the [live demo](https://permission-rag-demo.b9hphyfz7skjm.us-east-2.cs.amazonlightsail.com/).
 
 ## Permissions that scale to 100,000 documents

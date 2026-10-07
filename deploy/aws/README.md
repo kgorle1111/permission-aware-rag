@@ -3,7 +3,9 @@
 [Open the live demo](https://permission-rag-demo.b9hphyfz7skjm.us-east-2.cs.amazonlightsail.com/). Verified 2026-10-07 on
 Lightsail deployment version 1: HTTPS UI, allowed retrieval, forbidden-document
 check, retrieval-only answers and auditor query redaction passed. The junior
-claims workflow was also verified in the browser.
+claims workflow was also verified in the browser. The user chose to keep the
+portfolio service running. Deployment 1 uses stable reference commit `2d2b0f9e862b`;
+the hierarchy and scale changes in [PR #6](https://github.com/kgorle1111/permission-aware-rag/pull/6) are not deployed yet.
 
 One **Lightsail Nano container node** in **us-east-2** serves the synthetic
 underwriting workbench over managed HTTPS. It uses predefined demo roles and
