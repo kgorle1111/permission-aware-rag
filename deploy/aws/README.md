@@ -1,5 +1,10 @@
 # AWS demo deployment
 
+[Open the live demo](https://permission-rag-demo.b9hphyfz7skjm.us-east-2.cs.amazonlightsail.com/). Verified 2026-10-07 on
+Lightsail deployment version 1: HTTPS UI, allowed retrieval, forbidden-document
+check, retrieval-only answers and auditor query redaction passed. The junior
+claims workflow was also verified in the browser.
+
 One **Lightsail Nano container node** in **us-east-2** serves the synthetic
 underwriting workbench over managed HTTPS. It uses predefined demo roles and
 retrieval-only answers. Role selection demonstrates permissions; it does not
@@ -36,7 +41,8 @@ AWS_PROFILE=permission-rag-demo AWS_REGION=us-east-2 bash deploy/aws/deploy.sh -
 The default plan makes no network calls. Apply requires a clean checkout, checks
 identity and existing service ownership/capacity, builds a nonroot linux/amd64
 image and smokes it locally under Nano resource limits before creating resources.
-It uploads to Lightsail's private image storage, deploys `deployment.json`, waits
+It passes the active Docker context endpoint to the upload helper (including
+Colima/Docker Desktop sockets). It uploads to Lightsail's private image storage, deploys `deployment.json`, waits
 for that exact deployment version and smokes the live HTTPS URL. It does not push
 Git, upgrade the project, enable auto deployment, or call a paid model.
 On failure, inspect the service and its deployment/container logs; created

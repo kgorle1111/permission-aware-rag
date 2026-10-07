@@ -120,6 +120,11 @@ flowchart LR
 
 ## 🚀 Try it in 60 seconds
 
+[Open the live AWS demo](https://permission-rag-demo.b9hphyfz7skjm.us-east-2.cs.amazonlightsail.com/) — synthetic documents, predefined demo roles,
+and retrieval-only answers. Use synthetic questions; demo role selection is not
+real-user authentication. Audit history is ephemeral across container replacement.
+[Hosting details and removal instructions](deploy/aws/README.md).
+
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/kgorle1111/permission-aware-rag)
 &nbsp;one-click free-tier deploy, or run it locally (no install step):
 
@@ -146,7 +151,6 @@ on drafted answers; without it, the workbench runs retrieval-only.
 - Permissions that scale to 100,000 documents, with a benchmark to prove it
 - An eval on real documents this project didn't write
 - A leak-test kit you can point at your own retriever
-- A live demo link
 
 Everything else: [ROADMAP.md](ROADMAP.md).
 

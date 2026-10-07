@@ -232,5 +232,8 @@ The reference JSONL writer supports one process per audit file.
 The reference workbench has an [AWS Lightsail deployment](deploy/aws/README.md)
 with private image uploads, managed HTTPS, one Nano node and a local smoke check
 under its resource limits. It uses synthetic documents and retrieval-only answers.
-The deployment script is prepared locally; a live URL is added only after AWS
-verification. Audit history is ephemeral across container replacement.
+[Live HTTPS demo](https://permission-rag-demo.b9hphyfz7skjm.us-east-2.cs.amazonlightsail.com/)
+verified on 2026-10-07: allowed retrieval, forbidden-document check, retrieval-only
+answers and auditor query redaction all passed; the junior claims workflow was
+also verified in the browser. Demo role selection is not real-user authentication.
+Audit history is ephemeral across container replacement.
