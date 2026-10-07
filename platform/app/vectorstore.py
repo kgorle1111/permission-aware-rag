@@ -19,6 +19,10 @@ from qdrant_client.models import (
     MatchAny,
     MatchValue,
     PointStruct,
+    PayloadSchemaType,
+    ScalarQuantization,
+    ScalarQuantizationConfig,
+    ScalarType,
     VectorParams,
 )
 
@@ -45,8 +49,18 @@ def reset_collection():
         c.delete_collection(config.COLLECTION)
     c.create_collection(
         collection_name=config.COLLECTION,
-        vectors_config=VectorParams(size=config.EMBED_DIM, distance=Distance.COSINE),
+        vectors_config=VectorParams(size=config.EMBED_DIM, distance=Distance.COSINE, on_disk=True),
+        on_disk_payload=True,
+        quantization_config=ScalarQuantization(
+            scalar=ScalarQuantizationConfig(type=ScalarType.INT8, always_ram=True)),
     )
+
+    # Embedded Qdrant ignores indexes/quantization; only the remote server uses
+    # these storage/acceleration settings. Keep local correctness tests distinct.
+    if config.QDRANT_URL:
+        for field in (*ACL_LEVELS, "doc_id"):
+            c.create_payload_index(collection_name=config.COLLECTION, field_name=field,
+                                   field_schema=PayloadSchemaType.KEYWORD, wait=True)
 
 
 def upsert_chunks(chunks: list[dict]):
@@ -97,6 +111,25 @@ def update_chunk_acl(chunk_id: int, acl: list[str], *, levels: dict | None = Non
         raise RuntimeError("indexed chunk missing; full reingestion required")
     client().set_payload(collection_name=config.COLLECTION,
                          payload={"acl": acl, **(levels or {"acl_doc": acl})}, points=[chunk_id], wait=True)
+
+
+def update_doc_acls(acls: dict[str, list[str]], batch_size: int = 1000):
+    """One filtered write per equal-grant batch; section/paragraph fields untouched."""
+    from .ingest import validate_acl
+    if not isinstance(batch_size, int) or batch_size < 1:
+        raise ValueError("batch_size must be a positive integer")
+    grouped = {}
+    for doc_id, acl in acls.items():
+        if not isinstance(doc_id, str) or not doc_id.strip():
+            raise ValueError("document ids must be nonempty")
+        grants = tuple(validate_acl(acl))
+        grouped.setdefault(grants, []).append(doc_id)
+    for grants, documents in grouped.items():
+        for offset in range(0, len(documents), batch_size):
+            client().set_payload(collection_name=config.COLLECTION,
+                                 payload={"acl_doc": list(grants)},
+                                 points=Filter(must=[FieldCondition(key="doc_id", match=MatchAny(
+                                     any=documents[offset:offset + batch_size]))]), wait=True)
 
 
 def close_client():

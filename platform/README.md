@@ -52,3 +52,29 @@ The tests exercise local code paths and fakes. They do not establish resistance 
 ## Repository map
 
 `app/` contains the API, identity verification, retrieval, ingestion, synchronization, SQL store, and connector adapter. `scripts/` contains local setup and demo commands. `corpus/` contains demo documents and the synthetic permission feed. `tests/` contains the offline test suite. `config/postgres_rls.sql` is an optional example, not an activated runtime control.
+
+### Hierarchy and storage verification
+
+Remote Qdrant collections create keyword indexes on `acl_doc`, `acl_section`,
+`acl_para` and `doc_id` before upload, store payload/original vectors on disk, and
+configure int8 scalar quantization in RAM. Embedded Qdrant does not implement
+those indexes or compression; its tests establish permission correctness only.
+
+Document permission sync uses filtered `set_payload` in batches of up to 1,000
+doc IDs with equal grants; one document is one vector write regardless of its
+chunk count. Every retry replays document grants from SQL. Child restrictions
+remain unchanged until reingestion. Deletion intent is persisted before remote
+deletion; interrupted deletion requires full reingestion rather than reopening
+an incomplete index. Sync still reads the SQL chunk/policy mirror; 100k-document
+latency, memory and revocation targets have **not** been measured.
+
+To verify a real server using a unique synthetic collection (removed afterwards):
+
+```bash
+python ../evals/verify_qdrant_storage.py --url http://localhost:6333
+```
+
+This checks engine hierarchy filtering, bulk revocation, payload indexes and
+storage configuration; it does not measure quantization savings or ANN recall.
+The 2026-10-07 check used Qdrant server/client 1.18.0. Production uses a configured
+`QDRANT_URL`; the public AWS demo runs the small stdlib reference app instead.

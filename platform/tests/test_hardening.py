@@ -23,19 +23,19 @@ def _write_source(rows):
 def test_failed_sync_stays_blocked_and_retry_replays_acl_updates(client, monkeypatch):
     """A partial vector write must leave the durable barrier up until retry."""
     from app import sync
-    from app.vectorstore import update_chunk_acl as real_update
+    from app.vectorstore import update_doc_acls as real_update
 
     try:
         _write_source([{"doc_id": "hr-salaries", "acl": ["user:cfo@company.com"]}])
         calls = []
 
-        def fail_once(chunk_id, acl, **kwargs):
-            calls.append((chunk_id, acl))
+        def fail_once(acls):
+            calls.append(acls)
             if len(calls) == 1:
                 raise RuntimeError("simulated vector write failure")
-            return real_update(chunk_id, acl, **kwargs)
+            return real_update(acls)
 
-        monkeypatch.setattr(sync, "update_chunk_acl", fail_once)
+        monkeypatch.setattr(sync, "update_doc_acls", fail_once)
         try:
             sync_once()
             assert False, "the simulated vector failure should escape sync_once"
@@ -48,7 +48,7 @@ def test_failed_sync_stays_blocked_and_retry_replays_acl_updates(client, monkeyp
         denied = client.post("/query", json={"query": "salary bands"}, headers=auth("bob"))
         assert denied.json() == retrieval.EMPTY_RESPONSE
 
-        monkeypatch.setattr(sync, "update_chunk_acl", real_update)
+        monkeypatch.setattr(sync, "update_doc_acls", real_update)
         assert sync_once() == ["hr-salaries"]
         allowed_only_to_cfo = client.post(
             "/query", json={"query": "salary bands"}, headers=auth("bob"))
@@ -240,7 +240,7 @@ def test_partial_vector_deletion_cannot_be_restored_by_later_grant(client, monke
             sync_once()
             assert False, "a source grant must not clear a missing-index barrier"
         except RuntimeError as exc:
-            assert "indexed chunk missing" in str(exc)
+            assert "full reingestion required" in str(exc)
 
         blocked = client.post("/query", json={"query": "salary bands"}, headers=auth("bob"))
         assert blocked.json() == retrieval.EMPTY_RESPONSE

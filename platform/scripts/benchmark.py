@@ -40,6 +40,13 @@ def _principal_can_read(acl: list[str], principal_strings: list[str]) -> bool:
     return "*" in acl or bool(set(acl) & set(principal_strings))
 
 
+def _chunk_can_read(chunk: dict, principal_strings: list[str]) -> bool:
+    levels = ("acl_doc", "acl_section", "acl_para")
+    if any(level in chunk for level in levels):
+        return all(_principal_can_read(chunk.get(level, []), principal_strings) for level in levels)
+    return _principal_can_read(chunk["acl"], principal_strings)
+
+
 def _validate_results(response: dict, principal, chunks: list[dict], *,
                       forbidden_markers: set[str] | None = None) -> None:
     """Check returned doc/text pairs against the independently derived ACLs."""
@@ -50,7 +57,7 @@ def _validate_results(response: dict, principal, chunks: list[dict], *,
         key = (result.get("doc_id"), result.get("text"))
         candidates = by_key.get(key)
         assert candidates, f"retrieval returned unknown chunk: {key[0]}"
-        assert any(_principal_can_read(chunk["acl"], principal.principals)
+        assert any(_chunk_can_read(chunk, principal.principals)
                    for chunk in candidates), (
             f"unauthorized result chunk returned: {key[0]}")
     rendered = json.dumps(response, ensure_ascii=False)
@@ -124,13 +131,13 @@ def _worker(corpus_path: Path, iterations: int) -> dict:
     security_checks = 0
     for user_name, principal in users.items():
         for chunk in probes:
-            if _principal_can_read(chunk["acl"], principal.principals):
+            if _chunk_can_read(chunk, principal.principals):
                 continue
             forbidden_markers = set().union(*(
                 markers_by_chunk[(chunk["doc_id"], chunk["text"])]
                 for chunk in chunks
                 if markers_by_chunk[(chunk["doc_id"], chunk["text"])]
-                and not _principal_can_read(chunk["acl"], principal.principals)
+                and not _chunk_can_read(chunk, principal.principals)
             ))
             target_markers = markers_by_chunk[(chunk["doc_id"], chunk["text"])]
             for variant_name, make_query in probe_variants:
@@ -150,7 +157,7 @@ def _worker(corpus_path: Path, iterations: int) -> dict:
     warm_ms: list[float] = []
     for user_name, principal in users.items():
         readable = next((chunk for chunk in chunks
-                         if _principal_can_read(chunk["acl"], principal.principals)), None)
+                         if _chunk_can_read(chunk, principal.principals)), None)
         if readable is None:
             raise RuntimeError(f"corpus has no readable chunks for {user_name}")
         query = readable["text"]
