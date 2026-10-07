@@ -64,21 +64,76 @@ class PermissionRAG:
             if lines:
                 self._last_hash = hashlib.sha256(lines[-1].encode()).hexdigest()
 
-    def add_document(self, doc_id: str, text: str, acl: Iterable[str], chunk_words: int = 80) -> None:
-        """Ingest a document. `acl` is the set of principals allowed to read it."""
-        acl = normalize_acl(acl)
+    def add_document(
+        self,
+        doc_id: str,
+        text: str,
+        acl: Iterable[str],
+        chunk_words: int = 80,
+        *,
+        sections: list[dict] | None = None,
+    ) -> None:
+        """Ingest atomically; each optional section/paragraph ACL narrows its parents."""
+        chunks = self.document_chunks(text, acl, chunk_words, sections=sections)
         if any(c["doc_id"] == doc_id for c in self.chunks):
             raise ValueError(f"doc_id {doc_id!r} already ingested — use remove_document() then re-add")
-        for i, chunk_text in enumerate(self._chunk_texts(text, chunk_words)):
+        for i, chunk in enumerate(chunks):
             self.chunks.append(
                 {
                     "id": f"{doc_id}#{i}",
                     "doc_id": doc_id,
-                    "text": chunk_text,
-                    "acl": acl,
-                    "tf": Counter(tokenize(chunk_text)),
+                    **chunk,
+                    "tf": Counter(tokenize(chunk["text"])),
                 }
             )
+
+    @staticmethod
+    def document_chunks(text, acl, chunk_words=80, *, sections=None):
+        """Validate all boundaries before ingest; overlap never crosses a boundary.
+
+        Missing child ACL means unrestricted at that level; an explicitly empty
+        or malformed ACL is rejected rather than silently becoming public.
+        """
+        doc_acl = normalize_acl(acl)
+        if not isinstance(text, str) or not isinstance(chunk_words, int) or chunk_words < 1:
+            raise ValueError("text must be a string and chunk_words a positive integer")
+        if sections is not None and not isinstance(sections, list):
+            raise TypeError("sections must be a list")
+        chunks = []
+
+        def pack(value, section_acl, paragraph_acl):
+            if not isinstance(value, str):
+                raise TypeError("paragraph text must be a string")
+            for part in PermissionRAG._chunk_texts(value, chunk_words):
+                chunks.append(
+                    {
+                        "text": part,
+                        "acl": doc_acl,
+                        "acl_doc": doc_acl,
+                        "acl_section": section_acl,
+                        "acl_para": paragraph_acl,
+                    }
+                )
+
+        pack(text, frozenset({"*"}), frozenset({"*"}))
+        for section in sections or []:
+            if not isinstance(section, dict):
+                raise TypeError("section must be an object")
+            section_acl = normalize_acl(section["acl"]) if "acl" in section else frozenset({"*"})
+            if "paragraphs" in section:
+                if "text" in section or not isinstance(section["paragraphs"], list):
+                    raise ValueError("section requires either text or a paragraphs list")
+                for para in section["paragraphs"]:
+                    if not isinstance(para, dict):
+                        raise TypeError("paragraph must be an object")
+                    para_acl = normalize_acl(para["acl"]) if "acl" in para else frozenset({"*"})
+                    pack(para.get("text"), section_acl, para_acl)
+            else:
+                pack(section.get("text"), section_acl, frozenset({"*"}))
+        return chunks
+
+    def can_read_chunk(self, user, chunk):
+        return all(self.can_read(user, chunk[level]) for level in ("acl_doc", "acl_section", "acl_para"))
 
     @staticmethod
     def _chunk_texts(text: str, chunk_words: int) -> list[str]:
@@ -147,7 +202,7 @@ class PermissionRAG:
         t0 = time.perf_counter()
         if self._audit_failed:
             raise RuntimeError("audit persistence failed; recovery required")
-        visible = [c for c in self.chunks if self.can_read(user, c["acl"])]
+        visible = [c for c in self.chunks if self.can_read_chunk(user, c)]
         denied = len(self.chunks) - len(visible)
         # IDF over the visible set only: a hidden doc must not shift visible scores
         df = Counter()

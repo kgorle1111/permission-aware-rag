@@ -1,8 +1,8 @@
 """Ingestion: chunk + embed + inherit the document's ACL onto every chunk.
 
 The chunk — not the document — is the unit that reaches the model, so the
-chunk is the unit that carries permissions. Section-level overrides apply the
-STRICTEST-WINS rule: a chunk spanning sensitivities gets the tighter ACL.
+chunk is the unit that carries permissions. Section and paragraph restrictions apply with
+AND across levels; separate memberships can satisfy separate levels.
 """
 from __future__ import annotations
 
@@ -44,18 +44,28 @@ def validate_acl(acl: list[str]) -> list[str]:
 
 
 def chunk_document(doc: dict) -> list[dict]:
-    """Split into paragraph chunks; each inherits doc ACL unless its section
-    declares a stricter one."""
+    """Keep each ACL level independent; paragraphs never cross a policy boundary."""
     doc_acl = validate_acl(doc.get("acl", []))
     chunks = []
     for section in doc["sections"]:
-        acl = doc_acl
-        if "acl" in section:
-            acl = strictest(doc_acl, validate_acl(section["acl"]))
-        for para in [p.strip() for p in section["text"].split("\n\n") if p.strip()]:
-            chunks.append({"doc_id": doc["doc_id"], "text": para, "acl": acl,
-                           "doc_acl": doc_acl,
-                           "section_acl": validate_acl(section["acl"]) if "acl" in section else None})
+        section_acl = validate_acl(section["acl"]) if "acl" in section else ["*"]
+        if "paragraphs" in section:
+            if "text" in section or not isinstance(section["paragraphs"], list):
+                raise ValueError("section requires either text or a paragraphs list")
+            paragraphs = section["paragraphs"]
+        else:
+            paragraphs = [{"text": p.strip()} for p in section["text"].split("\n\n") if p.strip()]
+        for para in paragraphs:
+            para_acl = validate_acl(para["acl"]) if "acl" in para else ["*"]
+            if not isinstance(para.get("text"), str):
+                raise ValueError("paragraph text must be a string")
+            if not para["text"].strip():
+                continue
+            # Flat metadata remains conservative, never used to authorize.
+            acl = strictest(strictest(doc_acl, section_acl), para_acl)
+            chunks.append({"doc_id": doc["doc_id"], "text": para["text"].strip(), "acl": acl,
+                           "acl_doc": doc_acl, "acl_section": section_acl, "acl_para": para_acl,
+                           "doc_acl": doc_acl, "section_acl": section_acl, "paragraph_acl": para_acl})
     return chunks
 
 
@@ -98,7 +108,7 @@ def ingest_corpus(corpus_path: str | Path, reset: bool = True) -> int:
         for ch in all_chunks:
             s.add(ChunkACL(chunk_id=ch["id"], doc_id=ch["doc_id"], acl=ch["acl"]))
             s.add(ChunkPolicy(chunk_id=ch["id"], doc_acl=ch["doc_acl"],
-                              section_acl=ch["section_acl"]))
+                              section_acl=ch["section_acl"], paragraph_acl=ch["paragraph_acl"]))
         state.revision += 1
         state.pending = False
         state.rebuild_required = False

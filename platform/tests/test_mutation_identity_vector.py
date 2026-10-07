@@ -139,7 +139,9 @@ def test_vector_search_passes_acl_filter_limit_and_payload_options(monkeypatch):
     assert captured["score_threshold"] == config.MIN_SCORE
     assert captured["with_payload"] is True
     acl_filter = captured["query_filter"].must[0]
-    assert acl_filter.key == "acl"
+    assert [c.key for c in captured["query_filter"].must] == ["acl_doc", "acl_section", "acl_para"]
+    assert all(c.match.any == ["user:reader@example.test", "*"] for c in captured["query_filter"].must)
+    assert acl_filter.key == "acl_doc"
     assert acl_filter.match.any == ["user:reader@example.test", "*"]
 
 
@@ -158,6 +160,7 @@ def test_upsert_is_durable_before_permission_state_can_be_committed(monkeypatch)
             "doc_id": "confidential-plan",
             "text": "Private text",
             "acl": ["group:finance"],
+            "acl_doc": ["group:finance"], "acl_section": ["*"], "acl_para": ["*"],
             "vector": [0.3, 0.7],
         }
     ]
@@ -173,6 +176,7 @@ def test_upsert_is_durable_before_permission_state_can_be_committed(monkeypatch)
         "doc_id": "confidential-plan",
         "text": "Private text",
         "acl": ["group:finance"],
+        "acl_doc": ["group:finance"], "acl_section": ["*"], "acl_para": ["*"],
     }
 
 
@@ -181,8 +185,8 @@ def test_unfiltered_audit_query_is_relevant_limited_and_returns_only_denied_coun
 ):
     captured = {}
     hits = [
-        SimpleNamespace(payload={"acl": ["group:hr"]}),
-        SimpleNamespace(payload={"acl": ["group:eng"]}),
+        SimpleNamespace(payload={"acl_doc": ["group:hr"], "acl_section": ["group:hr"], "acl_para": ["group:hr"]}),
+        SimpleNamespace(payload={"acl_doc": ["group:eng"], "acl_section": ["group:eng"], "acl_para": ["group:eng"]}),
     ]
 
     class FakeClient:
@@ -199,7 +203,7 @@ def test_unfiltered_audit_query_is_relevant_limited_and_returns_only_denied_coun
     assert captured["query"] == [1.0, 0.0]
     assert captured["limit"] == 2
     assert captured["score_threshold"] == config.MIN_SCORE
-    assert captured["with_payload"] == ["acl"]
+    assert captured["with_payload"] == ["acl_doc", "acl_section", "acl_para"]
     assert "query_filter" not in captured
 
 
@@ -237,7 +241,7 @@ def test_acl_update_reads_no_document_data_and_waits_for_visibility(monkeypatch)
     }
     assert captured["set_payload"] == {
         "collection_name": config.COLLECTION,
-        "payload": {"acl": ["group:hr"]},
+        "payload": {"acl": ["group:hr"], "acl_doc": ["group:hr"]},
         "points": [91],
         "wait": True,
     }

@@ -3,8 +3,8 @@
 The in-memory PermissionRAG enforces permissions in Python. This backend pushes the
 same guarantee down into Postgres Row-Level Security:
 
-- Every chunk row carries an `acl text[]`.
-- A SELECT policy admits a row only when its acl overlaps the caller's principals,
+- Every chunk row carries three independent ACL arrays.
+- A SELECT policy admits a row only when every ACL level overlaps the caller's principals,
   supplied per-transaction via `set_config('rag.principals', ...)` (parameterized —
   no SQL string building).
 - The app role is a non-superuser and not the table owner, so RLS applies to every
@@ -29,7 +29,7 @@ import time
 
 import psycopg
 from embedding import DIMS, embed, to_pgvector
-from permission_rag import PermissionRAG, normalize_acl
+from permission_rag import PermissionRAG
 from psycopg import sql
 
 SCHEMA = f"""
@@ -39,6 +39,9 @@ CREATE TABLE IF NOT EXISTS chunks (
     doc_id    text NOT NULL,
     text      text NOT NULL,
     acl       text[] NOT NULL CHECK (cardinality(acl) > 0),
+    acl_doc   text[] NOT NULL,
+    acl_section text[] NOT NULL,
+    acl_para  text[] NOT NULL,
     embedding vector({DIMS}) NOT NULL
 );
 CREATE TABLE IF NOT EXISTS corpus_stats (
@@ -53,11 +56,23 @@ CREATE TABLE IF NOT EXISTS audit (
     line text NOT NULL,
     line_sha256 text NOT NULL
 );
+-- Existing flat rows have no child restrictions. Migrate before changing policy.
+ALTER TABLE chunks ADD COLUMN IF NOT EXISTS acl_doc text[];
+ALTER TABLE chunks ADD COLUMN IF NOT EXISTS acl_section text[];
+ALTER TABLE chunks ADD COLUMN IF NOT EXISTS acl_para text[];
+UPDATE chunks SET acl_doc = acl WHERE acl_doc IS NULL;
+UPDATE chunks SET acl_section = ARRAY['*'] WHERE acl_section IS NULL;
+UPDATE chunks SET acl_para = ARRAY['*'] WHERE acl_para IS NULL;
+ALTER TABLE chunks ALTER COLUMN acl_doc SET NOT NULL;
+ALTER TABLE chunks ALTER COLUMN acl_section SET NOT NULL;
+ALTER TABLE chunks ALTER COLUMN acl_para SET NOT NULL;
 ALTER TABLE chunks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chunks FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS chunks_read ON chunks;
 CREATE POLICY chunks_read ON chunks FOR SELECT
-    USING (acl && string_to_array(current_setting('rag.principals', true), ','));
+    USING (acl_doc && string_to_array(current_setting('rag.principals', true), ',')
+       AND acl_section && string_to_array(current_setting('rag.principals', true), ',')
+       AND acl_para && string_to_array(current_setting('rag.principals', true), ','));
 DROP POLICY IF EXISTS chunks_ingest ON chunks;
 CREATE POLICY chunks_ingest ON chunks FOR ALL
     USING (current_setting('rag.mode', true) = 'ingest')
@@ -80,7 +95,7 @@ def setup_schema(admin_dsn: str, app_role: str = "rag_app", app_password: str = 
     The app role deliberately gets no BYPASSRLS and does not own the tables,
     so every query it runs is subject to the policies above.
     """
-    with psycopg.connect(admin_dsn, autocommit=True) as conn:
+    with psycopg.connect(admin_dsn) as conn:
         conn.execute(SCHEMA)
         exists = conn.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (app_role,)).fetchone()
         if not exists:
@@ -110,17 +125,30 @@ class PgVectorRAG:
         self.conn.close()
 
     # ── ingest (rag.mode = 'ingest') ─────────────────────────────────────────
-    def add_document(self, doc_id: str, text: str, acl, chunk_words: int = 80) -> None:
-        entries = sorted(normalize_acl(acl))
+    def add_document(
+        self, doc_id: str, text: str, acl, chunk_words: int = 80, *, sections: list[dict] | None = None
+    ) -> None:
+        chunks = PermissionRAG.document_chunks(text, acl, chunk_words, sections=sections)
         with self.conn.transaction():
             self.conn.execute("SELECT set_config('rag.mode', 'ingest', true)")
             dup = self.conn.execute("SELECT 1 FROM chunks WHERE doc_id = %s LIMIT 1", (doc_id,)).fetchone()
             if dup:
                 raise ValueError(f"doc_id {doc_id!r} already ingested — use remove_document() then re-add")
-            for i, chunk_text in enumerate(PermissionRAG._chunk_texts(text, chunk_words)):
+            for i, chunk in enumerate(chunks):
+                chunk_text = chunk["text"]
                 self.conn.execute(
-                    "INSERT INTO chunks (id, doc_id, text, acl, embedding) VALUES (%s,%s,%s,%s,%s::vector)",
-                    (f"{doc_id}#{i}", doc_id, chunk_text, entries, to_pgvector(embed(chunk_text))),
+                    "INSERT INTO chunks (id, doc_id, text, acl, acl_doc, acl_section, acl_para, embedding) "
+                    "VALUES (%s,%s,%s,%s,%s,%s,%s,%s::vector)",
+                    (
+                        f"{doc_id}#{i}",
+                        doc_id,
+                        chunk_text,
+                        sorted(chunk["acl_doc"]),
+                        sorted(chunk["acl_doc"]),
+                        sorted(chunk["acl_section"]),
+                        sorted(chunk["acl_para"]),
+                        to_pgvector(embed(chunk_text)),
+                    ),
                 )
             self.conn.execute("UPDATE corpus_stats SET chunk_count = (SELECT count(*) FROM chunks)")
 

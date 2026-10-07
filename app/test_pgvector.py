@@ -167,3 +167,37 @@ def test_acl_and_principal_boundary():
         PgVectorRAG.principals({"id": "u", "groups": ["eng,group:hr"]})
     with pytest.raises(ValueError):
         PgVectorRAG.principals({"id": "", "groups": []})
+
+
+def test_hierarchy_rls_checks_every_level_without_application_filter():
+    rag = _fresh()
+    rag.add_document(
+        "nested",
+        "",
+        ["group:hr"],
+        sections=[
+            {
+                "acl": ["user:bob"],
+                "paragraphs": [
+                    {"text": "salary policy ordinary details"},
+                    {"text": "salary policy secret compensation", "acl": ["group:executive"]},
+                ],
+            },
+        ],
+    )
+    for scope, expected in [
+        ("*,user:bob,group:hr", {"salary policy ordinary details"}),
+        ("*,user:bob", set()),
+        ("*,user:alice,group:hr", set()),
+        (
+            "*,user:bob,group:hr,group:executive",
+            {"salary policy ordinary details", "salary policy secret compensation"},
+        ),
+    ]:
+        with rag.conn.transaction():
+            rag.conn.execute("SELECT set_config('rag.principals', %s, true)", (scope,))
+            assert {r[0] for r in rag.conn.execute("SELECT text FROM chunks")} == expected
+    with pytest.raises((TypeError, ValueError)):
+        rag.add_document("invalid", "lead", ["*"], sections=[{"text": "secret", "acl": []}])
+    with psycopg.connect(ADMIN) as c:
+        assert c.execute("SELECT count(*) FROM chunks WHERE doc_id='invalid'").fetchone()[0] == 0

@@ -29,11 +29,11 @@ def test_failed_sync_stays_blocked_and_retry_replays_acl_updates(client, monkeyp
         _write_source([{"doc_id": "hr-salaries", "acl": ["user:cfo@company.com"]}])
         calls = []
 
-        def fail_once(chunk_id, acl):
+        def fail_once(chunk_id, acl, **kwargs):
             calls.append((chunk_id, acl))
             if len(calls) == 1:
                 raise RuntimeError("simulated vector write failure")
-            return real_update(chunk_id, acl)
+            return real_update(chunk_id, acl, **kwargs)
 
         monkeypatch.setattr(sync, "update_chunk_acl", fail_once)
         try:

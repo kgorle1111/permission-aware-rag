@@ -15,6 +15,7 @@ links to a test, a committed result, or a ledger row:
 | 2026-10-03 | Decisions, threat model and shortcut ledgers, each enforced by tests | `app/test_ledgers.py` |
 | 2026-10-05 | Production service consolidated into [`platform/`](platform/README.md) with its history: FastAPI, Qdrant, RS256 JWT, Google Drive permission sync | `.github/workflows/platform.yml` |
 | 2026-10-05 | Platform mutation gate made blocking: 61 surviving mutants killed by new tests, 15 pinned as reviewed equivalents | `platform/mutation_equivalents.json` |
+| 2026-10-07 | Independent document/section/paragraph ACL levels in memory, PostgreSQL RLS and Qdrant; isolation oracle catches both hierarchy mutants (8/8 total) | `app/test_hierarchy.py`, `app/test_pgvector.py`, `platform/tests/test_hierarchy.py` |
 
 ### First adversarial security review (2026-07-20)
 

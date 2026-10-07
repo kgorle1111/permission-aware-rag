@@ -80,14 +80,16 @@ def sync_once(source_path: str | Path = None) -> list[str]:
                     changed.add(row.doc_id)
                     continue
                 effective = (acl if policy.section_acl is None else
-                             strictest(acl, policy.section_acl))
+                             strictest(strictest(acl, policy.section_acl), policy.paragraph_acl or []))
                 if policy.doc_acl != acl or row.acl != effective:
                     changed.add(row.doc_id)
                 policy.doc_acl = acl
                 row.acl = effective
             # Replay every effective ACL, including after a partial Qdrant write
             # followed by SQL rollback or after the source changes again.
-            update_chunk_acl(row.chunk_id, row.acl)
+            update_chunk_acl(row.chunk_id, row.acl, levels={"acl_doc": policy.doc_acl,
+                                                         "acl_section": policy.section_acl or [],
+                                                         "acl_para": policy.paragraph_acl or []})
         state.revision += 1
         state.pending = False
     clear_cache()
