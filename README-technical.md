@@ -56,8 +56,8 @@ This system prevents the leak by construction, instead of filtering after the fa
    this gate passed unchanged.
 4. **Evidence that scales** — a frozen 210-doc generated corpus gives **0/1,350 leaks
    (95% upper bound 0.28%)**, and an isolation check (results must be identical to a
-   corpus holding only the caller's readable docs) catches all 6 deliberately leaky
-   retrievers in [`app/mutants.py`](app/mutants.py). Hand-labeled cases alone caught 1 of 6.
+   corpus holding only the caller's readable docs) catches all 8 deliberately faulty
+   retrievers (including two hierarchy faults) in [`app/mutants.py`](app/mutants.py). Hand-labeled cases alone caught 1 of 6.
    [Results](evals/results/2026-10-03-v2/table.md) · [Threat model](docs/THREAT_MODEL.md) ·
    [Decisions](docs/DECISIONS.md) · [Roadmap](ROADMAP.md)
 
@@ -142,11 +142,11 @@ deployable service:
 | Vectors | BM25 / pgvector + RLS | Qdrant + SQL store |
 | Identity | demo roles / HS256 seam | RS256 JWT, verified per request |
 | Source sync | static corpus | Google Drive delta + webhook, permission revocation |
-| Tests | leak evals, mutants, isolation oracle | 304 tests, 98.85% branch coverage (≥96% gate), blocking mutation gate |
+| Tests | leak evals, mutants, isolation oracle | 322 tests, 98.91% branch coverage (≥96% gate), blocking mutation gate |
 | Shipping | Render one-click | Docker image (non-root), container smoke CI |
 
 The platform has its own CI in [`.github/workflows/platform.yml`](.github/workflows/platform.yml).
-Its mutation gate is blocking: of 1,300 mutants, every survivor was either killed by a test
+Its mutation gate is blocking: of 1,486 mutants, every survivor was either killed by a test
 or recorded as a reviewed equivalent in [`platform/mutation_equivalents.json`](platform/mutation_equivalents.json),
 pinned by source and mutant hash, so any new survivor fails the build.
 

@@ -32,7 +32,7 @@ reproducible, or easier for a reviewer to verify?**
 # reference app (run from app/)
 python3 -m pytest -q                 # unit, HTTP, LLM-mock and ledger tests
 python3 run_evals.py                 # label gate + isolation gate: must report 0 leaks, 0 isolation diffs
-python3 run_evals.py --mutants       # every known-leaky retriever must be caught (gate recall 6/6)
+python3 run_evals.py --mutants       # every known-leaky retriever must be caught (gate recall 8/8)
 python3 eval_scale.py                # frozen 1,350-probe leak eval; refuses to run if the eval set changed
 DATABASE_URL=postgresql://... python3 -m pytest test_pgvector.py   # pgvector + RLS (needs Postgres)
 
@@ -57,8 +57,8 @@ python scripts/check_mutations.py mutants/mutmut-cicd-stats.json --mutants-dir m
    `validate_acl` (`platform/`). A bare string is never an ACL. Malformed or empty ACLs deny everyone.
 4. **Hierarchical ACLs narrow, never widen.** Permissions are authored per document → section →
    paragraph. A chunk is readable only if the caller passes **every** level (AND). Don't flatten
-   levels into one set, and never let any single level grant access on its own. This is being
-   implemented (`ROADMAP.md`); new code should follow it already.
+   levels into one set, and never let any single level grant access on its own. This is
+   implemented across all three backends; preserve the per-level predicates.
 5. **Identity is bound server-side.** The caller's principals come from the verified token or
    session. A model, a tool argument or a request body never chooses or widens them. Agents and
    tools inherit the caller's principals and nothing more.
@@ -74,7 +74,7 @@ python scripts/check_mutations.py mutants/mutmut-cicd-stats.json --mutants-dir m
 
 ## Gates that must stay green
 
-- **Leak gates:** `run_evals.py` (0 leaks, 0 isolation diffs), `run_evals.py --mutants` (6/6),
+- **Leak gates:** `run_evals.py` (0 leaks, 0 isolation diffs), `run_evals.py --mutants` (8/8),
   `eval_scale.py` (0/1,350), and `test_pgvector.py` on Postgres. A change that makes any of them
   pass by editing the gate, the probes or the frozen hash is a regression, not a fix.
 - **Docs ledgers (`app/test_ledgers.py`):** decision, threat and roadmap rows cite

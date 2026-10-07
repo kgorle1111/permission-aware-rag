@@ -7,7 +7,7 @@
 [![CI](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/ci.yml)
 [![platform](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/platform.yml/badge.svg)](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/platform.yml)
 ![leaks 0 of 1,350](https://img.shields.io/badge/leaks-0%20of%201%2C350-brightgreen)
-![coverage 98.85%](https://img.shields.io/badge/platform%20coverage-98.85%25-brightgreen)
+![coverage 98.91%](https://img.shields.io/badge/platform%20coverage-98.91%25-brightgreen)
 ![python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776ab)
 ![license Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)
 
@@ -68,7 +68,8 @@ So we built evidence that can fail:
 | Leak probes on a frozen, hashed 210-document corpus (in-memory search) | **0 of 1,350** |
 | The same probes against Postgres with row-level security | **0 of 1,350** |
 | Planted leak bugs caught by the original hand-written check | 1 of 6 |
-| Planted leak bugs caught with the new isolation check | **6 of 6** |
+| Original planted leak bugs caught with the isolation check | **6 of 6** |
+| Expanded gate, including OR-across-levels and flat-intersection faults | **8 of 8** |
 
 In plain numbers: **0/1,350 leaks (95% upper bound 0.28%)**, and the hand-labeled gate
 still holds at recall@4: 14/14 with zero leaks. The isolation check needs no labels. For
@@ -99,7 +100,7 @@ flowchart LR
 |---|---|
 | 🔒 **Permission first, not filter after** | Forbidden text never enters ranking, so it can't shape the answer, the order or the citations. |
 | 🐘 **The database enforces it too** | In the Postgres backend, row-level security returns only permitted rows, even if a query forgets its filter. |
-| 🧪 **Tests that are proven to fail** | Planted leak bugs, a 1,300-mutant mutation gate, and docs that break the build when they drift from the code. |
+| 🧪 **Tests that are proven to fail** | Planted leak bugs, a 1,486-mutant mutation gate, and docs that break the build when they drift from the code. |
 | 🧾 **Receipts on every answer** | Latency and estimated cost per answer (about $0.002 on Claude Haiku 4.5), plus an audit log that detects edits. |
 
 ## 🧑‍💼 What this shows, if you're hiring
@@ -113,8 +114,8 @@ flowchart LR
 
 - **Two layers.** A reference core in Python stdlib only (~600 readable lines, no dependencies), plus [`platform/`](platform/README.md), the same design as a deployable service on FastAPI, Qdrant, SQLAlchemy and PyJWT.
 - **Two search backends.** BM25 in memory, or pgvector on Postgres with row-level security. Both run the leak gates in CI.
-- **304 platform tests at 98.85% branch coverage**, with a 96% floor enforced in CI.
-- **A blocking mutation gate.** 1,300 mutants: every survivor is either killed by a test or pinned as a reviewed equivalent with a written reason.
+- **322 platform tests at 98.91% branch coverage**, with a 96% floor enforced in CI.
+- **A blocking mutation gate.** 1,486 mutants: every survivor is either killed by a test or pinned as a reviewed equivalent with a written reason.
 - **Docs that can't drift.** Tests fail if a [decision](docs/DECISIONS.md), threat row or roadmap entry cites a test that no longer exists, or if this README's numbers stop matching a fresh eval run.
 - **LLM hygiene:** one structured, grounded call; prompt caching on the static system prompt; graceful fallback to retrieval-only when the model is unavailable.
 
@@ -157,3 +158,5 @@ Everything else: [ROADMAP.md](ROADMAP.md).
 ## 📄 License
 
 Apache License 2.0. See [LICENSE](LICENSE).
+
+Latest hierarchy and scale-prerequisite verification: [2026-10-07 results](evals/results/2026-10-07-hierarchy/table.md). The 100k-document performance benchmark remains open.

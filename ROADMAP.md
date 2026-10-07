@@ -16,6 +16,8 @@ links to a test, a committed result, or a ledger row:
 | 2026-10-05 | Production service consolidated into [`platform/`](platform/README.md) with its history: FastAPI, Qdrant, RS256 JWT, Google Drive permission sync | `.github/workflows/platform.yml` |
 | 2026-10-05 | Platform mutation gate made blocking: 61 surviving mutants killed by new tests, 15 pinned as reviewed equivalents | `platform/mutation_equivalents.json` |
 | 2026-10-07 | Independent document/section/paragraph ACL levels in memory, PostgreSQL RLS and Qdrant; isolation oracle catches both hierarchy mutants (8/8 total) | `app/test_hierarchy.py`, `app/test_pgvector.py`, `platform/tests/test_hierarchy.py` |
+| 2026-10-07 | Qdrant keyword indexes, document-filtered batched ACL updates, on-disk payload/vectors and int8 configuration; durable retry barriers | `platform/tests/test_scale_acl.py`, `platform/tests/test_hardening.py`, `evals/verify_qdrant_storage.py` |
+| 2026-10-07 | AWS Lightsail HTTPS portfolio demo, with synthetic documents and retrieval-only roles | [deployment guide](deploy/aws/README.md) |
 
 ### First adversarial security review (2026-07-20)
 
@@ -23,7 +25,7 @@ links to a test, a committed result, or a ledger row:
 |---|---|---|---|
 | S1 | High | IDF side channel: hidden docs shifted visible BM25 scores | Fixed 2026-07-28: statistics over the caller-visible set; score-identity regression test |
 | S2 | High | `/audit` let any role read every user's queries | Fixed 2026-07-28: scoped to the caller; full view only for the audit group |
-| S3 | Medium | Prompt injection: document text spliced into the prompt with no boundary | Fixed 2026-07-28: `<document>` data boundary + payload test. Closing-tag escaping is still open (Next, item 1) |
+| S3 | Medium | Prompt injection: document text spliced into the prompt with no boundary | Fixed 2026-07-28: `<document>` data boundary + payload test. Closing-tag escaping fixed 2026-10-07 (`app/test_security.py`) |
 | S4 | Low | Demo page rendered document text via `innerHTML` | Fixed 2026-07-28: escaped, plus CSP/nosniff headers |
 | S5 | Low | `/ask` was an unthrottled paid API call | Fixed 2026-07-28: per-IP rate limit |
 
@@ -34,7 +36,7 @@ These were written before the scaled eval ran. Negative results get published th
 | Id | Claim | Not shown if | Status |
 |---|---|---|---|
 | E1 | Pre-filtering has zero leaks at scale | any leak, or upper bound > 0.5% at n ≥ 1,000 | **shown**: 0/1,350, UB 0.28% |
-| E2 | The leak gate detects realistic leak bugs | fewer than 100% of the known-leaky retrievers caught | **shown**: 6/6 |
+| E2 | The leak gate detects realistic leak bugs | fewer than 100% of the known-leaky retrievers caught | **shown**: 8/8 after hierarchy probes |
 | E3 | pgvector + RLS matches in-memory on leaks | any leak on either backend | **shown**: 0/1,350 on both |
 | E4 | Recall is useful, not just safe | recall@4 lower bound < 0.70 on the frozen set | shown, but weak: probes are lexical |
 
@@ -44,7 +46,7 @@ These were written before the scaled eval ran. Negative results get published th
 2. **Permissions that scale to 100,000 documents:** see the next section.
 3. **Real-world eval:** leak count, recall and citation validity on documents this project didn't write (an adversarial legal corpus first, then a public set with realistic permission groups), with confidence intervals.
 4. **A leak-test kit you can point at your own retriever:** the planted leak bugs, the isolation check and the scaled eval behind one small interface.
-5. **A live demo link.**
+5. **Write-up and interview walkthrough**, using the [live demo](https://permission-rag-demo.b9hphyfz7skjm.us-east-2.cs.amazonlightsail.com/).
 
 ## Permissions that scale to 100,000 documents
 
@@ -58,7 +60,7 @@ These were written before the scaled eval ran. Negative results get published th
 - **Prerequisite fixes:** payload indexes on the permission fields, batched permission updates, and vector quantization.
 - **Hybrid search must never use collection-wide IDF.** It would reopen the score side channel that S1 closed.
 
-These are design targets until a 100k-document benchmark measures them. The goals: retrieval p95 under 100 ms at every selectivity level, a 10k-document folder revocation in under 60 seconds, and zero leaks. Misses get published.
+Hierarchy and the Qdrant configuration fixes are implemented. The remote-server diagnostic verifies storage settings, engine filtering and bulk revocation; it does not measure resident memory or large-scale latency. Permission reconciliation still scans the SQL mirror. Performance goals remain design targets until a 100k-document benchmark measures them. The goals: retrieval p95 under 100 ms at every selectivity level, a 10k-document folder revocation in under 60 seconds, and zero leaks. Misses get published.
 
 ## Scoped, not scheduled
 
