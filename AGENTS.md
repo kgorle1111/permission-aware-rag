@@ -190,4 +190,5 @@ Constraints for each level:
 - MUST still execute the user's choice if they disagree with a suggestion
 
 Selected project Region: us-east-2. CLI profile: permission-rag-demo.
+User-selected help_level: HIGH (2026-10-07).
 <!-- END AWS Agent Toolkit rules -->

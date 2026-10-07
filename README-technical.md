@@ -229,8 +229,8 @@ The reference JSONL writer supports one process per audit file.
 
 ### AWS showcase deployment
 
-The reference workbench has an [AWS App Runner deployment](deploy/aws/README.md)
-with a private ECR image, managed HTTPS, one instance maximum and a local smoke
-check. It uses synthetic documents and retrieval-only answers. The templates and
-container are prepared locally; live AWS deployment requires account setup and
-verification.
+The reference workbench has an [AWS Lightsail deployment](deploy/aws/README.md)
+with private image uploads, managed HTTPS, one Nano node and a local smoke check
+under its resource limits. It uses synthetic documents and retrieval-only answers.
+The deployment script is prepared locally; a live URL is added only after AWS
+verification. Audit history is ephemeral across container replacement.
