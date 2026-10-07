@@ -27,6 +27,9 @@ for tool in aws docker python3 git lightsailctl; do
   command -v "$tool" >/dev/null || { echo "Missing prerequisite: $tool" >&2; exit 1; }
 done
 [[ -z "$(git status --porcelain)" ]] || { echo 'Deploy requires a clean committed checkout.' >&2; exit 1; }
+# lightsailctl uses the Docker API directly and does not resolve CLI contexts.
+# Preserve an explicit host; otherwise pass the active context endpoint.
+export DOCKER_HOST="${DOCKER_HOST:-$(docker context inspect --format '{{.Endpoints.docker.Host}}')}"
 aws_cmd=(aws --region "$region" --profile "$profile")
 "${aws_cmd[@]}" sts get-caller-identity --query Account --output text
 work="$(mktemp -d)"; container=""
