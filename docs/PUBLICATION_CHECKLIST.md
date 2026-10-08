@@ -1,6 +1,6 @@
 # Publication and rehearsal preparation
 
-**Status: drafts only.** The article has not been published outside this
+**Status: private draft; do not publish.** The article has not been published outside this
 repository; no timed human rehearsal, recording, or unassisted external
 integration is claimed. This checklist prepares those actions without posting,
 sending invitations, or changing the live demo.
@@ -11,11 +11,11 @@ sending invitations, or changing the live demo.
 |---|---|
 | Title | A permission-aware retriever is only as convincing as its leak tests |
 | Subtitle | A leak gate missed five of six planted faults; isolation checks and measured revocation exposed what to fix next. |
-| Source | [PORTFOLIO_WRITEUP.md](PORTFOLIO_WRITEUP.md) |
+| Private source | `marketing/posts/permission-aware-rag-article.md` (gitignored; local only) |
 | Audience | Hiring managers, AI engineering interviewers, engineers evaluating their own retrievers |
 | Summary | Permission filtering must protect visible scores as well as returned IDs. This reference project publishes test misses, hierarchy checks, durable revocation recovery, and a reproducible adapter kit with explicit limits. |
 | Suggested tags | RAG, retrieval, access control, security testing, reproducible engineering |
-| Publication venue, author/byline, date | Pending human selection; use the maintainer's chosen attribution |
+| Publication venue, author/byline, date | Publication paused by maintainer; obtain a new explicit publishing instruction before posting |
 | Canonical article URL | Pending publication; record the actual public URL after verification |
 | Evidence revision | Record exact published Git commit; current work is stacked in open PRs, not merged |
 

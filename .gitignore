@@ -13,3 +13,6 @@ HANDOFF.md
 WORK_LOG.md
 .planning-archive/
 docs/COMPETITOR_SCAN-*.md
+
+# Private marketing drafts and article previews; never publish automatically.
+/marketing/
