@@ -1,0 +1,22 @@
+{
+  "probes": 2088,
+  "visibility_failures": 0,
+  "isolation_failures": 0,
+  "positive_controls": 197,
+  "recall_misses": 0,
+  "errors": 0,
+  "invalid_acl_controls": 0,
+  "invalid_acl_failures": 0,
+  "revocation_controls": 1,
+  "revocation_failures": 0,
+  "examples": [],
+  "passed": true,
+  "fixture": "national-archives-constitution-fictional-acls-v1",
+  "fixture_sha256": "e4f60a85e8239471d82bb3212e503ac817a175f137f3a2ed9ddebc6e62f3cec6",
+  "chunks": 87,
+  "principal_scopes": 8,
+  "python": "3.12.4",
+  "adapter": "evals/kit/example_adapter.py",
+  "implementation_sha256": "6031cc22681ae58445f35b291627b68a61d3e6f15cc767338e6c958cef743b59",
+  "source_commit": "f8a01244506087035a3a79dd23d0382b989d1eda"
+}

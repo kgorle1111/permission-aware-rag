@@ -1,0 +1,319 @@
+{
+  "name": "deterministic-acl-controls-v1",
+  "principals": [
+    {
+      "id": "bob",
+      "groups": [
+        "hr",
+        "finance",
+        "exec"
+      ]
+    },
+    {
+      "id": "bob",
+      "groups": [
+        "hr"
+      ]
+    },
+    {
+      "id": "bob",
+      "groups": []
+    },
+    {
+      "id": "alice",
+      "groups": [
+        "hr"
+      ]
+    },
+    {
+      "id": "charlie",
+      "groups": [
+        "hr-admin"
+      ]
+    },
+    {
+      "id": "dana",
+      "groups": []
+    },
+    {
+      "id": "banker",
+      "groups": [
+        "banking*"
+      ]
+    },
+    {
+      "id": "guest",
+      "groups": []
+    }
+  ],
+  "chunks": [
+    {
+      "id": "constitution-p000",
+      "text": "Salary policy public handbook general procedure.",
+      "acl_doc": [
+        "*"
+      ],
+      "acl_section": [
+        "*"
+      ],
+      "acl_para": [
+        "*"
+      ]
+    },
+    {
+      "id": "constitution-p001",
+      "text": "Salary policy ordinary HR compensation schedule.",
+      "acl_doc": [
+        "group:hr"
+      ],
+      "acl_section": [
+        "*"
+      ],
+      "acl_para": [
+        "*"
+      ]
+    },
+    {
+      "id": "constitution-p002",
+      "text": "Salary policy Bob section specific remuneration rule.",
+      "acl_doc": [
+        "group:hr"
+      ],
+      "acl_section": [
+        "user:bob"
+      ],
+      "acl_para": [
+        "*"
+      ]
+    },
+    {
+      "id": "constitution-p003",
+      "text": "Salary policy private executive forecast bonus guidance.",
+      "acl_doc": [
+        "*"
+      ],
+      "acl_section": [
+        "*"
+      ],
+      "acl_para": [
+        "group:exec"
+      ]
+    },
+    {
+      "id": "constitution-p004",
+      "text": "Salary policy HR administrator override confidential codes.",
+      "acl_doc": [
+        "group:hr-admin"
+      ],
+      "acl_section": [
+        "*"
+      ],
+      "acl_para": [
+        "*"
+      ]
+    },
+    {
+      "id": "constitution-p005",
+      "text": "Salary policy banking star partner secret waiver.",
+      "acl_doc": [
+        "group:banking*"
+      ],
+      "acl_section": [
+        "*"
+      ],
+      "acl_para": [
+        "*"
+      ]
+    },
+    {
+      "id": "constitution-p006",
+      "text": "Salary policy Dana private assignment payroll record.",
+      "acl_doc": [
+        "user:dana"
+      ],
+      "acl_section": [
+        "*"
+      ],
+      "acl_para": [
+        "*"
+      ]
+    },
+    {
+      "id": "constitution-p007",
+      "text": "Salary policy Bob finance restricted paragraph projection.",
+      "acl_doc": [
+        "group:hr"
+      ],
+      "acl_section": [
+        "user:bob"
+      ],
+      "acl_para": [
+        "group:finance"
+      ]
+    }
+  ],
+  "ks": [
+    1,
+    3,
+    20
+  ],
+  "revocations": [
+    {
+      "id": "constitution-p001",
+      "principal": {
+        "id": "bob",
+        "groups": [
+          "hr"
+        ]
+      },
+      "levels": {
+        "acl_doc": [
+          "user:revoked-owner"
+        ]
+      }
+    }
+  ],
+  "invalid_chunks": [
+    {
+      "id": "invalid-acl_doc-0",
+      "text": "Salary policy invalid restricted payroll",
+      "acl_doc": [],
+      "acl_section": [
+        "*"
+      ],
+      "acl_para": [
+        "*"
+      ]
+    },
+    {
+      "id": "invalid-acl_doc-1",
+      "text": "Salary policy invalid restricted payroll",
+      "acl_doc": "group:hr",
+      "acl_section": [
+        "*"
+      ],
+      "acl_para": [
+        "*"
+      ]
+    },
+    {
+      "id": "invalid-acl_doc-2",
+      "text": "Salary policy invalid restricted payroll",
+      "acl_doc": [
+        "*",
+        "group:hr\n"
+      ],
+      "acl_section": [
+        "*"
+      ],
+      "acl_para": [
+        "*"
+      ]
+    },
+    {
+      "id": "invalid-acl_doc-3",
+      "text": "Salary policy invalid restricted payroll",
+      "acl_doc": null,
+      "acl_section": [
+        "*"
+      ],
+      "acl_para": [
+        "*"
+      ]
+    },
+    {
+      "id": "invalid-acl_section-0",
+      "text": "Salary policy invalid restricted payroll",
+      "acl_doc": [
+        "*"
+      ],
+      "acl_section": [],
+      "acl_para": [
+        "*"
+      ]
+    },
+    {
+      "id": "invalid-acl_section-1",
+      "text": "Salary policy invalid restricted payroll",
+      "acl_doc": [
+        "*"
+      ],
+      "acl_section": "group:hr",
+      "acl_para": [
+        "*"
+      ]
+    },
+    {
+      "id": "invalid-acl_section-2",
+      "text": "Salary policy invalid restricted payroll",
+      "acl_doc": [
+        "*"
+      ],
+      "acl_section": [
+        "*",
+        "group:hr\n"
+      ],
+      "acl_para": [
+        "*"
+      ]
+    },
+    {
+      "id": "invalid-acl_section-3",
+      "text": "Salary policy invalid restricted payroll",
+      "acl_doc": [
+        "*"
+      ],
+      "acl_section": null,
+      "acl_para": [
+        "*"
+      ]
+    },
+    {
+      "id": "invalid-acl_para-0",
+      "text": "Salary policy invalid restricted payroll",
+      "acl_doc": [
+        "*"
+      ],
+      "acl_section": [
+        "*"
+      ],
+      "acl_para": []
+    },
+    {
+      "id": "invalid-acl_para-1",
+      "text": "Salary policy invalid restricted payroll",
+      "acl_doc": [
+        "*"
+      ],
+      "acl_section": [
+        "*"
+      ],
+      "acl_para": "group:hr"
+    },
+    {
+      "id": "invalid-acl_para-2",
+      "text": "Salary policy invalid restricted payroll",
+      "acl_doc": [
+        "*"
+      ],
+      "acl_section": [
+        "*"
+      ],
+      "acl_para": [
+        "*",
+        "group:hr\n"
+      ]
+    },
+    {
+      "id": "invalid-acl_para-3",
+      "text": "Salary policy invalid restricted payroll",
+      "acl_doc": [
+        "*"
+      ],
+      "acl_section": [
+        "*"
+      ],
+      "acl_para": null
+    }
+  ]
+}
