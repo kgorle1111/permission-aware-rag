@@ -61,7 +61,7 @@ combined gate now catches eight of eight. The frozen document-ID leak evaluation
 caught four of the original six, so I kept both checks and published the misses.”
 
 Explain the distinction between planted retrieval faults and the service's
-separate 1,486-mutant campaign.
+separate mutation campaign: 1,646 of 1,661 mutants killed, with 15 reviewed equivalents.
 
 ## 2:20–3:10 — Explain hierarchy with one example
 
@@ -84,21 +84,28 @@ are regression cases, not a population-wide confidence interval.
 
 **Say:** “The service keeps a durable permission barrier before updating SQL and
 Qdrant. Failure leaves queries blocked until reconciliation succeeds; interrupted
-deletion requires reingestion. Its suite has 322 tests and 98.91% branch-aware
-coverage. Mutation testing adds evidence beyond coverage: 1,471 of 1,486 mutants
-were killed, and 15 were reviewed as behaviorally equivalent and hash-pinned.
-They remain survivors in the score; new unexplained survivors fail CI.”
+deletion requires reingestion. The current local service suite has 358 passing
+tests at 98.97% branch-aware coverage. The earlier hierarchy checkpoint had 322 tests and 98.91% branch-aware
+coverage. Mutation testing adds evidence beyond coverage: the fresh serial campaign killed
+1,646 of 1,661 mutants, and 15 were reviewed as behaviorally equivalent and hash-pinned.
+They remain survivors in that score; new unexplained survivors fail CI. The strict validator found no unexplained survivors or incomplete outcomes.”
 
-**Show the scale gap:** “The streamed benchmark loaded 100,000 documents and
+**Show the baseline scale gap:** “The streamed benchmark loaded 100,000 documents and
 1.5 million chunks into real Qdrant over HTTP. Search p95 was 4.15 to 8.00 ms
 across the measured visibility buckets. But one document's actual `sync_once`
-permission update took 102.29 seconds: the SQL mirror scan and replay of all
-grants dominate. The harness uses SQLite and streamed ingestion, so I do not
+permission update took 102.29 seconds in the baseline implementation: the SQL
+mirror scan and replay of all grants dominated. The harness uses SQLite and streamed ingestion, so I do not
 claim production ingest throughput or complete API latency.”
 
-The folder requested 10,000 revocations (9,999 newly changed, one already
+The baseline folder update requested 10,000 revocations (9,999 newly changed, one already
 revoked), took 104.92 seconds, and missed its 60-second target. Show the
 [scale results](../evals/results/2026-10-08-scale/table.md).
+The optimized implementation now journals affected documents, preserves unfinished
+intent across changed source feeds, and scopes row materialization and vector
+writes to those documents. Global SQL integrity probes remain. The same-corpus remeasurement took
+0.63 seconds for one document and 13.31 seconds for the folder, with zero
+remaining grants. Show the [optimized results](../evals/results/2026-10-08-sync-optimized/table.md);
+these are local synthetic measurements, not production guarantees.
 Do not turn configured int8 quantization into unmeasured memory or ANN-recall savings.
 
 ## 4:05–5:00 — Bound the result and invite reproduction
@@ -114,8 +121,9 @@ session-principal forgery via arbitrary SQL and externally anchored audit
 truncation remain explicit gaps. The public-text kit adds 2,088 probes over 87 National Archives paragraphs
 with fictional ACLs: zero visibility and isolation failures, and 197 of 197
 required exact-content hits. The independent example adapter passed too, but no unfamiliar
-engineer has integrated it unassisted. The measured scale result still exposes a
-reconciliation bottleneck.”
+engineer has integrated it unassisted. The baseline scale result motivated the
+implemented reconciliation journal; the folder remeasurement met the local
+target at 13.31 seconds.”
 
 Close with: “The part I'd like you to inspect is the evidence chain: a precise
 boundary, a test that initially missed bugs, faults that now make it fail, and
@@ -124,7 +132,7 @@ commands you can rerun.”
 ## Rehearsal checklist
 
 - Time one complete run; record actual duration and trim repetition to five minutes.
-- Explain **one of six**, **eight of eight**, and **1,471 of 1,486** without mixing
+- Explain **one of six**, **eight of eight**, and **1,646 of 1,661** without mixing
   their different denominators or purposes.
 - Keep the pre-hierarchy live-demo distinction and synthetic-data caveat audible.
 - Keep benchmark HTTP-search timings separate from full application reconciliation.

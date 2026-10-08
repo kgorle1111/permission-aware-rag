@@ -65,7 +65,7 @@ establishes functional behavior. It does not establish memory savings or ANN
 recall. The subsequent scale run measured a different limitation: the remote
 search path was fast while end-to-end permission reconciliation was slow.
 
-## The scale run exposed a revocation bottleneck
+## The baseline scale run exposed a revocation bottleneck
 
 A streamed benchmark loaded **100,000 documents and 1.5 million chunks** into a
 real Qdrant 1.18.0 server accessed over HTTP, with 4 CPU cores and a 5,500 MiB
@@ -75,7 +75,7 @@ per visibility bucket was **4.15 ms at 1%, 4.45 ms at 10%, and 8.00 ms at 60%**.
 Those timings measure the remote filtered search, not the complete authenticated
 API, generation, or an isolation proof under ANN ranking.
 
-The actual one-document permission update through `sync_once` took **102.29
+In the baseline implementation, the actual one-document permission update through `sync_once` took **102.29
 seconds**. Grouped vector writes did not make application revocation a single
 round trip: reconciliation still scanned the full SQL mirror and replayed all
 document grants. The 10,000-document folder update took **104.92 seconds**, missing its
@@ -87,15 +87,34 @@ establish production ingestion throughput, compressed resident-memory savings,
 or ANN recall. [Scale method and results](../evals/results/2026-10-08-scale/table.md) ·
 [Raw report](../evals/results/2026-10-08-scale/report.json)
 
+The subsequent implementation persists a journal of affected documents before
+remote writes, reconciles only those documents, and carries unfinished intent
+into a retry even when the next source feed changes. Section and paragraph
+restrictions remain intact. Fresh-instance regressions check scoped SQL row
+materialization, actual vector write counts, and retry after a remote write whose
+acknowledgement was lost. Global SQL integrity probes remain; this does not
+eliminate every full-mirror SQL scan. The same synthetic corpus and server limits measured **0.63 seconds** for one
+document and **13.31 seconds** for the folder, meeting the local folder target.
+Both left zero granted points. Query p95 was 2.13/2.25/58.88 ms; the higher
+60% bucket cautions against claiming a query speedup from these single runs.
+[Optimized results and limits](../evals/results/2026-10-08-sync-optimized/table.md) ·
+[Recovery protocol](SYNC_RECONCILIATION.md)
+
 ## Test the tests, then keep the limits beside the numbers
 
-The service's full mutation campaign generated **1,486 mutants**. Tests killed
+The service's earlier full mutation campaign generated **1,486 mutants**. Tests killed
 **1,471**; the remaining **15** were individually reviewed as equivalent and
 pinned to source and mutant hashes. They remain survivors in the reported score.
 Eight regression tests killed 27 meaningful survivors, covering migration
 reflection, remote index arguments, batching, input ambiguity and retry behavior.
 No unchecked mutants, timeouts or suspicious outcomes remained when the strict
 validator passed.
+
+The fresh serial journal campaign killed **1,646 of 1,661 mutants**; the
+remaining **15** are exact reviewed equivalents. Thirteen new regressions killed
+21 actionable survivors. The strict hash-pinned validator found no unresolved
+survivors, timeouts or suspicious outcomes. Parallel local mutation results were
+excluded after shared test fixtures caused reproducible false kills.
 
 The frozen synthetic evaluation uses 210 documents and the unchanged hash
 `db6b5dcb51a5`. Both reference backends produced **0/1,350 forbidden-document
@@ -113,6 +132,10 @@ floor, not proof of security. On review of
 `6ea35f04c32c2e802b2d3fbce497fee852f12514`, reference, pgvector, both Python
 coverage jobs, container smoke and mutation CI had all succeeded. The PR was
 open; passing checks do not mean it was merged.
+
+The current local service checkpoint has **358 passing tests at 98.97% combined
+branch-aware coverage**, including the journal regressions. The PR revision above
+remains dated CI evidence; local results do not establish new PR CI success.
 
 ## Try the evidence
 
@@ -170,8 +193,9 @@ unexecuted. No third-party competitor package or model was run.
 
 ## Remaining evidence and known gaps
 
-The scale and external-text artifacts above are measured, while fixing the
-reconciliation bottleneck, full runner integration and an unassisted external
+The baseline scale and external-text artifacts above are measured. Targeted
+journal reconciliation is implemented, remeasured and validated by the fresh
+serial mutation campaign. Full runner integration and an unassisted external
 adapter run remain open. The missing historical
 296-chunk legal corpus has not been recovered or evaluated. An unassisted run by
 an external engineer is still a target, not a completed result.

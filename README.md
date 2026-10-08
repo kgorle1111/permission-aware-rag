@@ -7,7 +7,7 @@
 [![CI](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/ci.yml)
 [![platform](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/platform.yml/badge.svg)](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/platform.yml)
 ![leaks 0 of 1,350](https://img.shields.io/badge/leaks-0%20of%201%2C350-brightgreen)
-![coverage 98.91%](https://img.shields.io/badge/platform%20coverage-98.91%25-brightgreen)
+![coverage 98.97%](https://img.shields.io/badge/platform%20coverage-98.97%25-brightgreen)
 ![python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776ab)
 ![license Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)
 
@@ -100,7 +100,7 @@ flowchart LR
 |---|---|
 | 🔒 **Permission first, not filter after** | Forbidden text never enters ranking, so it can't shape the answer, the order or the citations. |
 | 🐘 **The database enforces it too** | In the Postgres backend, row-level security returns only permitted rows, even if a query forgets its filter. |
-| 🧪 **Tests that are proven to fail** | Planted leak bugs, a 1,486-mutant mutation gate, and docs that break the build when they drift from the code. |
+| 🧪 **Tests that are proven to fail** | Planted leak bugs, a 1,661-mutant mutation gate, and docs that break the build when they drift from the code. |
 | 🧾 **Receipts on every answer** | Latency and estimated cost per answer (about $0.002 on Claude Haiku 4.5), plus an audit log that detects edits. |
 
 ## 🧑‍💼 What this shows, if you're hiring
@@ -114,8 +114,8 @@ flowchart LR
 
 - **Two layers.** A reference core in Python stdlib only (~600 readable lines, no dependencies), plus [`platform/`](platform/README.md), the same design as a deployable service on FastAPI, Qdrant, SQLAlchemy and PyJWT.
 - **Two search backends.** BM25 in memory, or pgvector on Postgres with row-level security. Both run the leak gates in CI.
-- **322 platform tests at 98.91% branch coverage**, with a 96% floor enforced in CI.
-- **A blocking mutation gate.** 1,486 mutants: every survivor is either killed by a test or pinned as a reviewed equivalent with a written reason.
+- **358 platform tests at 98.97% branch coverage**, with a 96% floor enforced in CI.
+- **A blocking mutation gate.** 1,661 mutants: every survivor is either killed by a test or pinned as a reviewed equivalent with a written reason.
 - **Docs that can't drift.** Tests fail if a [decision](docs/DECISIONS.md), threat row or roadmap entry cites a test that no longer exists, or if this README's numbers stop matching a fresh eval run.
 - **LLM hygiene:** one structured, grounded call; prompt caching on the static system prompt; graceful fallback to retrieval-only when the model is unavailable.
 
@@ -161,4 +161,4 @@ Apache License 2.0. See [LICENSE](LICENSE).
 
 Latest hierarchy and scale-prerequisite verification: [2026-10-07 results](evals/results/2026-10-07-hierarchy/table.md). The first scale measurement is linked below; broader performance targets remain open.
 
-New evidence: [100k documents / 1.5M chunks](evals/results/2026-10-08-scale/table.md) — local filtered search p95 4.15–8.00 ms; folder reconciliation **104.92 s**, missing the 60 s goal. [Public-text fixture](evals/results/2026-10-08-public-kit/table.md) uses fictional ACLs and reports 0/2,088 isolation/visibility failures. Try the [retriever adapter kit](evals/kit/README.md), read the [write-up](docs/PORTFOLIO_WRITEUP.md), or follow the [interview walkthrough](docs/WALKTHROUGH.md).
+New evidence: [100k documents / 1.5M chunks](evals/results/2026-10-08-scale/table.md) — local filtered search p95 4.15–8.00 ms; baseline folder reconciliation **104.92 s**, missing the 60 s goal. [Durable reconciliation](evals/results/2026-10-08-sync-optimized/table.md) reduced it to **13.31 s** and single-document revocation to **0.63 s**; global SQL integrity checks remain. [Public-text fixture](evals/results/2026-10-08-public-kit/table.md) uses fictional ACLs and reports 0/2,088 isolation/visibility failures. Try the [retriever adapter kit](evals/kit/README.md), read the [write-up](docs/PORTFOLIO_WRITEUP.md), or follow the [interview walkthrough](docs/WALKTHROUGH.md).

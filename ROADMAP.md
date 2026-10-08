@@ -57,7 +57,7 @@ These were written before the scaled eval ran. Negative results get published th
 ## Next
 
 1. **Review PR #6**, whose CI checks passed, and the subsequent evidence batch. The live demo still runs the prior stable image.
-2. **Measured reconciliation bottleneck:** track pending document changes durably to avoid full SQL scans and all-document replay while preserving retry and deletion barriers. Remeasure against the missed folder target; this fix is not implemented yet.
+2. **Review the reconciliation improvement:** durable document intents reduce affected-row hydration and vector replay while preserving retry and deletion barriers. [Remeasurement](evals/results/2026-10-08-sync-optimized/table.md): single-document 0.63 s, folder 13.31 s; necessary global SQL integrity scans remain. Local gates: 358 tests, 98.97% branch coverage, 1,646/1,661 mutants killed and 15 reviewed equivalents.
 3. **Broader real-world eval:** realistic domain input and independent questions/permission provenance, beyond the small public-text fixture.
 4. **External integration:** have an engineer run the kit unassisted against a separate retriever (L4).
 5. **Publish the write-up and rehearse the interview walkthrough.**
