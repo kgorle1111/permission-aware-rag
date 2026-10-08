@@ -1,0 +1,24 @@
+{
+  "description": "subprocess-failure",
+  "prompts": [
+    "Run fixed permission fixture"
+  ],
+  "providers": [
+    {
+      "id": "file://../../kit/promptfoo-provider.cjs",
+      "config": {
+        "fixture": "evals/results/2026-10-08-promptfoo/deliberately-missing-fixture.json"
+      }
+    }
+  ],
+  "tests": [
+    {
+      "assert": [
+        {
+          "type": "javascript",
+          "value": "output.passed === true"
+        }
+      ]
+    }
+  ]
+}

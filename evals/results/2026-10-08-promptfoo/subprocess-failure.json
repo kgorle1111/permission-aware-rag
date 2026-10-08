@@ -1,0 +1,212 @@
+{
+  "evalId": "eval-lem-2026-10-08T19:41:49",
+  "results": {
+    "version": 3,
+    "timestamp": "2026-10-08T19:41:49.654Z",
+    "prompts": [
+      {
+        "id": "a4f97f3c5663518759b9629816ca7ece93fc3fdc27112d4bb180f7bd57708c08",
+        "raw": "Run fixed permission fixture",
+        "label": "Run fixed permission fixture",
+        "provider": "deterministic-retriever-leak-kit",
+        "metrics": {
+          "score": 0,
+          "testPassCount": 0,
+          "testFailCount": 0,
+          "testErrorCount": 1,
+          "assertPassCount": 0,
+          "assertFailCount": 0,
+          "totalLatencyMs": 56,
+          "tokenUsage": {
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "total": 0,
+            "numRequests": 1,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            },
+            "assertions": {
+              "total": 0,
+              "prompt": 0,
+              "completion": 0,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0,
+                "cacheReadInputTokens": 0,
+                "cacheCreationInputTokens": 0
+              }
+            }
+          },
+          "namedScores": {},
+          "namedScoresCount": {},
+          "namedScoreWeights": {},
+          "cost": 0
+        }
+      }
+    ],
+    "results": [
+      {
+        "cost": 0,
+        "error": "invalid kit JSON: Unexpected end of JSON input",
+        "gradingResult": null,
+        "id": "5b51925f-0dca-4312-ac10-c61ef0cd6163",
+        "latencyMs": 56,
+        "namedScores": {},
+        "prompt": {
+          "raw": "Run fixed permission fixture",
+          "label": "Run fixed permission fixture",
+          "config": {}
+        },
+        "promptId": "a4f97f3c5663518759b9629816ca7ece93fc3fdc27112d4bb180f7bd57708c08",
+        "promptIdx": 0,
+        "provider": {
+          "id": "deterministic-retriever-leak-kit",
+          "label": ""
+        },
+        "response": {
+          "error": "invalid kit JSON: Unexpected end of JSON input"
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "assert": [
+            {
+              "type": "javascript",
+              "value": "output.passed === true"
+            }
+          ],
+          "vars": {},
+          "options": {},
+          "metadata": {}
+        },
+        "testIdx": 0,
+        "tokenUsage": {
+          "prompt": 0,
+          "completion": 0,
+          "cached": 0,
+          "total": 0,
+          "numRequests": 1,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "assertions": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            }
+          }
+        },
+        "vars": {},
+        "metadata": {
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 2
+      }
+    ],
+    "stats": {
+      "successes": 0,
+      "failures": 0,
+      "errors": 1,
+      "tokenUsage": {
+        "prompt": 0,
+        "completion": 0,
+        "cached": 0,
+        "total": 0,
+        "numRequests": 1,
+        "completionDetails": {
+          "reasoning": 0,
+          "acceptedPrediction": 0,
+          "rejectedPrediction": 0,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "assertions": {
+          "total": 0,
+          "prompt": 0,
+          "completion": 0,
+          "cached": 0,
+          "numRequests": 0,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          }
+        }
+      },
+      "durationMs": 62,
+      "evaluationDurationMs": 62
+    }
+  },
+  "config": {
+    "tags": {},
+    "description": "subprocess-failure",
+    "prompts": [
+      "Run fixed permission fixture"
+    ],
+    "providers": [
+      {
+        "id": "file://<REPO_ROOT>/evals/kit/promptfoo-provider.cjs",
+        "config": {
+          "fixture": "<TOOLING_DIR>/does-not-exist.json"
+        }
+      }
+    ],
+    "tests": [
+      {
+        "assert": [
+          {
+            "type": "javascript",
+            "value": "output.passed === true"
+          }
+        ]
+      }
+    ],
+    "env": {},
+    "sharing": false,
+    "outputPath": [
+      "<TOOLING_DIR>/subprocess-failure.json"
+    ],
+    "extensions": [],
+    "metadata": {},
+    "evaluateOptions": {},
+    "basePath": "<TOOLING_DIR>"
+  },
+  "shareableUrl": null,
+  "metadata": {
+    "promptfooVersion": "0.124.1",
+    "nodeVersion": "v26.3.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "exportedAt": "2026-10-08T19:41:49.730Z",
+    "evaluationCreatedAt": "2026-10-08T19:41:49.654Z"
+  },
+  "runtimeOptions": {
+    "eventSource": "cli",
+    "showProgressBar": false,
+    "repeat": 1,
+    "maxConcurrency": 4,
+    "cache": false
+  }
+}

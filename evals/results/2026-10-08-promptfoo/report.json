@@ -1,0 +1,371 @@
+{
+  "date": "2026-10-08",
+  "scope": "Actual local promptfoo CLI custom provider integration; no model calls, external reviewer or competitor comparison",
+  "node": "v26.3.0",
+  "npm": "11.16.0",
+  "promptfoo": "0.124.1",
+  "base_git_commit": "495d85489751eedd9aec65ccc50bdcba2177a309",
+  "package_provenance": {
+    "registry": "https://registry.npmjs.org/",
+    "installed_package_json_sha256": "1f88f2f383feeee5ea79b84070fa77ff722f5467819477088120f22e6fe3e1bd",
+    "npx_package_lock_sha256": "25a83fcdfbe048e4de2c635154ebcf3a4bc4be7bfad18493486e8ca60f20a96c",
+    "locked_promptfoo": {
+      "version": "0.124.1",
+      "resolved": "https://registry.npmjs.org/promptfoo/-/promptfoo-0.124.1.tgz",
+      "integrity": "sha512-Y6fq/WGTL7lPvDsirNSmmmcPLhURwRao03iv8fCoLbFq6H1eqg5VVTmXiap5Jl+fiRaQQZXYMHb2N1gQm1tGyQ==",
+      "license": "MIT",
+      "workspaces": [
+        "src/app",
+        "site"
+      ],
+      "dependencies": {
+        "@anthropic-ai/sdk": "0.128.0",
+        "@apidevtools/json-schema-ref-parser": "^16.0.3",
+        "@hono/node-server": "2.1.1",
+        "@inquirer/checkbox": "^5.1.0",
+        "@inquirer/confirm": "^6.0.8",
+        "@inquirer/core": "^12.0.0",
+        "@inquirer/editor": "^5.0.8",
+        "@inquirer/input": "^5.0.8",
+        "@inquirer/search": "^4.1.8",
+        "@inquirer/select": "^5.1.0",
+        "@libsql/client": "^0.18.0",
+        "@opentelemetry/api": "^1.9.0",
+        "@opentelemetry/core": "2.11.0",
+        "@opentelemetry/exporter-trace-otlp-http": "^0.222.0",
+        "@opentelemetry/resources": "^2.6.0",
+        "@opentelemetry/sdk-trace-node": "^2.6.0",
+        "@opentelemetry/semantic-conventions": "^1.40.0",
+        "acorn": "^8.18.0",
+        "ai": "^6.0.286",
+        "ajv": "^8.18.0",
+        "ajv-formats": "^3.0.1",
+        "async": "^3.2.6",
+        "binary-extensions": "^3.2.0",
+        "cache-manager": ">=7.2.8 <7.2.10",
+        "chalk": "^6.0.0",
+        "chokidar": "5.0.0",
+        "cli-progress": "^3.12.0",
+        "cli-table3": "^0.6.5",
+        "commander": "^15.0.0",
+        "compression": "^1.8.2",
+        "cors": "^2.8.6",
+        "csv-parse": "^7.0.3",
+        "csv-stringify": "^6.9.0",
+        "dedent": "^1.7.2",
+        "drizzle-orm": "^0.45.3",
+        "express": "^5.2.1",
+        "exsolve": "^1.0.8",
+        "fast-deep-equal": "^3.1.3",
+        "fast-safe-stringify": "^2.1.1",
+        "fast-xml-parser": "^5.7.1",
+        "fastest-levenshtein": "^1.0.16",
+        "gcp-metadata": "^9.0.2",
+        "glob": "^13.0.6",
+        "http-z": "^8.1.1",
+        "istextorbinary": "^9.5.0",
+        "js-rouge": "^3.2.0",
+        "js-yaml": "5.4.2",
+        "json5": "^2.2.3",
+        "keyv": "^5.6.0",
+        "keyv-file": "^5.3.3",
+        "lru-cache": "^11.5.3",
+        "mathjs": "^15.1.1",
+        "minimatch": "^10.2.4",
+        "nunjucks": "^3.2.4",
+        "openai": "^7.20.0",
+        "opener": "^1.5.2",
+        "ora": "^9.3.0",
+        "parse5": "^8.0.0",
+        "posthog-node": "~5.24.10",
+        "protobufjs": "^8.7.2",
+        "proxy-agent": "^8.0.0",
+        "proxy-from-env": "^2.1.0",
+        "python-shell": "^5.0.0",
+        "rfdc": "^1.4.1",
+        "saxes": "^6.0.0",
+        "semver": "^7.7.4",
+        "signal-exit": "4.1.0",
+        "simple-git": "^4.0.2",
+        "socket.io": "^4.8.4",
+        "socket.io-client": "^4.8.4",
+        "text-extensions": "^3.1.0",
+        "tsx": "^4.23.11",
+        "undici": ">=7.29.1 <8",
+        "winston": "^3.19.0",
+        "ws": "^8.21.3",
+        "zod": "^4.3.6"
+      },
+      "bin": {
+        "pf": "dist/src/entrypoint.js",
+        "promptfoo": "dist/src/entrypoint.js"
+      },
+      "engines": {
+        "node": ">=22.22.0"
+      },
+      "optionalDependencies": {
+        "@anthropic-ai/claude-agent-sdk": "0.3.283",
+        "@aws-sdk/client-bedrock-agent-runtime": "^3.1045.0",
+        "@aws-sdk/client-bedrock-runtime": "^3.1045.0",
+        "@aws-sdk/client-s3": "^3.1003.0",
+        "@aws-sdk/client-sagemaker-runtime": "^3.1045.0",
+        "@aws-sdk/credential-provider-sso": "^3.972.16",
+        "@aws/bedrock-token-generator": "^1.1.0",
+        "@azure/ai-projects": "^2.1.1",
+        "@azure/identity": "^4.13.3",
+        "@azure/msal-node": "^7.0.0",
+        "@azure/storage-blob": "^12.31.0",
+        "@fal-ai/client": "~1.10.1",
+        "@googleapis/sheets": "^18.0.1",
+        "@modelcontextprotocol/sdk": "^1.32.0",
+        "@modelcontextprotocol/server-filesystem": "2026.8.31",
+        "@openai/codex-sdk": "^0.156.1",
+        "@opencode-ai/sdk": "^1.18.32",
+        "@smithy/node-http-handler": "^4.4.14",
+        "google-auth-library": "^11.1.0",
+        "hono": "^4.13.9",
+        "jks-js": "^1.1.5",
+        "natural": "^8.1.1",
+        "node-sql-parser": "^5.4.0",
+        "pdf-parse": "^2.4.5",
+        "pem": "~1.14.8",
+        "read-excel-file": "^9.3.9",
+        "sharp": "^0.35.5"
+      },
+      "peerDependencies": {
+        "@huggingface/transformers": "*",
+        "@ibm-cloud/watsonx-ai": "*",
+        "@langfuse/client": "*",
+        "@openai/agents": "*",
+        "@openai/codex-security": "^0.2.0",
+        "@slack/web-api": "*",
+        "ibm-cloud-sdk-core": "*",
+        "playwright": "*",
+        "playwright-extra": "*",
+        "puppeteer-extra-plugin-stealth": "*"
+      },
+      "peerDependenciesMeta": {
+        "@huggingface/transformers": {
+          "optional": true
+        },
+        "@ibm-cloud/watsonx-ai": {
+          "optional": true
+        },
+        "@langfuse/client": {
+          "optional": true
+        },
+        "@openai/agents": {
+          "optional": true
+        },
+        "@openai/codex-security": {
+          "optional": true
+        },
+        "@slack/web-api": {
+          "optional": true
+        },
+        "ibm-cloud-sdk-core": {
+          "optional": true
+        },
+        "playwright": {
+          "optional": true
+        },
+        "playwright-extra": {
+          "optional": true
+        },
+        "puppeteer-extra-plugin-stealth": {
+          "optional": true
+        }
+      }
+    },
+    "temporary_cache": "<TOOLING_DIR>/npm-cache",
+    "install_exit_code": 0,
+    "evaluation_started_before_last_optional_download_finished": true,
+    "installer_finished_successfully_before_evidence_finalization": true
+  },
+  "source_sha256": {
+    "evals/kit/promptfoo-provider.cjs": "c2c6228239b48a50017bbe9023464fa138c7b8f291482a4c936bf458c59b7f47",
+    "evals/kit/promptfooconfig.yaml": "ff437e4a005a2c490b34e927a7ef60790b1b80e65df5a28449782d4cfc53d226",
+    "evals/kit/run.py": "2bd197f61167a5bc8a0db610fca9557c18d598bc170d65d129e6d7b96eab9c00"
+  },
+  "runtime_controls": {
+    "cwd": "<TOOLING_DIR>",
+    "environment": "PATH plus explicit promptfoo controls only; no inherited provider credentials",
+    "telemetry_disabled": true,
+    "updates_disabled": true,
+    "remote_generation_disabled": true,
+    "sharing_disabled": true,
+    "self_hosted": true,
+    "CLI_flags": [
+      "--no-cache",
+      "--no-write",
+      "--no-share",
+      "--no-progress-bar",
+      "--no-table"
+    ],
+    "evaluation_network_permissions": "default sandbox; no network escalation used for evaluations"
+  },
+  "exports": "Full CLI JSON exports with repository/tooling host paths replaced by <REPO_ROOT>/<TOOLING_DIR>; original hashes above, original exports retained in temporary tooling",
+  "cases": [
+    {
+      "case": "supplied-controls",
+      "cli_exit_code": 0,
+      "wall_seconds": 3.3267,
+      "promptfoo_successes": 1,
+      "promptfoo_failures": 0,
+      "promptfoo_errors": 0,
+      "assertion_pass": true,
+      "provider_output_type": "dict",
+      "kit": {
+        "probes": 192,
+        "visibility_failures": 0,
+        "isolation_failures": 0,
+        "positive_controls": 18,
+        "recall_misses": 0,
+        "errors": 0,
+        "invalid_acl_controls": 12,
+        "invalid_acl_failures": 0,
+        "revocation_controls": 1,
+        "revocation_failures": 0,
+        "passed": true,
+        "python": "3.14.8",
+        "fixture_sha256": "78f6aab5e1053595f7471dad372878f7ce8e39af93d7c443728998c97d01436e",
+        "implementation_sha256": "78644d7b52b47645d836bce11e1d83994c2c179c90c2556115f55ff496e33dd7",
+        "source_commit": "495d85489751eedd9aec65ccc50bdcba2177a309"
+      },
+      "provider_error": null,
+      "raw_export_sha256": "c23ef1e7baafd5de5aae1ee321b082b733cf4440558ab0e37524514170c51102",
+      "published_export_sha256": "a02f9fd3b9e846705ec618d6309fb8deb508d1cf2b80963f5627a0180cb15754",
+      "executed_config_sha256": "ff437e4a005a2c490b34e927a7ef60790b1b80e65df5a28449782d4cfc53d226"
+    },
+    {
+      "case": "public-reference",
+      "cli_exit_code": 0,
+      "wall_seconds": 1.6836,
+      "promptfoo_successes": 1,
+      "promptfoo_failures": 0,
+      "promptfoo_errors": 0,
+      "assertion_pass": true,
+      "provider_output_type": "dict",
+      "kit": {
+        "probes": 2088,
+        "visibility_failures": 0,
+        "isolation_failures": 0,
+        "positive_controls": 197,
+        "recall_misses": 0,
+        "errors": 0,
+        "invalid_acl_controls": 0,
+        "invalid_acl_failures": 0,
+        "revocation_controls": 1,
+        "revocation_failures": 0,
+        "passed": true,
+        "python": "3.14.8",
+        "fixture_sha256": "e4f60a85e8239471d82bb3212e503ac817a175f137f3a2ed9ddebc6e62f3cec6",
+        "implementation_sha256": "78644d7b52b47645d836bce11e1d83994c2c179c90c2556115f55ff496e33dd7",
+        "source_commit": "495d85489751eedd9aec65ccc50bdcba2177a309"
+      },
+      "provider_error": null,
+      "raw_export_sha256": "d2232fc7a36f9390db14c2847f7f52e94230fbb77f764fc0a1e2ab9ef0a7faec",
+      "published_export_sha256": "72690dcc7fd5f6d4e4f2bb103a77d7fd1163076ce4d3f860e6c137dda7b62299",
+      "executed_config_sha256": "a62922c5256e1961dba9bc4aa0b5fcb1139fef6dc3450baf31b178e0e49745f5"
+    },
+    {
+      "case": "public-example",
+      "cli_exit_code": 0,
+      "wall_seconds": 1.0297,
+      "promptfoo_successes": 1,
+      "promptfoo_failures": 0,
+      "promptfoo_errors": 0,
+      "assertion_pass": true,
+      "provider_output_type": "dict",
+      "kit": {
+        "probes": 2088,
+        "visibility_failures": 0,
+        "isolation_failures": 0,
+        "positive_controls": 197,
+        "recall_misses": 0,
+        "errors": 0,
+        "invalid_acl_controls": 0,
+        "invalid_acl_failures": 0,
+        "revocation_controls": 1,
+        "revocation_failures": 0,
+        "passed": true,
+        "python": "3.14.8",
+        "fixture_sha256": "e4f60a85e8239471d82bb3212e503ac817a175f137f3a2ed9ddebc6e62f3cec6",
+        "implementation_sha256": "6031cc22681ae58445f35b291627b68a61d3e6f15cc767338e6c958cef743b59",
+        "source_commit": "495d85489751eedd9aec65ccc50bdcba2177a309"
+      },
+      "provider_error": null,
+      "raw_export_sha256": "f2a9bddb617d622282a56fabd42ed2de80b04835a2884883daaa0c5a31e540c6",
+      "published_export_sha256": "c0cd5191772eacd731d1a213c39a8b0f0395d129031002b372312e5de194db07",
+      "executed_config_sha256": "90d6dc4499a1fbcc9cdd47500f9a199a0398ac1f9ccca4086c17de566f85a1a1"
+    },
+    {
+      "case": "faulty-retriever",
+      "cli_exit_code": 100,
+      "wall_seconds": 0.8851,
+      "promptfoo_successes": 0,
+      "promptfoo_failures": 1,
+      "promptfoo_errors": 0,
+      "assertion_pass": false,
+      "provider_output_type": "dict",
+      "kit": {
+        "probes": 192,
+        "visibility_failures": 85,
+        "isolation_failures": 192,
+        "positive_controls": 18,
+        "recall_misses": 0,
+        "errors": 0,
+        "invalid_acl_controls": 12,
+        "invalid_acl_failures": 0,
+        "revocation_controls": 1,
+        "revocation_failures": 0,
+        "passed": false,
+        "python": "3.14.8",
+        "fixture_sha256": "78f6aab5e1053595f7471dad372878f7ce8e39af93d7c443728998c97d01436e",
+        "implementation_sha256": "cedfa7c11d52bb24af60313119c93c8008d4937d445ea74207fce4fa8b285d07",
+        "source_commit": "495d85489751eedd9aec65ccc50bdcba2177a309"
+      },
+      "provider_error": null,
+      "raw_export_sha256": "c0dadb39e04e6a1cdc1babc2cf98b96808c0337c3527ddce7f92bc87b4bf96c2",
+      "published_export_sha256": "d6a793b0a0e9d58504fb0e78c6e945dbba1bf80028149c56c35dc7c372ce6f55",
+      "executed_config_sha256": "bf7cb2421c1728a240ed8cd30a3677bd8a845385eee71d96c550fc61d51af74e"
+    },
+    {
+      "case": "subprocess-failure",
+      "cli_exit_code": 100,
+      "wall_seconds": 0.8646,
+      "promptfoo_successes": 0,
+      "promptfoo_failures": 0,
+      "promptfoo_errors": 1,
+      "assertion_pass": null,
+      "provider_output_type": null,
+      "kit": null,
+      "provider_error": "invalid kit JSON: Unexpected end of JSON input",
+      "raw_export_sha256": "0f73cf76e026a549fefb87a1d540b4be567b28effdafce1e3dab6c1863cbeaf8",
+      "published_export_sha256": "739c1fecfab9b89f309ddc86d60d63797a3403bfe4fffa4125224a5cb12320ad",
+      "executed_config_sha256": "a688523fdc79f88c7db851c98e8d2a8b15d80d12c0ab478b9ae222805b2ca734"
+    }
+  ],
+  "portable_recheck": {
+    "completed_after_install": true,
+    "verifier_exit_code": 0,
+    "observations": "portable-verification.json",
+    "reproduction_files_sha256": {
+      "verify_cli.py": "f5eb93a05469bf64b94d68474e34c76c15d2ec74f00183ef8f2cdda55b3b70f3",
+      "faulty-retriever.yaml": "7447b1bfcddca87c75be3631ace68a37d8a9ebfe1a266dd69a1a26825f94f610",
+      "public-reference.yaml": "951b59f5784ea1bc82422e8a8bbf7a8fa33b2a55bd143c4fbcc41fb1421d008c",
+      "subprocess-failure.yaml": "b6ca0763df2957f7d9a44dc7b758ec44acb2ff901bd9dc7e34f83a43cb304056",
+      "public-example.yaml": "8d967e84200762b02ce8ec980f0581cb4f9b510114e2d84d7351764ae383c38c",
+      "fault-adapter.py": "6be93961faf7daca5e1eed05b9b08a345f2b6fa97127917a29ffeb80974ad893"
+    },
+    "original_cli_export_sha256": {
+      "supplied-controls": "aeb19ee71158212c101d2cbdc78a43125d93270ee139fd565b2967f23f2c15a9",
+      "public-reference": "c8b74cd9d56253a99d20a58f4c9671ac65f55259e83abbabe2e33c106508e243",
+      "public-example": "8f578ee5afa4db2aa9c624ae1320f0385d019d55a6967dd077cef19a59f7e18e",
+      "faulty-retriever": "b6e3f3c4237a5ea56a12b628f59b1b018a1247b230d1cef7c8b9af2316bdd321",
+      "subprocess-failure": "affb2c672acc4eeb1da8581197eac3279ba94bea68fafb9af8204353f11ce7ed"
+    }
+  },
+  "public_equivalent_base_commit": "07b12e63c36fbc92ea713558ce1010f797d75da3",
+  "base_source_tree": "b8a8deea819c347ca344436c4e8ea749fcb29a7f"
+}

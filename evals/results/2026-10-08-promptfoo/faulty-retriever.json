@@ -1,0 +1,741 @@
+{
+  "evalId": "eval-mWh-2026-10-08T19:41:48",
+  "results": {
+    "version": 3,
+    "timestamp": "2026-10-08T19:41:48.768Z",
+    "prompts": [
+      {
+        "id": "a4f97f3c5663518759b9629816ca7ece93fc3fdc27112d4bb180f7bd57708c08",
+        "raw": "Run fixed permission fixture",
+        "label": "Run fixed permission fixture",
+        "provider": "deterministic-retriever-leak-kit",
+        "metrics": {
+          "score": 0,
+          "testPassCount": 0,
+          "testFailCount": 1,
+          "testErrorCount": 0,
+          "assertPassCount": 0,
+          "assertFailCount": 1,
+          "totalLatencyMs": 73,
+          "tokenUsage": {
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "total": 0,
+            "numRequests": 1,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            },
+            "assertions": {
+              "total": 0,
+              "prompt": 0,
+              "completion": 0,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0,
+                "cacheReadInputTokens": 0,
+                "cacheCreationInputTokens": 0
+              }
+            }
+          },
+          "namedScores": {},
+          "namedScoresCount": {},
+          "namedScoreWeights": {},
+          "cost": 0
+        }
+      }
+    ],
+    "results": [
+      {
+        "cost": 0,
+        "error": "Custom function returned false\noutput.passed === true",
+        "gradingResult": {
+          "pass": false,
+          "score": 0,
+          "reason": "Custom function returned false\noutput.passed === true",
+          "namedScores": {},
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": false,
+              "score": 0,
+              "reason": "Custom function returned false\noutput.passed === true",
+              "assertion": {
+                "type": "javascript",
+                "value": "output.passed === true"
+              }
+            }
+          ]
+        },
+        "id": "49e1c2a2-fc76-4791-862a-718aff8fad88",
+        "latencyMs": 73,
+        "namedScores": {},
+        "prompt": {
+          "raw": "Run fixed permission fixture",
+          "label": "Run fixed permission fixture",
+          "config": {}
+        },
+        "promptId": "a4f97f3c5663518759b9629816ca7ece93fc3fdc27112d4bb180f7bd57708c08",
+        "promptIdx": 0,
+        "provider": {
+          "id": "deterministic-retriever-leak-kit",
+          "label": ""
+        },
+        "response": {
+          "output": {
+            "probes": 192,
+            "visibility_failures": 85,
+            "isolation_failures": 192,
+            "positive_controls": 18,
+            "recall_misses": 0,
+            "errors": 0,
+            "invalid_acl_controls": 12,
+            "invalid_acl_failures": 0,
+            "revocation_controls": 1,
+            "revocation_failures": 0,
+            "examples": [
+              {
+                "kind": "isolation_failures",
+                "principal": {
+                  "id": "bob",
+                  "groups": [
+                    "hr",
+                    "finance",
+                    "exec"
+                  ]
+                },
+                "chunk": "constitution-p000",
+                "k": 1,
+                "got": [
+                  [
+                    "constitution-p000",
+                    7.6646
+                  ]
+                ],
+                "want": [
+                  [
+                    "constitution-p000",
+                    5.9631
+                  ]
+                ]
+              },
+              {
+                "kind": "isolation_failures",
+                "principal": {
+                  "id": "bob",
+                  "groups": [
+                    "hr",
+                    "finance",
+                    "exec"
+                  ]
+                },
+                "chunk": "constitution-p000",
+                "k": 3,
+                "got": [
+                  [
+                    "constitution-p000",
+                    7.6646
+                  ],
+                  [
+                    "constitution-p001",
+                    0.1203
+                  ],
+                  [
+                    "constitution-p002",
+                    0.1124
+                  ]
+                ],
+                "want": [
+                  [
+                    "constitution-p000",
+                    5.9631
+                  ],
+                  [
+                    "constitution-p001",
+                    0.1814
+                  ],
+                  [
+                    "constitution-p002",
+                    0.1694
+                  ]
+                ]
+              },
+              {
+                "kind": "isolation_failures",
+                "principal": {
+                  "id": "bob",
+                  "groups": [
+                    "hr",
+                    "finance",
+                    "exec"
+                  ]
+                },
+                "chunk": "constitution-p000",
+                "k": 20,
+                "got": [
+                  [
+                    "constitution-p000",
+                    7.6646
+                  ],
+                  [
+                    "constitution-p001",
+                    0.1203
+                  ],
+                  [
+                    "constitution-p002",
+                    0.1124
+                  ],
+                  [
+                    "constitution-p003",
+                    0.1124
+                  ],
+                  [
+                    "constitution-p007",
+                    0.1124
+                  ]
+                ],
+                "want": [
+                  [
+                    "constitution-p000",
+                    5.9631
+                  ],
+                  [
+                    "constitution-p001",
+                    0.1814
+                  ],
+                  [
+                    "constitution-p002",
+                    0.1694
+                  ],
+                  [
+                    "constitution-p003",
+                    0.1694
+                  ],
+                  [
+                    "constitution-p007",
+                    0.1694
+                  ]
+                ]
+              },
+              {
+                "kind": "isolation_failures",
+                "principal": {
+                  "id": "bob",
+                  "groups": [
+                    "hr",
+                    "finance",
+                    "exec"
+                  ]
+                },
+                "chunk": "constitution-p001",
+                "k": 1,
+                "got": [
+                  [
+                    "constitution-p001",
+                    7.1269
+                  ]
+                ],
+                "want": [
+                  [
+                    "constitution-p001",
+                    5.9631
+                  ]
+                ]
+              },
+              {
+                "kind": "isolation_failures",
+                "principal": {
+                  "id": "bob",
+                  "groups": [
+                    "hr",
+                    "finance",
+                    "exec"
+                  ]
+                },
+                "chunk": "constitution-p001",
+                "k": 3,
+                "got": [
+                  [
+                    "constitution-p001",
+                    7.1269
+                  ],
+                  [
+                    "constitution-p000",
+                    0.1203
+                  ]
+                ],
+                "want": [
+                  [
+                    "constitution-p001",
+                    5.9631
+                  ],
+                  [
+                    "constitution-p000",
+                    0.1814
+                  ],
+                  [
+                    "constitution-p002",
+                    0.1694
+                  ]
+                ]
+              },
+              {
+                "kind": "isolation_failures",
+                "principal": {
+                  "id": "bob",
+                  "groups": [
+                    "hr",
+                    "finance",
+                    "exec"
+                  ]
+                },
+                "chunk": "constitution-p001",
+                "k": 20,
+                "got": [
+                  [
+                    "constitution-p001",
+                    7.1269
+                  ],
+                  [
+                    "constitution-p000",
+                    0.1203
+                  ],
+                  [
+                    "constitution-p002",
+                    0.1124
+                  ],
+                  [
+                    "constitution-p003",
+                    0.1124
+                  ],
+                  [
+                    "constitution-p007",
+                    0.1124
+                  ]
+                ],
+                "want": [
+                  [
+                    "constitution-p001",
+                    5.9631
+                  ],
+                  [
+                    "constitution-p000",
+                    0.1814
+                  ],
+                  [
+                    "constitution-p002",
+                    0.1694
+                  ],
+                  [
+                    "constitution-p003",
+                    0.1694
+                  ],
+                  [
+                    "constitution-p007",
+                    0.1694
+                  ]
+                ]
+              },
+              {
+                "kind": "isolation_failures",
+                "principal": {
+                  "id": "bob",
+                  "groups": [
+                    "hr",
+                    "finance",
+                    "exec"
+                  ]
+                },
+                "chunk": "constitution-p002",
+                "k": 1,
+                "got": [
+                  [
+                    "constitution-p002",
+                    8.4219
+                  ]
+                ],
+                "want": [
+                  [
+                    "constitution-p002",
+                    6.4196
+                  ]
+                ]
+              },
+              {
+                "kind": "isolation_failures",
+                "principal": {
+                  "id": "bob",
+                  "groups": [
+                    "hr",
+                    "finance",
+                    "exec"
+                  ]
+                },
+                "chunk": "constitution-p002",
+                "k": 3,
+                "got": [
+                  [
+                    "constitution-p002",
+                    8.4219
+                  ],
+                  [
+                    "constitution-p007",
+                    1.3724
+                  ],
+                  [
+                    "constitution-p000",
+                    0.1203
+                  ]
+                ],
+                "want": [
+                  [
+                    "constitution-p002",
+                    6.4196
+                  ],
+                  [
+                    "constitution-p007",
+                    1.0216
+                  ],
+                  [
+                    "constitution-p000",
+                    0.1814
+                  ]
+                ]
+              },
+              {
+                "kind": "isolation_failures",
+                "principal": {
+                  "id": "bob",
+                  "groups": [
+                    "hr",
+                    "finance",
+                    "exec"
+                  ]
+                },
+                "chunk": "constitution-p002",
+                "k": 20,
+                "got": [
+                  [
+                    "constitution-p002",
+                    8.4219
+                  ],
+                  [
+                    "constitution-p007",
+                    1.3724
+                  ],
+                  [
+                    "constitution-p000",
+                    0.1203
+                  ],
+                  [
+                    "constitution-p001",
+                    0.1203
+                  ],
+                  [
+                    "constitution-p003",
+                    0.1124
+                  ]
+                ],
+                "want": [
+                  [
+                    "constitution-p002",
+                    6.4196
+                  ],
+                  [
+                    "constitution-p007",
+                    1.0216
+                  ],
+                  [
+                    "constitution-p000",
+                    0.1814
+                  ],
+                  [
+                    "constitution-p001",
+                    0.1814
+                  ],
+                  [
+                    "constitution-p003",
+                    0.1694
+                  ]
+                ]
+              },
+              {
+                "kind": "isolation_failures",
+                "principal": {
+                  "id": "bob",
+                  "groups": [
+                    "hr",
+                    "finance",
+                    "exec"
+                  ]
+                },
+                "chunk": "constitution-p003",
+                "k": 1,
+                "got": [
+                  [
+                    "constitution-p003",
+                    8.4219
+                  ]
+                ],
+                "want": [
+                  [
+                    "constitution-p003",
+                    6.9169
+                  ]
+                ]
+              },
+              {
+                "kind": "isolation_failures",
+                "principal": {
+                  "id": "bob",
+                  "groups": [
+                    "hr",
+                    "finance",
+                    "exec"
+                  ]
+                },
+                "chunk": "constitution-p003",
+                "k": 3,
+                "got": [
+                  [
+                    "constitution-p003",
+                    8.4219
+                  ],
+                  [
+                    "constitution-p000",
+                    0.1203
+                  ]
+                ],
+                "want": [
+                  [
+                    "constitution-p003",
+                    6.9169
+                  ],
+                  [
+                    "constitution-p000",
+                    0.1814
+                  ],
+                  [
+                    "constitution-p001",
+                    0.1814
+                  ]
+                ]
+              },
+              {
+                "kind": "isolation_failures",
+                "principal": {
+                  "id": "bob",
+                  "groups": [
+                    "hr",
+                    "finance",
+                    "exec"
+                  ]
+                },
+                "chunk": "constitution-p003",
+                "k": 20,
+                "got": [
+                  [
+                    "constitution-p003",
+                    8.4219
+                  ],
+                  [
+                    "constitution-p000",
+                    0.1203
+                  ],
+                  [
+                    "constitution-p001",
+                    0.1203
+                  ],
+                  [
+                    "constitution-p002",
+                    0.1124
+                  ],
+                  [
+                    "constitution-p007",
+                    0.1124
+                  ]
+                ],
+                "want": [
+                  [
+                    "constitution-p003",
+                    6.9169
+                  ],
+                  [
+                    "constitution-p000",
+                    0.1814
+                  ],
+                  [
+                    "constitution-p001",
+                    0.1814
+                  ],
+                  [
+                    "constitution-p002",
+                    0.1694
+                  ],
+                  [
+                    "constitution-p007",
+                    0.1694
+                  ]
+                ]
+              }
+            ],
+            "passed": false,
+            "fixture": "deterministic-acl-controls-v1",
+            "fixture_sha256": "78f6aab5e1053595f7471dad372878f7ce8e39af93d7c443728998c97d01436e",
+            "chunks": 8,
+            "principal_scopes": 8,
+            "python": "3.14.8",
+            "adapter": "<TOOLING_DIR>/fault-adapter.py",
+            "implementation_sha256": "cedfa7c11d52bb24af60313119c93c8008d4937d445ea74207fce4fa8b285d07",
+            "source_commit": "495d85489751eedd9aec65ccc50bdcba2177a309"
+          }
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "assert": [
+            {
+              "type": "javascript",
+              "value": "output.passed === true"
+            }
+          ],
+          "vars": {},
+          "options": {},
+          "metadata": {}
+        },
+        "testIdx": 0,
+        "tokenUsage": {
+          "prompt": 0,
+          "completion": 0,
+          "cached": 0,
+          "total": 0,
+          "numRequests": 1,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "assertions": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            }
+          }
+        },
+        "vars": {},
+        "metadata": {
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 1
+      }
+    ],
+    "stats": {
+      "successes": 0,
+      "failures": 1,
+      "errors": 0,
+      "tokenUsage": {
+        "prompt": 0,
+        "completion": 0,
+        "cached": 0,
+        "total": 0,
+        "numRequests": 1,
+        "completionDetails": {
+          "reasoning": 0,
+          "acceptedPrediction": 0,
+          "rejectedPrediction": 0,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "assertions": {
+          "total": 0,
+          "prompt": 0,
+          "completion": 0,
+          "cached": 0,
+          "numRequests": 0,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          }
+        }
+      },
+      "durationMs": 82,
+      "evaluationDurationMs": 82
+    }
+  },
+  "config": {
+    "tags": {},
+    "description": "faulty-retriever",
+    "prompts": [
+      "Run fixed permission fixture"
+    ],
+    "providers": [
+      {
+        "id": "file://<REPO_ROOT>/evals/kit/promptfoo-provider.cjs",
+        "config": {
+          "adapter": "<TOOLING_DIR>/fault-adapter.py"
+        }
+      }
+    ],
+    "tests": [
+      {
+        "assert": [
+          {
+            "type": "javascript",
+            "value": "output.passed === true"
+          }
+        ]
+      }
+    ],
+    "env": {},
+    "sharing": false,
+    "outputPath": [
+      "<TOOLING_DIR>/faulty-retriever.json"
+    ],
+    "extensions": [],
+    "metadata": {},
+    "evaluateOptions": {},
+    "basePath": "<TOOLING_DIR>"
+  },
+  "shareableUrl": null,
+  "metadata": {
+    "promptfooVersion": "0.124.1",
+    "nodeVersion": "v26.3.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "exportedAt": "2026-10-08T19:41:48.861Z",
+    "evaluationCreatedAt": "2026-10-08T19:41:48.768Z"
+  },
+  "runtimeOptions": {
+    "eventSource": "cli",
+    "showProgressBar": false,
+    "repeat": 1,
+    "maxConcurrency": 4,
+    "cache": false
+  }
+}
