@@ -25,8 +25,8 @@ Before publication:
   links to the chosen immutable Git revision. Recheck PR status and live endpoint.
 - Keep the original negative results: label gate 1/6, combined faults 8/8,
   baseline folder 104.92 s missing 60 s, and optimized folder 13.31 s on the
-  measured synthetic corpus. Distinguish retrieval faults from 1,646/1,661
-  mutation kills with 15 reviewed equivalents.
+  measured synthetic corpus. Distinguish retrieval faults from 1,677/1,693
+  mutation kills with 16 reviewed equivalents.
 - Retain the scope of 0/1,350 frozen flat-ACL probes, 0/124 hierarchy differences,
   and public text with fictional permissions. The live demo is a stable
   pre-hierarchy image; it does not demonstrate the current journal implementation.
