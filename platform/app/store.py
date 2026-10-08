@@ -81,6 +81,20 @@ class SourceCheckpoint(Base):
     token = Column(Text, nullable=False)
 
 
+class PermissionMutation(Base):
+    """Desired document grants persisted before remote payload mutations."""
+    __tablename__ = "permission_mutation"
+    doc_id = Column(String, primary_key=True)
+    acl = Column(JSON, nullable=True)  # null deletion; [] denies
+
+
+class PendingSourceCheckpoint(Base):
+    """Provider cursor awaiting successful journal reconciliation."""
+    __tablename__ = "pending_source_checkpoint"
+    provider = Column(String, primary_key=True)
+    token = Column(Text, nullable=False)
+
+
 class PermissionState(Base):
     """Durable barrier: pending mutations block reads until reconciliation."""
     __tablename__ = "permission_state"
