@@ -23,6 +23,8 @@ Current implementation work is in [PR #6](https://github.com/kgorle1111/permissi
 
 ### Evidence batch — 2026-10-08
 
+The reports, kit and narrative drafts are in [draft PR #7](https://github.com/kgorle1111/permission-aware-rag/pull/7), stacked on PR #6. They are not merged.
+
 - [100k-document / 1.5M-chunk local measurement](evals/results/2026-10-08-scale/table.md): filtered engine retrieval met the local p95 target; actual folder reconciliation took **104.92 s**, missing the <60 s target. Production full-materialization ingest and end-to-end API timing remain unmeasured.
 - [Public-input fixture and adapter evidence](evals/results/2026-10-08-public-kit/table.md): 87 National Archives paragraphs with fictional permissions; zero failures in 2,088 visibility/isolation probes, 197/197 required hits, and eight planted faults caught. The missing historical corpus remains unrecovered.
 - [Portable leak-test kit](evals/kit/README.md) with an independent ACL oracle, positive controls, reference/standalone adapters and an optional promptfoo shim. An external unassisted integration remains unproven.
