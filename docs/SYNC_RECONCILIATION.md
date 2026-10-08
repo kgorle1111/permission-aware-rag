@@ -67,6 +67,29 @@ barrier. Its successful replacement transaction writes the new SQL mirror and
 clears document intents, pending cursors, and committed provider cursors together.
 A failed replacement keeps reads blocked and does not discard the old journals.
 
+## Upgrading an index created before journals
+
+A prior release could finish a Qdrant grant write and lose its acknowledgement
+before the SQL mirror committed. Its global pending barrier contains no
+per-document recovery intent. Creating empty journal tables and accepting an
+empty patch would then unblock retrieval while the remote grants differ from SQL.
+
+Startup checks for a pending existing permission state when either journal table
+is absent. It commits `rebuild_required` and a revision increment **before** schema
+creation, so a crash after table creation cannot erase the upgrade barrier.
+Ordinary sync cannot clear it: full successful reingestion is required. An already
+committed rebuild intent remains unchanged; clean pre-journal indexes upgrade
+without a forced rebuild, and current journaled retries retain their normal path.
+Stop other application writers during schema upgrades; concurrent old/new
+versions sharing the mirror are not a supported migration procedure.
+
+[Eight upgrade regressions](../platform/tests/test_sync_journal_upgrade.py)
+verify an actual remote public grant followed by SQL rollback, absence of either
+journal table, crash during bootstrap, clean upgrade, current retry recovery,
+revision idempotence and active-row scope. The disclosure regression failed on
+the previous bootstrap before the guard was added. The complete platform suite
+passed 366 tests at 98.97% combined branch-aware coverage.
+
 ## Scope and verification
 
 The optimization reduces full ORM hydration and all-document vector replay.
@@ -102,7 +125,9 @@ python -m pytest tests/test_sync_journal_security.py tests/test_sync_scale.py -q
 ```
 
 Focused tests establish these recovery properties, not the complete mutation
-gate or a large-scale latency result. The fresh serial campaign killed
-1,646/1,661 mutants with 15 reviewed equivalents; the strict validator passed.
+gate or a large-scale latency result. After the upgrade guard, the complete mutation report validated
+1,677/1,693 killed with 16 reviewed equivalents. Unchanged-module results were
+retained; new bootstrap mutants ran serially and actionable survivors gained
+regressions. The strict source/mutant-hash validator passed.
 The [optimized 100k-document report](../evals/results/2026-10-08-sync-optimized/table.md)
 records the separate latency measurement and preserves the baseline miss.
