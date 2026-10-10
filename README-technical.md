@@ -208,13 +208,13 @@ Records hold ids, counts and timings only, never query, answer or document text.
 `GET /audit` adds an `ops` object next to `entries` and `llm_summary`: `latency_ms` p50/p95
 (nearest-rank, over requests that reached retrieval), `cost_per_day_usd` (UTC days),
 `outcomes` with count and rate each, and `failure_rate` (`failed_closed` + `llm_fallback`
-over all requests). It is computed in process, so it resets on restart (ROADMAP B11).
+over all requests). It is computed in process, so it resets on restart (ROADMAP B12).
 
 `DAILY_BUDGET_USD` (default `5.0`) caps estimated LLM spend per UTC day. Before each call the
 server projects a worst case (all input at ~4 chars per token plus the full 600-token output); if
 spent-so-far plus that projection would pass the cap, the call is skipped and the response is
 retrieval-only with the note "Daily LLM budget reached", outcome `llm_fallback`. The count
-resets at UTC midnight. The check is not atomic (ROADMAP B12), so concurrent calls can overshoot
+resets at UTC midnight. The check is not atomic (ROADMAP B13), so concurrent calls can overshoot
 by one call each.
 
 Red-team suite: `evals/redteam/attacks.json` holds 89 attacks (prompt injection incl. encoded,

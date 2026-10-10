@@ -148,8 +148,8 @@ its upgrade trigger. `app/test_ledgers.py` fails if a shortcut comment has no ro
 | B09 | open | Semantic cache scans a scope's entries linearly | Cache holds more than ~10k entries | `app/rungs.py` "linear scan over entries" |
 | B10 | open | Chunk size counts words, not model tokens | A real embedder with a hard token limit replaces the feature-hash one | `app/rungs.py` "words approximate tokens" |
 | B07 | open | Held-out real-corpus leak eval | Real corpus available | `evals/results/2026-10-03-v2/table.md` "real-corpus held-out run" |
-| B11 | open | Ops stats and daily spend live in process memory (both apps); the platform audit table has no outcome, latency or cost columns | More than one server process, or `/audit` must survive a restart | `app/obs.py` "per-process memory, resets on restart" |
-| B12 | open | Spend-cap check and spend recording are not atomic, so concurrent calls can overshoot the cap by one call each | Many concurrent `/ask` calls, or a hard cap is required | `app/underwriter_server.py` "check-then-call is not atomic" |
+| B12 | open | Ops stats and daily spend live in process memory (both apps); the platform audit table has no outcome, latency or cost columns | More than one server process, or `/audit` must survive a restart | `app/obs.py` "per-process memory, resets on restart" |
+| B13 | open | Spend-cap check and spend recording are not atomic, so concurrent calls can overshoot the cap by one call each | Many concurrent `/ask` calls, or a hard cap is required | `app/underwriter_server.py` "check-then-call is not atomic" |
 
 ## Deliberately not building
 
