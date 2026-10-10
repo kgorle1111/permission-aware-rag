@@ -22,6 +22,7 @@ PRs [#6](https://github.com/kgorle1111/permission-aware-rag/pull/6) through [#12
 | 2026-10-07 | AWS Lightsail HTTPS portfolio demo, with synthetic documents and retrieval-only roles | [deployment guide](deploy/aws/README.md) |
 | 2026-10-10 | Measurement foundation: answer metrics (7.2, offline judge only), ladder harness that rejects any leaking rung and rejects all 8 mutants (7.4), and `run_evals.py --mutants` plus `ladder.py --check` in CI (1.4) | `evals/metrics.py`, `evals/ladder.py`, `app/test_answer_metrics.py`, `app/test_ladder.py` |
 | 2026-10-10 | Tier 3 retrieval rungs, each measured and each passing every leak gate: scoped semantic cache (8.5), embedding cache (8.6), structure-aware chunking (9.2), router + rewrite/HyDE/step-back (9.3, deterministic fakes only), multi-query RRF (9.4), abstain threshold (9.7). The unscoped-cache mutant is caught (9/9). No rung beat the baseline on recall; the lexical corpus cannot show it either way | [ladder table](evals/results/2026-10-10-tier3-ladder/table.md), `app/rungs.py`, `app/test_rungs.py` |
+| 2026-10-10 | Observability and cost guards in both apps: one JSON log line per request (ids, counts, timings; never text), p50/p95 latency, cost per day and failure rate by outcome in `/audit`, a `DAILY_BUDGET_USD` cap that falls back to retrieval-only, an LLM-outage path the circuit breaker can see (platform), claim-level citation coverage (T15 mitigation, reference app), and an 89-attack red-team data file (85 run against the reference app, 84 against the platform) driving the real HTTP surfaces with a mocked model | `app/test_obs.py`, `platform/tests/test_observability.py`, `app/test_claims.py`, `app/test_redteam.py`, `platform/tests/test_redteam.py` |
 
 
 ### Evidence batch — 2026-10-08
@@ -102,8 +103,6 @@ Designed and scoped on purpose, but not scheduled. Each waits for a reason to bu
 - **Generation hardening:** repeat the data-not-instructions rule after the documents, and pin the model to a dated version instead of an alias.
 - **Embedding fingerprint:** the index records which embedding model built it, and the service refuses to query with a different one (prevents silent mismatches).
 - **PII redaction** at ingest and on output.
-- **Spend cap** per day, plus a red-team suite of 50+ injection and exfiltration attacks in CI.
-- **Request logs for latency, cost and retrieval failures:** one structured line per request (request id, outcome, per-stage latency, tokens, estimated cost, failure reason) in both apps, with p50/p95 latency, daily cost and failure rate in `/audit`. Logs hold ids and counts only, never query or document text.
 - **Model SDK contract test** against the real API in CI.
 - **Bind principals server-side** ([T18](docs/THREAT_MODEL.md)), so SQL on the app connection can't forge `rag.principals`.
 
@@ -149,6 +148,8 @@ its upgrade trigger. `app/test_ledgers.py` fails if a shortcut comment has no ro
 | B09 | open | Semantic cache scans a scope's entries linearly | Cache holds more than ~10k entries | `app/rungs.py` "linear scan over entries" |
 | B10 | open | Chunk size counts words, not model tokens | A real embedder with a hard token limit replaces the feature-hash one | `app/rungs.py` "words approximate tokens" |
 | B07 | open | Held-out real-corpus leak eval | Real corpus available | `evals/results/2026-10-03-v2/table.md` "real-corpus held-out run" |
+| B11 | open | Ops stats and daily spend live in process memory (both apps); the platform audit table has no outcome, latency or cost columns | More than one server process, or `/audit` must survive a restart | `app/obs.py` "per-process memory, resets on restart" |
+| B12 | open | Spend-cap check and spend recording are not atomic, so concurrent calls can overshoot the cap by one call each | Many concurrent `/ask` calls, or a hard cap is required | `app/underwriter_server.py` "check-then-call is not atomic" |
 
 ## Deliberately not building
 
