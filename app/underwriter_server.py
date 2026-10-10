@@ -13,6 +13,7 @@ import io
 import json
 import os
 import pathlib
+import re
 import sys
 import threading
 import time
@@ -116,9 +117,17 @@ def user_from_jwt(auth_header):
         claims = json.loads(_b64url(p))
         if claims.get("exp", 0) < time.time():
             return None
-        return {"id": claims["sub"], "groups": list(claims.get("groups", []))}
+        sub, groups = claims.get("sub"), claims.get("groups", [])
+        # T14: signed != well-formed; a comma would forge an RLS principal, a str would iterate
+        if not _principal_name(sub) or not isinstance(groups, list) or not all(map(_principal_name, groups)):
+            return None
+        return {"id": sub, "groups": list(groups)}
     except Exception:
         return None
+
+
+def _principal_name(name) -> bool:
+    return isinstance(name, str) and re.fullmatch(r"[^,\s]+", name) is not None
 
 
 def resolve_user(handler, qs, body):
