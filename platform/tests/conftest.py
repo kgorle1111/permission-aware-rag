@@ -19,6 +19,8 @@ os.environ["QDRANT_PATH"] = str(_tmp / "qdrant")
 os.environ["JWT_PRIVATE_KEY_PATH"] = str(_tmp / "idp_private.pem")
 os.environ["JWT_PUBLIC_KEY_PATH"] = str(_tmp / "idp_public.pem")
 os.environ["PERMISSIONS_SOURCE"] = str(_tmp / "permissions.jsonl")
+if os.environ.get("RUN_LIVE_CONTRACT") == "1":  # read only by test_live_contract.py
+    os.environ["_LIVE_CONTRACT_KEY"] = os.environ.get("ANTHROPIC_API_KEY", "")
 os.environ["ANTHROPIC_API_KEY"] = ""  # extractive answers only — offline
 os.environ["DEMO_MODE"] = "0"
 os.environ["SYNC_INTERVAL_S"] = "0"

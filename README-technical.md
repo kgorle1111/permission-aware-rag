@@ -267,6 +267,10 @@ Honest limits:
 - Metadata only: it does not run SQL over customer data tables, and `platform/` does not have it.
 - Audit rows hold hashes, so a reviewer can match a retained statement to its row but cannot read it from the log.
 
+## Live model contract test
+
+`app/test_live_contract.py` and `platform/tests/test_live_contract.py` each make one real Messages API call (max 64 output tokens, one fake document) and assert structure only: the pinned `claude-haiku-4-5-20251001` resolves without the alias fallback, the response parses, `usage` token counts are ints, and the `[doc-id]` citation is found by our parser. They skip unless `RUN_LIVE_CONTRACT=1` and `ANTHROPIC_API_KEY` are set, so normal CI and local runs never touch the network. `.github/workflows/live-contract.yml` runs them weekly (Mondays 06:00 UTC) and on manual dispatch only, with read-only permissions; it skips cleanly when the `ANTHROPIC_API_KEY` repo secret is unset. Cost: 2 calls of about 450 input and at most 64 output tokens at Haiku 4.5 prices ($1/M in, $5/M out), roughly $0.0016 per run. The 404-to-alias fallback is not tested live because it would need a deliberately bad model id.
+
 ## Scope and honest limitations
 
 - **Ranking is BM25, on purpose.** The contribution is the permission model; `_score()` is

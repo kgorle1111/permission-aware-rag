@@ -25,6 +25,7 @@ PRs [#6](https://github.com/kgorle1111/permission-aware-rag/pull/6) through [#12
 | 2026-10-10 | Tier 3 retrieval rungs, each measured and each passing every leak gate: scoped semantic cache (8.5), embedding cache (8.6), structure-aware chunking (9.2), router + rewrite/HyDE/step-back (9.3, deterministic fakes only), multi-query RRF (9.4), abstain threshold (9.7). The unscoped-cache mutant is caught (9/9). No rung beat the baseline on recall; the lexical corpus cannot show it either way | [ladder table](evals/results/2026-10-10-tier3-ladder/table.md), `app/rungs.py`, `app/test_rungs.py` |
 | 2026-10-10 | Observability and cost guards in both apps: one JSON log line per request (ids, counts, timings; never text), p50/p95 latency, cost per day and failure rate by outcome in `/audit`, a `DAILY_BUDGET_USD` cap that falls back to retrieval-only, an LLM-outage path the circuit breaker can see (platform), claim-level citation coverage (T15 mitigation, reference app), and an 89-attack red-team data file (85 run against the reference app, 84 against the platform) driving the real HTTP surfaces with a mocked model | `app/test_obs.py`, `platform/tests/test_observability.py`, `app/test_claims.py`, `app/test_redteam.py`, `platform/tests/test_redteam.py` |
 | 2026-10-10 | Text-to-SQL under Postgres RLS (11.3, T25): a fake model writes SQL over a `doc_meta` table; the statement runs as a read-only `rag_sql` role under the same signed-principal RLS, audited by the database. 40 hostile statements x 5 users (pre-check off) with 0 leaks, a metamorphic hidden-rows test, 60/60 exact-match on honest questions. **No real model was called, so no SQL-quality claim.** | [results](evals/results/2026-10-10-text-to-sql/table.md), `app/text_to_sql.py`, `app/test_text_to_sql.py` |
+| 2026-10-10 | Live model contract test: one real Messages API call per call site (pinned model id resolves, `usage` shape, `[doc-id]` citation parsing) in a weekly + manual workflow that never runs on push or PR. **Needs the maintainer to set the repo secret `ANTHROPIC_API_KEY`; without it the job skips.** The 404 to alias-fallback path is not covered (needs a bad-model call). About $0.0016 per run | `.github/workflows/live-contract.yml`, `app/test_live_contract.py`, `platform/tests/test_live_contract.py` |
 
 ### Evidence batch — 2026-10-08
 
@@ -104,7 +105,6 @@ Designed and scoped on purpose, but not scheduled. Each waits for a reason to bu
 - **Generation hardening:** repeat the data-not-instructions rule after the documents, and pin the model to a dated version instead of an alias.
 - **Embedding fingerprint:** the index records which embedding model built it, and the service refuses to query with a different one (prevents silent mismatches).
 - **PII redaction** at ingest and on output.
-- **Model SDK contract test** against the real API in CI.
 - **Separate auditor role for audit reads** ([T19](docs/THREAT_MODEL.md)): the app connection can no longer skip or forge audit rows (server-side writes, done), but it still reads audit metadata for the `/audit` view.
 
 ### The full RAG build-out, one measured rung at a time
