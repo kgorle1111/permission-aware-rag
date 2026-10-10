@@ -61,8 +61,9 @@ platform cross-user audit exposure and missing platform document prompt boundari
 An inconsistent rebuild-state probe also led to defensive denial hardening.
 [Authorship, preserved failures and current verification](docs/INDEPENDENT_VERIFICATION.md)
 distinguish before-fix checks from after-fix regressions. Current local platform:
-386 tests, 98.97% coverage; container verification passed and fresh mutation testing is in progress.
-These changes await PR review and are not merged; the live AWS image remains unchanged.
+387 tests, 98.97% coverage; container verification and the mutation gate passed
+(1,688/1,708 killed, 20 equivalents).
+[Draft PR #12](https://github.com/kgorle1111/permission-aware-rag/pull/12) awaits review and is not merged; the live AWS image remains unchanged.
 
 ## Next
 
