@@ -38,8 +38,9 @@ equivalent in `mutation_equivalents.json`. CI runs all three on every push
 - Requests authenticate with RS256 JWTs. Retrieval applies the ACL predicate in the Qdrant query and constructs the answer from returned chunks. Access checks, generation, and the success audit write are performed inside the permission-state transaction/locking boundary. If reconciliation is marked pending or retrieval fails, the request returns the empty response.
 - Each chunk stores document, section and paragraph ACLs independently. Qdrant applies an AND of three principal-overlap filters before ranking; a caller must satisfy every level. Missing child restrictions are public at that level; explicit empty/malformed ACLs deny. This implements hierarchy, not relationship-based authorization. Legacy indexes require full reingestion before sync can unblock retrieval. Pending upgrades from releases without document journals also require reingestion: startup commits the rebuild barrier before creating recovery tables. Clean pre-journal indexes can upgrade normally. See [upgrade recovery](../docs/SYNC_RECONCILIATION.md#upgrading-an-index-created-before-journals).
 - Embedding fingerprint: ingest records backend/model/dimension; a mismatch or a legacy index without one fails closed (empty response, `/readyz` 503) until reingested. `EMBED_MODEL` optionally names the model.
+- Optional local models (off by default; see below). Real embeddings, learned-sparse hybrid and a cross-encoder reranker run in-process via ONNX, and every one is ACL-safe by construction: the sparse leg carries no collection-wide statistics, the filter rides on both hybrid branches, and the reranker only receives chunks the engine already filtered.
 - PII redaction (`app/redact.py`, regex + Luhn): applied at ingest and to every returned result and answer. Placeholders look like `[REDACTED:EMAIL]`.
-- Degradation: embedder, vector-store and LLM calls sit behind circuit breakers (`BREAKER_THRESHOLD`, `BREAKER_RESET_S`). Responses include `degraded` and `source` (`full_rag`, `retrieval_only`, `keyword_fallback`, `unavailable`). The keyword fallback reads redacted chunk text mirrored in SQL and enforces the same AND-across-levels ACL rule. Permission or sync uncertainty never degrades; it stays fail-closed.
+- Degradation: embedder, vector-store, reranker and LLM calls sit behind circuit breakers (`BREAKER_THRESHOLD`, `BREAKER_RESET_S`). Responses include `degraded` and `source` (`full_rag`, `retrieval_only`, `keyword_fallback`, `vector_order`, `unavailable`). The keyword fallback reads redacted chunk text mirrored in SQL and enforces the same AND-across-levels ACL rule. Permission or sync uncertainty never degrades; it stays fail-closed.
 - `corpus/permissions.jsonl` is a patch feed: a missing document leaves its stored permissions unchanged. A row with `{"doc_id":"...","deleted":true}` explicitly deletes that document. Set `PERMISSIONS_BACKEND=gdrive` to use Drive snapshots and changes instead. Drive file IDs must match the ingested corpus `doc_id` values; the service account needs Drive metadata read access, and Drive email/domain permissions must map to the signed JWT `sub` and `groups` claims. A failed reconciliation keeps reads blocked until a successful reconciliation repairs state.
 - Drive's change page token is saved in SQL in the same transaction as ACL updates. An initial sync snapshots the permissions of known ingested file IDs. Reingestion clears the saved token and causes the next sync to take a fresh baseline. An optional webhook at `/webhooks/drive` accepts notifications only when the configured channel ID, channel token, and resource ID all match; polling remains enabled as the recovery path.
 - Permission sync updates access for already indexed content; it does not fetch or restore document contents. Reingest after changing the permission source/backend or moving to a different physical SQL/vector store. After a document is deleted from the index, restoring its access requires reingesting its content.
@@ -56,6 +57,24 @@ The tests exercise local code paths and fakes. They do not establish resistance 
 ## Repository map
 
 `app/` contains the API, identity verification, retrieval, ingestion, synchronization, SQL store, and connector adapter. `scripts/` contains local setup and demo commands. `corpus/` contains demo documents and the synthetic permission feed. `tests/` contains the offline test suite. `config/postgres_rls.sql` is an optional example, not an activated runtime control.
+
+### Local models (optional)
+
+```sh
+pip install -r requirements-models.txt   # adds fastembed (ONNX, no PyTorch); never needed for tests or CI
+export EMBED_BACKEND=fastembed            # BAAI/bge-small-en-v1.5, 384-d; MIN_SCORE defaults to 0.55
+export SPARSE_BACKEND=splade              # optional: SPLADE++ learned-sparse hybrid (RRF fusion)
+export RERANKER=fastembed                 # optional: ms-marco MiniLM cross-encoder over 25 filtered candidates
+python scripts/ingest.py                  # required after changing any index-side setting
+```
+
+Models download on first use (set `MODEL_CACHE_DIR` to keep them). Changing `EMBED_BACKEND`, `EMBED_MODEL`, `EMBED_DIM` or `SPARSE_BACKEND` without reingesting fails closed through the embedding fingerprint (the sparse model is part of the fingerprint's model string); `RERANKER` is query-side only and needs no reingest. Hybrid collections name their vectors (`dense`, `sparse`), set no Qdrant IDF modifier, and are created by ingest.
+
+- **Hybrid** fuses a dense and a sparse prefetch with reciprocal rank fusion; the ACL filter is attached to both prefetches and the outer query. SPLADE was chosen over BM42 because BM42 scores only make sense with Qdrant's IDF modifier, a collection-wide statistic.
+- **Rerank** takes `RERANK_CANDIDATES` (25) ACL-filtered chunks, scores each (query, chunk) pair, drops scores below `RERANK_MIN_SCORE` and returns the top `k`. If the reranker fails, retrieval falls back to vector order and the response is `degraded` with `source: "vector_order"`; the reranker has its own circuit breaker.
+- **Embedding cache** (`EMBED_CACHE_PATH`, fastembed only): ingest reuses vectors for unchanged text, keyed by sha256(text) plus backend/model/dimension. Queries never touch it, so one user's query cannot speed up another's. Delete the file to purge it; it holds vectors of redacted chunk text, so treat it like the index.
+- **Floors are calibrated per model.** bge cosine similarity between unrelated texts is about 0.43-0.54, so the hash embedder's `MIN_SCORE=0.1` would return anything; the fastembed default is 0.55. Hybrid without a reranker has no abstain floor on its sparse leg.
+- **Measured, not assumed:** [rung results](../evals/results/2026-10-10-platform-rungs/table.md) (`python scripts/rung_benchmark.py`). On the small synthetic corpus dense retrieval is the clear win on paraphrases; hybrid and the reranker did not beat it, and the async path (`retrieval.aretrieve`, executor-backed, principal passed explicitly) did not improve concurrent p95, so it is not wired into `/query`.
 
 ### Hierarchy and storage verification
 

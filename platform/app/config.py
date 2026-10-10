@@ -18,6 +18,7 @@ COLLECTION = os.getenv("COLLECTION", "chunks")
 EMBED_DIM = int(os.getenv("EMBED_DIM", "384"))
 # hash = built-in hashing-trick embedder (offline, deterministic)
 # st   = sentence-transformers BAAI/bge-small-en-v1.5 (pip install sentence-transformers)
+# fastembed = ONNX BAAI/bge-small-en-v1.5, no PyTorch (pip install -r requirements-models.txt)
 EMBED_BACKEND = os.getenv("EMBED_BACKEND", "hash")
 
 # Identity: RS256 public key for verifying JWTs. scripts/gen_keys.py creates a
@@ -34,7 +35,9 @@ CACHE_MAX_ENTRIES = int(os.getenv("CACHE_MAX_ENTRIES", "256"))
 TOP_K = int(os.getenv("TOP_K", "4"))
 # similarity floor: hits below this never count as results, so a query about a
 # topic the user can't read looks exactly like a query about nothing
-MIN_SCORE = float(os.getenv("MIN_SCORE", "0.1"))
+# Default floors are per embedder: bge cosine similarity between unrelated texts sits around
+# 0.43-0.54 (measured, evals/results/2026-10-10-platform-rungs), so the hash embedder's 0.1 would pass everything.
+MIN_SCORE = float(os.getenv("MIN_SCORE", "0.55" if EMBED_BACKEND == "fastembed" else "0.1"))
 
 # Optional LLM generation (extractive answers when unset — demo runs keyless)
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
@@ -63,3 +66,19 @@ EMBED_MODEL = os.getenv("EMBED_MODEL", "")
 # Circuit breakers (embedder / vector store / LLM): consecutive failures to open, seconds to half-open
 BREAKER_THRESHOLD = int(os.getenv("BREAKER_THRESHOLD", "3"))
 BREAKER_RESET_S = float(os.getenv("BREAKER_RESET_S", "30"))
+
+# Local-model rungs (all need requirements-models.txt; defaults keep the keyless hash path).
+# Learned-sparse hybrid: "none" or "splade". Never enable Qdrant's IDF modifier (S1).
+SPARSE_BACKEND = os.getenv("SPARSE_BACKEND", "none")
+SPARSE_MODEL = os.getenv("SPARSE_MODEL", "")
+# Cross-encoder rerank of ACL-filtered candidates: "none" or "fastembed".
+RERANKER = os.getenv("RERANKER", "none")
+RERANK_MODEL = os.getenv("RERANK_MODEL", "")
+RERANK_CANDIDATES = int(os.getenv("RERANK_CANDIDATES", "25"))
+# Raw cross-encoder logit floor, calibrated for the default ms-marco MiniLM model on 10 out-of-corpus
+# queries (just above their best score). It also drops paraphrase targets: see the rung table.
+RERANK_MIN_SCORE = float(os.getenv("RERANK_MIN_SCORE", "-10.0"))
+# Document-embedding cache (fastembed only, ingest only, keyed sha256(text)+model id); "" disables
+EMBED_CACHE_PATH = os.getenv("EMBED_CACHE_PATH", str(ROOT / "embed_cache.sqlite"))
+# Where fastembed stores downloaded ONNX models ("" = fastembed's default temp dir)
+MODEL_CACHE_DIR = os.getenv("MODEL_CACHE_DIR", "")

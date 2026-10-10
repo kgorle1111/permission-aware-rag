@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add opt-in local models: `EMBED_BACKEND=fastembed` (bge-small, ingest-side embedding cache), `SPARSE_BACKEND=splade` (hybrid RRF with the ACL filter on both prefetches and no IDF modifier), `RERANKER=fastembed` (cross-encoder over ACL-filtered candidates, vector-order fallback). Defaults unchanged; `scripts/rung_benchmark.py` measures each rung against the leak gates. Add `retrieval.aretrieve` (not wired into `/query`: no p95 gain).
+
 - Preserve section restrictions during permission updates and persist reconciliation barriers across failures.
 - Serialize retrieval, generation, and audit commits against permission mutations; prevent superseded work from clearing a newer barrier.
 - Fail closed on malformed ACLs, invalid identities, missing indexed chunks, and audit failures.

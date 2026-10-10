@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .embeddings import embed, fingerprint
+from .embeddings import embed, fingerprint, sparse_embed, sparse_enabled
 from .redact import redact
 from .store import (ChunkACL, ChunkPolicy, SourceCheckpoint, PermissionMutation,
                     PendingSourceCheckpoint, ChunkText, IndexFingerprint,
@@ -89,6 +89,9 @@ def ingest_corpus(corpus_path: str | Path, reset: bool = True) -> int:
     vectors = embed([c["text"] for c in all_chunks])
     for ch, v in zip(all_chunks, vectors):
         ch["vector"] = v
+    if sparse_enabled():
+        for ch, sv in zip(all_chunks, sparse_embed([c["text"] for c in all_chunks])):
+            ch["sparse"] = sv
 
     if not reset:
         raise ValueError("incremental ingestion is unsupported; use a full replacement")

@@ -16,19 +16,28 @@ from qdrant_client.models import (
     Distance,
     FieldCondition,
     Filter,
+    Fusion,
+    FusionQuery,
     MatchAny,
     MatchValue,
     PointStruct,
     PayloadSchemaType,
+    Prefetch,
     ScalarQuantization,
     ScalarQuantizationConfig,
     ScalarType,
+    SparseVector,
+    SparseVectorParams,
     VectorParams,
 )
 
 from . import config
+from .embeddings import sparse_enabled
 
 ACL_LEVELS = ("acl_doc", "acl_section", "acl_para")
+
+# Hybrid collections name their vectors; dense-only collections keep the unnamed default.
+DENSE, SPARSE = "dense", "sparse"
 
 _client: QdrantClient | None = None
 
@@ -47,9 +56,13 @@ def reset_collection():
     c = client()
     if c.collection_exists(config.COLLECTION):
         c.delete_collection(config.COLLECTION)
+    dense = VectorParams(size=config.EMBED_DIM, distance=Distance.COSINE, on_disk=True)
+    hybrid = sparse_enabled()
     c.create_collection(
         collection_name=config.COLLECTION,
-        vectors_config=VectorParams(size=config.EMBED_DIM, distance=Distance.COSINE, on_disk=True),
+        vectors_config={DENSE: dense} if hybrid else dense,
+        # No `modifier`: Qdrant's IDF modifier is a collection-wide statistic (S1).
+        sparse_vectors_config={SPARSE: SparseVectorParams()} if hybrid else None,
         on_disk_payload=True,
         quantization_config=ScalarQuantization(
             scalar=ScalarQuantizationConfig(type=ScalarType.INT8, always_ram=True)),
@@ -64,24 +77,54 @@ def reset_collection():
 
 
 def upsert_chunks(chunks: list[dict]):
-    """chunks: [{id:int, doc_id, text, acl:[...], vector:[...]}]"""
+    """chunks: [{id:int, doc_id, text, acl:[...], vector:[...], sparse:(indices, values) if hybrid}]"""
+    hybrid = sparse_enabled()
     client().upsert(config.COLLECTION, wait=True, points=[
-        PointStruct(id=ch["id"], vector=ch["vector"],
+        PointStruct(id=ch["id"],
+                    vector={DENSE: ch["vector"], SPARSE: SparseVector(
+                        indices=ch["sparse"][0], values=ch["sparse"][1])} if hybrid else ch["vector"],
                     payload={"doc_id": ch["doc_id"], "text": ch["text"], "acl": ch["acl"], **{level: ch[level] for level in ACL_LEVELS}})
         for ch in chunks
     ])
 
 
-def search(query_vector: list[float], principals: list[str], top_k: int) -> list[dict]:
-    """THE security boundary: acl-match filter applied inside the engine."""
-    hits = client().query_points(
-        collection_name=config.COLLECTION,
-        query=query_vector,
-        query_filter=Filter(must=[FieldCondition(key=level, match=MatchAny(any=principals)) for level in ACL_LEVELS]),
-        limit=top_k,
-        score_threshold=config.MIN_SCORE,
-        with_payload=True,
-    ).points
+def _acl_filter(principals: list[str]) -> Filter:
+    return Filter(must=[FieldCondition(key=level, match=MatchAny(any=principals)) for level in ACL_LEVELS])
+
+
+def search(query_vector: list[float], principals: list[str], top_k: int,
+           sparse: tuple[list[int], list[float]] | None = None) -> list[dict]:
+    """THE security boundary: acl-match filter applied inside the engine.
+
+    With `sparse`, dense and sparse branches are fused (RRF) server-side. The
+    same filter is attached to EACH prefetch, so both candidate lists are built
+    from readable rows only; the fused ranking never sees a hidden chunk.
+    """
+    acl = _acl_filter(principals)
+    if sparse is None:
+        hits = client().query_points(
+            collection_name=config.COLLECTION,
+            query=query_vector,
+            using=DENSE if sparse_enabled() else None,
+            query_filter=acl,
+            limit=top_k,
+            score_threshold=config.MIN_SCORE,
+            with_payload=True,
+        ).points
+    else:
+        hits = client().query_points(
+            collection_name=config.COLLECTION,
+            prefetch=[
+                Prefetch(query=query_vector, using=DENSE, filter=acl, limit=2 * top_k,
+                         score_threshold=config.MIN_SCORE),
+                Prefetch(query=SparseVector(indices=sparse[0], values=sparse[1]), using=SPARSE,
+                         filter=acl, limit=2 * top_k),
+            ],
+            query=FusionQuery(fusion=Fusion.RRF),
+            query_filter=acl,
+            limit=top_k,
+            with_payload=True,
+        ).points
     return [{"chunk_id": h.id, "score": h.score, **h.payload} for h in hits]
 
 
@@ -91,7 +134,7 @@ def search_unfiltered_count(query_vector: list[float], principals: list[str], to
     this function, only the count does."""
     hits = client().query_points(
         collection_name=config.COLLECTION, query=query_vector,
-        limit=top_k, score_threshold=config.MIN_SCORE, with_payload=list(ACL_LEVELS),
+        using=DENSE if sparse_enabled() else None, limit=top_k, score_threshold=config.MIN_SCORE, with_payload=list(ACL_LEVELS),
     ).points
     pset = set(principals)
     return sum(1 for h in hits if not all(set(h.payload.get(level, [])) & pset for level in ACL_LEVELS))
