@@ -144,7 +144,7 @@ on drafted answers; without it, the workbench runs retrieval-only.
 ## 🧭 Honest limits
 
 - **Synthetic data.** It hasn't been deployed at a real underwriting shop yet.
-- **Row-level security stops a forgotten filter, not SQL injection.** The app's database role can still change its own session settings ([T13](docs/THREAT_MODEL.md)); a separate ingest role is on the roadmap.
+- **Row-level security stops a forgotten filter, not SQL injection.** Ingest now runs as a separate database role ([T13](docs/THREAT_MODEL.md)), but SQL on the app connection could still forge its own principals ([T18](docs/THREAT_MODEL.md)).
 - **Recall is measured on exact wording.** Semantic recall on real documents is unmeasured.
 - **Cross-document reasoning isn't solved.** The AI could combine permitted files into a conclusion no single file supports. Citations and a human decision are the guard.
 - **The newest audit entries can be deleted without detection.** Edits anywhere are caught, but trimming the tail isn't ([T12](docs/THREAT_MODEL.md)).

@@ -102,7 +102,7 @@ Designed and scoped on purpose, but not scheduled. Each waits for a reason to bu
 - **Spend cap** per day, plus a red-team suite of 50+ injection and exfiltration attacks in CI.
 - **Request logs for latency, cost and retrieval failures:** one structured line per request (request id, outcome, per-stage latency, tokens, estimated cost, failure reason) in both apps, with p50/p95 latency, daily cost and failure rate in `/audit`. Logs hold ids and counts only, never query or document text.
 - **Model SDK contract test** against the real API in CI.
-- **Ingest through a separate database role** ([T13](docs/THREAT_MODEL.md)), so the app role can't write chunks.
+- **Bind principals server-side** ([T18](docs/THREAT_MODEL.md)), so SQL on the app connection can't forge `rag.principals`.
 
 ### The full RAG build-out, one measured rung at a time
 
@@ -128,7 +128,7 @@ retriever that leaks is a regression. The comparison table gets published, inclu
    server-side so a model can't widen its own access, plus turn, token and time caps. A guarded
    multi-agent pipeline only if a single agent measurably falls short.
 6. **Beyond text:** PDF tables and OCR, selective chart descriptions, and text-to-SQL under
-   row-level security for policy-system data, after the database-role fix ([T13](docs/THREAT_MODEL.md)).
+   row-level security for policy-system data, after principal binding ([T18](docs/THREAT_MODEL.md)); the ingest-role fix (T13) is done.
 
 ## Open shortcuts (test-enforced)
 
@@ -141,7 +141,7 @@ its upgrade trigger. `app/test_ledgers.py` fails if a shortcut comment has no ro
 | B02 | open | Feature-hash embedder in place of a real model | E4 (recall lower bound ≥ 0.70) fails on non-lexical probes | `app/embedding.py` "placeholder embedder" |
 | B03 | open | Rate limiter is in-memory, per process | More than one server process or host | `app/underwriter_server.py` "in-memory per-process" |
 | B04 | open | Smallest model tier (Haiku) for grounded answers | An answer-quality eval shows Haiku below bar | `app/llm.py` "smallest tier" |
-| B05 | open | RLS ingest gated by a forgeable GUC, not a DB role | Before any deployment that runs untrusted SQL paths (THREAT_MODEL T13) | `app/pgvector_rag.py` "rag.mode" |
+| B05 | done (T13, 2026-10-10) | RLS ingest gated by a forgeable GUC, not a DB role | — | `app/pgvector_rag.py` "Ingest runs as a separate database role" |
 | B06 | open | JWT group with a comma → 500 on pgvector | First real IdP integration (THREAT_MODEL T14) | `app/pgvector_rag.py` "contain no comma" |
 | B07 | open | Held-out real-corpus leak eval | Real corpus available | `evals/results/2026-10-03-v2/table.md` "real-corpus held-out run" |
 

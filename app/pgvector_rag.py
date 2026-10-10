@@ -10,14 +10,16 @@ same guarantee down into Postgres Row-Level Security:
 - The app role is a non-superuser and not the table owner, so RLS applies to every
   query it runs. With no principals set, the table is EMPTY. A query that forgets
   its filter cannot see a forbidden row — the pre-filter guarantee becomes a
-  database property instead of an application promise. NOT a SQL-injection
-  defense yet: the app role can set the rag.* GUCs itself (docs/THREAT_MODEL.md T13).
+  database property instead of an application promise. Not a full SQL-injection
+  defense: SQL on the app connection can still set `rag.principals` itself (T18).
 - Ranking is pgvector cosine (`<=>`) over the RLS-filtered rows. Embedding distance
   is per-row (no corpus statistics), so the BM25 side channel (S1) has no analogue
   here by construction.
 
-Ingest runs in a separate mode (`rag.mode = 'ingest'`) granted by its own policy;
-retrieval never sets it. Audit rows are hash-chained exactly like the JSONL backend.
+Ingest runs as a separate database role on its own connection. The app role has SELECT
+only on chunks and no membership in the ingest role, so no setting it can change grants
+write access or the ingest policy (T13). Without an ingest DSN the instance is read-only.
+Audit rows are hash-chained exactly like the JSONL backend.
 
 Same public surface as PermissionRAG: add_document / remove_document / retrieve /
 audit / verify_audit_chain. Requires `psycopg` (the project's only optional dep).
@@ -74,40 +76,48 @@ CREATE POLICY chunks_read ON chunks FOR SELECT
        AND acl_section && string_to_array(current_setting('rag.principals', true), ',')
        AND acl_para && string_to_array(current_setting('rag.principals', true), ','));
 DROP POLICY IF EXISTS chunks_ingest ON chunks;
-CREATE POLICY chunks_ingest ON chunks FOR ALL
-    USING (current_setting('rag.mode', true) = 'ingest')
-    WITH CHECK (current_setting('rag.mode', true) = 'ingest');
 """
 
-APP_ROLE_GRANTS = """
-GRANT USAGE ON SCHEMA public TO {role};
-GRANT SELECT, INSERT, DELETE ON chunks TO {role};
-GRANT SELECT ON corpus_stats TO {role};
-GRANT UPDATE ON corpus_stats TO {role};
-GRANT SELECT, INSERT ON audit TO {role};
-GRANT USAGE ON SEQUENCE audit_id_seq TO {role};
+# REVOKEs migrate databases created when the app role still wrote chunks (T13).
+ROLE_GRANTS = """
+GRANT USAGE ON SCHEMA public TO {app}, {ingest};
+REVOKE INSERT, UPDATE, DELETE ON chunks FROM {app};
+REVOKE UPDATE ON corpus_stats FROM {app};
+GRANT SELECT ON chunks, corpus_stats TO {app};
+GRANT SELECT, INSERT ON audit TO {app};
+GRANT USAGE ON SEQUENCE audit_id_seq TO {app};
+GRANT SELECT, INSERT, DELETE ON chunks TO {ingest};
+GRANT SELECT, UPDATE ON corpus_stats TO {ingest};
+CREATE POLICY chunks_ingest ON chunks FOR ALL TO {ingest} USING (true) WITH CHECK (true)
 """
 
 
-def setup_schema(admin_dsn: str, app_role: str = "rag_app", app_password: str = "rag_app") -> None:
-    """Run once as a privileged role: extension, tables, RLS policies, app role.
+def setup_schema(
+    admin_dsn: str,
+    app_role: str = "rag_app",
+    app_password: str = "rag_app",
+    ingest_role: str = "rag_ingest",
+    ingest_password: str = "rag_ingest",
+) -> None:
+    """Run once as a privileged role: extension, tables, RLS policies, both roles.
 
-    The app role deliberately gets no BYPASSRLS and does not own the tables,
-    so every query it runs is subject to the policies above.
+    Neither role gets BYPASSRLS or owns the tables, so every query they run is subject
+    to the policies. Neither is a member of the other, so SET ROLE can't cross over.
     """
     with psycopg.connect(admin_dsn) as conn:
         conn.execute(SCHEMA)
-        exists = conn.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (app_role,)).fetchone()
-        if not exists:
-            # role/password come from trusted config; composed via sql.Identifier/Literal
-            conn.execute(
-                sql.SQL("CREATE ROLE {} LOGIN PASSWORD {}").format(
-                    sql.Identifier(app_role), sql.Literal(app_password)
+        for role, password in ((app_role, app_password), (ingest_role, ingest_password)):
+            if not conn.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (role,)).fetchone():
+                # role/password come from trusted config; composed via sql.Identifier/Literal
+                conn.execute(
+                    sql.SQL("CREATE ROLE {} LOGIN PASSWORD {}").format(
+                        sql.Identifier(role), sql.Literal(password)
+                    )
                 )
+        for stmt in ROLE_GRANTS.strip().split(";"):
+            conn.execute(
+                sql.SQL(stmt).format(app=sql.Identifier(app_role), ingest=sql.Identifier(ingest_role))
             )
-        for stmt in APP_ROLE_GRANTS.strip().split(";"):
-            if stmt.strip():
-                conn.execute(sql.SQL(stmt).format(role=sql.Identifier(app_role)))
 
 
 class PgVectorRAG:
@@ -115,28 +125,37 @@ class PgVectorRAG:
 
     audit_path = None  # interface compat with the JSONL backend
 
-    def __init__(self, dsn: str):
+    def __init__(self, dsn: str, ingest_dsn: str | None = None):
+        """dsn connects as the app role (retrieval); ingest_dsn as the ingest role."""
         # autocommit: single reads commit immediately (no idle-in-transaction locks);
         # multi-statement work still uses explicit conn.transaction() blocks, which
         # is also what scopes each set_config(..., is_local=true) GUC.
         self.conn = psycopg.connect(dsn, autocommit=True)
+        self.ingest_conn = psycopg.connect(ingest_dsn, autocommit=True) if ingest_dsn else None
 
     def close(self) -> None:
         self.conn.close()
+        if self.ingest_conn:
+            self.ingest_conn.close()
 
-    # ── ingest (rag.mode = 'ingest') ─────────────────────────────────────────
+    # ── ingest (separate DB role, separate connection) ───────────────────────
+    def _writer(self) -> psycopg.Connection:
+        if self.ingest_conn is None:
+            raise PermissionError("read-only PgVectorRAG: pass ingest_dsn (the ingest role) to ingest")
+        return self.ingest_conn
+
     def add_document(
         self, doc_id: str, text: str, acl, chunk_words: int = 80, *, sections: list[dict] | None = None
     ) -> None:
         chunks = PermissionRAG.document_chunks(text, acl, chunk_words, sections=sections)
-        with self.conn.transaction():
-            self.conn.execute("SELECT set_config('rag.mode', 'ingest', true)")
-            dup = self.conn.execute("SELECT 1 FROM chunks WHERE doc_id = %s LIMIT 1", (doc_id,)).fetchone()
+        w = self._writer()
+        with w.transaction():
+            dup = w.execute("SELECT 1 FROM chunks WHERE doc_id = %s LIMIT 1", (doc_id,)).fetchone()
             if dup:
                 raise ValueError(f"doc_id {doc_id!r} already ingested — use remove_document() then re-add")
             for i, chunk in enumerate(chunks):
                 chunk_text = chunk["text"]
-                self.conn.execute(
+                w.execute(
                     "INSERT INTO chunks (id, doc_id, text, acl, acl_doc, acl_section, acl_para, embedding) "
                     "VALUES (%s,%s,%s,%s,%s,%s,%s,%s::vector)",
                     (
@@ -150,13 +169,13 @@ class PgVectorRAG:
                         to_pgvector(embed(chunk_text)),
                     ),
                 )
-            self.conn.execute("UPDATE corpus_stats SET chunk_count = (SELECT count(*) FROM chunks)")
+            w.execute("UPDATE corpus_stats SET chunk_count = (SELECT count(*) FROM chunks)")
 
     def remove_document(self, doc_id: str) -> int:
-        with self.conn.transaction():
-            self.conn.execute("SELECT set_config('rag.mode', 'ingest', true)")
-            cur = self.conn.execute("DELETE FROM chunks WHERE doc_id = %s", (doc_id,))
-            self.conn.execute("UPDATE corpus_stats SET chunk_count = (SELECT count(*) FROM chunks)")
+        w = self._writer()
+        with w.transaction():
+            cur = w.execute("DELETE FROM chunks WHERE doc_id = %s", (doc_id,))
+            w.execute("UPDATE corpus_stats SET chunk_count = (SELECT count(*) FROM chunks)")
             return cur.rowcount
 
     # ── retrieval (rag.principals only — RLS does the filtering) ─────────────

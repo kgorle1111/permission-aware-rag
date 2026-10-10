@@ -75,7 +75,8 @@ CORPUS = [
 if os.environ.get("RAG_BACKEND") == "pgvector":
     from pgvector_rag import PgVectorRAG
 
-    rag = PgVectorRAG(os.environ["DATABASE_URL"])
+    # INGEST_DATABASE_URL (the ingest role) is optional: without it the server is read-only (T13)
+    rag = PgVectorRAG(os.environ["DATABASE_URL"], os.environ.get("INGEST_DATABASE_URL"))
 else:
     rag = PermissionRAG(audit_path=pathlib.Path(__file__).with_name("audit_log.jsonl"))
 for _doc_id, _text, _acl in CORPUS:
@@ -83,6 +84,8 @@ for _doc_id, _text, _acl in CORPUS:
         rag.add_document(_doc_id, _text, _acl)
     except ValueError:
         pass  # already ingested (persistent backend restart)
+    except PermissionError:
+        break  # read-only pgvector deployment: the corpus is ingested out of band
 
 UI = pathlib.Path(__file__).with_name("ui.html")
 PRESETS = pathlib.Path(__file__).with_name("presets.json")
