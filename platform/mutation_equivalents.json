@@ -26,15 +26,50 @@
       "source_sha256": "1943ec463026c64d6fbc97f4fa2284d196dd0ab4521517258c89f3b5ce19e9fe",
       "mutant_sha256": "f0daf2866180eb6d082aaf90beba821b81b71576f7352a6f316b3685339872dc"
     },
+    "app.generation.x__send__mutmut_38": {
+      "source_sha256": "45411945e9c8b25d9f519c1b3078d9c39f355e9ccfd24540c42f59ff7b23a57b",
+      "mutant_sha256": "a3280a7b8efc94a16fca04e4c0c47ff181fe9ef34818b1ffeb52e830091c7e9d",
+      "reason": "httpx Headers.get is case-insensitive, so 'retry-after' reads the same header as 'Retry-After'."
+    },
+    "app.generation.x__send__mutmut_39": {
+      "source_sha256": "45411945e9c8b25d9f519c1b3078d9c39f355e9ccfd24540c42f59ff7b23a57b",
+      "mutant_sha256": "0804096b99e2a2e10a7ba55f11c39490020e704e8eb9e4559a55cba358c25c27",
+      "reason": "httpx Headers.get is case-insensitive, so 'RETRY-AFTER' reads the same header as 'Retry-After'."
+    },
+    "app.generation.x__send__mutmut_54": {
+      "source_sha256": "45411945e9c8b25d9f519c1b3078d9c39f355e9ccfd24540c42f59ff7b23a57b",
+      "mutant_sha256": "ba0ffd04949d257d22ea92008bc7e969398e9c2955e6ba3956b1cd9fd6a64b5a",
+      "reason": "Message of an unreachable AssertionError after the retry loop; every attempt returns or raises first."
+    },
+    "app.generation.x__send__mutmut_55": {
+      "source_sha256": "45411945e9c8b25d9f519c1b3078d9c39f355e9ccfd24540c42f59ff7b23a57b",
+      "mutant_sha256": "0f25fb3e423756fb5c4e97ef6249aa3cf67f30f857f2bb02cb97a7b4689f8913",
+      "reason": "Message of an unreachable AssertionError after the retry loop; every attempt returns or raises first."
+    },
+    "app.generation.x__send__mutmut_56": {
+      "source_sha256": "45411945e9c8b25d9f519c1b3078d9c39f355e9ccfd24540c42f59ff7b23a57b",
+      "mutant_sha256": "f03eb771989075ba39c168bb38612277bf97d63b66c3e2949414f72a8f2a5cbb",
+      "reason": "Message of an unreachable AssertionError after the retry loop; every attempt returns or raises first."
+    },
+    "app.generation.x__send__mutmut_7": {
+      "source_sha256": "45411945e9c8b25d9f519c1b3078d9c39f355e9ccfd24540c42f59ff7b23a57b",
+      "mutant_sha256": "d682308f64f58ed37d017496427cf604906ae225145bf0a27732ec014ba0e5f0",
+      "reason": "range(1, MAX+2) adds attempt 5, but attempt MAX (4) always returns or raises, so it is never reached."
+    },
+    "app.generation.x__send__mutmut_8": {
+      "source_sha256": "45411945e9c8b25d9f519c1b3078d9c39f355e9ccfd24540c42f59ff7b23a57b",
+      "mutant_sha256": "6ecb8a435d60cebf31a2748b4620d9bb920e6d5535b8594c79fa774dcfdac936",
+      "reason": "retry_after '' vs None: both make _delay fall through to jitter (float('') raises ValueError, caught)."
+    },
     "app.generation.x_answer__mutmut_18": {
-      "reason": "Omitting the quote=True argument for the document ID calls Python stdlib html.escape with its default quote=True, producing exactly identical escaped context and HTTP payload.",
-      "source_sha256": "1b7dcd35b68dbaa699eeba53cf2c1547b1f177a1d8f66ad2a2cd53e93b139b61",
-      "mutant_sha256": "d770c49e9896102ce0ef3cf48a20468c0b0db7b94b36fe8f748b5aadb43c8b15"
+      "source_sha256": "45411945e9c8b25d9f519c1b3078d9c39f355e9ccfd24540c42f59ff7b23a57b",
+      "mutant_sha256": "bc329cd773aa02dddfec4159a27e9108525b81ff0cba68d2da31a75ce513260f",
+      "reason": "html.escape(doc_id) without quote=True is identical: html.escape's quote parameter defaults to True."
     },
     "app.generation.x_answer__mutmut_25": {
-      "reason": "Omitting the quote=True argument for document text calls Python stdlib html.escape with its default quote=True, producing exactly identical escaped context and HTTP payload.",
-      "source_sha256": "1b7dcd35b68dbaa699eeba53cf2c1547b1f177a1d8f66ad2a2cd53e93b139b61",
-      "mutant_sha256": "2e9eea6884bac2f5f0db896a76a9680bc1290c241e6ea23b35a407e0368a3377"
+      "source_sha256": "45411945e9c8b25d9f519c1b3078d9c39f355e9ccfd24540c42f59ff7b23a57b",
+      "mutant_sha256": "b595d68cb8f8a832d3686c3f4a0c68952fd09cc41e5548ec088cdb2337e69a93",
+      "reason": "html.escape(text) without quote=True is identical: html.escape's quote parameter defaults to True."
     },
     "app.identity.x_principal_from_request__mutmut_7": {
       "reason": "Starlette Headers.get is case-insensitive, so 'AUTHORIZATION' reads the same header as 'authorization'.",
