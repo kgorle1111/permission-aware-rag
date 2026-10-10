@@ -10,8 +10,9 @@ same guarantee down into Postgres Row-Level Security:
 - The app role is a non-superuser and not the table owner, so RLS applies to every
   query it runs. With no principals set, the table is EMPTY. A query that forgets
   its filter cannot see a forbidden row — the pre-filter guarantee becomes a
-  database property instead of an application promise. Not a full SQL-injection
-  defense: SQL on the app connection can still set `rag.principals` itself (T18).
+  database property instead of an application promise. Principals arrive only as an
+  HMAC-signed, 60-second token verified inside Postgres (T18), so SQL on the app connection
+  can't widen what it reads; audit rows are not yet protected from it (T19).
 - Ranking is pgvector cosine (`<=>`) over the RLS-filtered rows. Embedding distance
   is per-row (no corpus statistics), so the BM25 side channel (S1) has no analogue
   here by construction.
@@ -26,7 +27,9 @@ audit / verify_audit_chain. Requires `psycopg` (the project's only optional dep)
 """
 
 import hashlib
+import hmac
 import json
+import secrets
 import time
 
 import psycopg
@@ -70,11 +73,36 @@ ALTER TABLE chunks ALTER COLUMN acl_section SET NOT NULL;
 ALTER TABLE chunks ALTER COLUMN acl_para SET NOT NULL;
 ALTER TABLE chunks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chunks FORCE ROW LEVEL SECURITY;
+-- T18: principals reach RLS only as an HMAC-signed, fresh token, verified with a key the
+-- app and ingest roles cannot read. A raw rag.principals setting is ignored.
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE TABLE IF NOT EXISTS rag_secret (id integer PRIMARY KEY CHECK (id = 1), key bytea NOT NULL);
+REVOKE ALL ON rag_secret FROM PUBLIC;
+CREATE OR REPLACE FUNCTION rag_principals() RETURNS text[]
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog, public AS $fn$
+DECLARE
+    parts text[] := string_to_array(coalesce(current_setting('rag.token', true), ''), '|');
+    k bytea;
+BEGIN
+    IF coalesce(array_length(parts, 1), 0) <> 3 OR parts[2] !~ '^[0-9]{{1,12}}$'
+       OR abs(extract(epoch FROM now()) - parts[2]::bigint) > 60 THEN
+        RETURN ARRAY[]::text[];
+    END IF;
+    SELECT key INTO k FROM rag_secret WHERE id = 1;
+    IF k IS NULL OR encode(hmac(convert_to(parts[1] || '|' || parts[2], 'UTF8'), k, 'sha256'), 'hex')
+                    IS DISTINCT FROM parts[3] THEN
+        RETURN ARRAY[]::text[];
+    END IF;
+    RETURN string_to_array(parts[1], ',');
+END
+$fn$;
+REVOKE ALL ON FUNCTION rag_principals() FROM PUBLIC;
 DROP POLICY IF EXISTS chunks_read ON chunks;
+-- (SELECT ...) makes Postgres verify the token once per query, not once per row
 CREATE POLICY chunks_read ON chunks FOR SELECT
-    USING (acl_doc && string_to_array(current_setting('rag.principals', true), ',')
-       AND acl_section && string_to_array(current_setting('rag.principals', true), ',')
-       AND acl_para && string_to_array(current_setting('rag.principals', true), ','));
+    USING (acl_doc && (SELECT rag_principals())
+       AND acl_section && (SELECT rag_principals())
+       AND acl_para && (SELECT rag_principals()));
 DROP POLICY IF EXISTS chunks_ingest ON chunks;
 """
 
@@ -84,6 +112,7 @@ GRANT USAGE ON SCHEMA public TO {app}, {ingest};
 REVOKE INSERT, UPDATE, DELETE ON chunks FROM {app};
 REVOKE UPDATE ON corpus_stats FROM {app};
 GRANT SELECT ON chunks, corpus_stats TO {app};
+GRANT EXECUTE ON FUNCTION rag_principals() TO {app}, {ingest};
 GRANT SELECT, INSERT ON audit TO {app};
 GRANT USAGE ON SEQUENCE audit_id_seq TO {app};
 GRANT SELECT, INSERT, DELETE ON chunks TO {ingest};
@@ -98,11 +127,15 @@ def setup_schema(
     app_password: str = "rag_app",
     ingest_role: str = "rag_ingest",
     ingest_password: str = "rag_ingest",
-) -> None:
+    principal_key: bytes | None = None,
+) -> bytes:
     """Run once as a privileged role: extension, tables, RLS policies, both roles.
 
     Neither role gets BYPASSRLS or owns the tables, so every query they run is subject
     to the policies. Neither is a member of the other, so SET ROLE can't cross over.
+
+    Returns the principal-signing key (T18). Pass it to PgVectorRAG. With no key given, an
+    existing key is kept (re-running setup never rotates silently); otherwise a random one is made.
     """
     with psycopg.connect(admin_dsn) as conn:
         conn.execute(SCHEMA)
@@ -118,6 +151,22 @@ def setup_schema(
             conn.execute(
                 sql.SQL(stmt).format(app=sql.Identifier(app_role), ingest=sql.Identifier(ingest_role))
             )
+        if principal_key is None:
+            row = conn.execute("SELECT key FROM rag_secret WHERE id = 1").fetchone()
+            principal_key = bytes(row[0]) if row else secrets.token_bytes(32)
+        if len(principal_key) < 32:
+            raise ValueError("principal_key must be at least 32 random bytes")
+        conn.execute(
+            "INSERT INTO rag_secret (id, key) VALUES (1, %s) ON CONFLICT (id) DO UPDATE SET key = EXCLUDED.key",
+            (principal_key,),
+        )
+        return principal_key
+
+
+def sign_principals(key: bytes, principals: list[str], now: float | None = None) -> str:
+    """'p1,p2|unix_ts|hmac_sha256_hex': the only principal channel RLS accepts (60 s window)."""
+    body = f"{','.join(principals)}|{int(time.time() if now is None else now)}"
+    return f"{body}|{hmac.new(key, body.encode(), hashlib.sha256).hexdigest()}"
 
 
 class PgVectorRAG:
@@ -125,8 +174,10 @@ class PgVectorRAG:
 
     audit_path = None  # interface compat with the JSONL backend
 
-    def __init__(self, dsn: str, ingest_dsn: str | None = None):
-        """dsn connects as the app role (retrieval); ingest_dsn as the ingest role."""
+    def __init__(self, dsn: str, ingest_dsn: str | None = None, *, principal_key: bytes):
+        """dsn connects as the app role (retrieval); ingest_dsn as the ingest role.
+        principal_key signs principals for RLS (T18); it must match setup_schema's key."""
+        self._principal_key = principal_key
         # autocommit: single reads commit immediately (no idle-in-transaction locks);
         # multi-statement work still uses explicit conn.transaction() blocks, which
         # is also what scopes each set_config(..., is_local=true) GUC.
@@ -182,17 +233,20 @@ class PgVectorRAG:
     @staticmethod
     def principals(user: dict) -> list[str]:
         names = [user["id"], *user.get("groups", ())]
-        # ',' is the GUC delimiter; an embedded one would forge an extra principal
-        if any(not n or "," in n for n in names):
-            raise ValueError("user id and group names must be non-empty and contain no comma")
+        # ',' separates principals and '|' separates token fields; either would forge structure
+        if any(not n or "," in n or "|" in n for n in names):
+            raise ValueError("user id and group names must be non-empty and contain no ',' or '|'")
         return ["*", f"user:{user['id']}"] + [f"group:{g}" for g in user.get("groups", ())]
+
+    def sign_principals(self, principals: list[str], now: float | None = None) -> str:
+        return sign_principals(self._principal_key, principals, now)
 
     def retrieve(self, query: str, user: dict, k: int = 3) -> list[dict]:
         t0 = time.perf_counter()
         qvec = to_pgvector(embed(query))
         with self.conn.transaction():
             self.conn.execute(
-                "SELECT set_config('rag.principals', %s, true)", (",".join(self.principals(user)),)
+                "SELECT set_config('rag.token', %s, true)", (self.sign_principals(self.principals(user)),)
             )
             rows = self.conn.execute(
                 "SELECT id, doc_id, text, 1 - (embedding <=> %s::vector) AS score "

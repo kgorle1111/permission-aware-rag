@@ -11,11 +11,11 @@ if not ADMIN:
     pytest.skip("DATABASE_URL not set — migration needs privileged Postgres", allow_module_level=True)
 
 from embedding import DIMS  # noqa: E402
-from pgvector_rag import setup_schema  # noqa: E402
+from pgvector_rag import setup_schema, sign_principals  # noqa: E402
 from psycopg import sql  # noqa: E402
 
 
-def test_populated_flat_schema_migrates_idempotently_and_keeps_raw_rls():
+def test_populated_flat_schema_migrates_idempotently_and_keeps_rls():
     suffix = uuid.uuid4().hex
     database, role = f"hierarchy_migration_{suffix}", f"hierarchy_reader_{suffix}"
     dsn = psycopg.conninfo.make_conninfo(ADMIN, dbname=database)
@@ -48,7 +48,7 @@ def test_populated_flat_schema_migrates_idempotently_and_keeps_raw_rls():
                     "(acl && string_to_array(current_setting('rag.principals', true), ','))"
                 )
             for _ in range(2):
-                setup_schema(dsn, app_role=role, app_password="migration-local-only")
+                key = setup_schema(dsn, app_role=role, app_password="migration-local-only")
                 with psycopg.connect(dsn) as conn:
                     rows = conn.execute(
                         "SELECT id, doc_id, text, acl, acl_doc, acl_section, acl_para FROM chunks ORDER BY id"
@@ -70,7 +70,8 @@ def test_populated_flat_schema_migrates_idempotently_and_keeps_raw_rls():
                         ("*,user:bob,group:hr-admin", {"public#0"}),
                     ]:
                         with reader.transaction():
-                            reader.execute("SELECT set_config('rag.principals', %s, true)", (scope,))
+                            token = sign_principals(key, scope.split(","))
+                            reader.execute("SELECT set_config('rag.token', %s, true)", (token,))
                             assert {r[0] for r in reader.execute("SELECT id FROM chunks")} == expected
                     assert reader.execute("SELECT id FROM chunks").fetchall() == []
         finally:

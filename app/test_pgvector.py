@@ -8,6 +8,7 @@ under Row-Level Security. CI provides a pgvector/pgvector:pg16 service.
 import json
 import os
 import pathlib
+import time
 
 import pytest
 
@@ -35,10 +36,11 @@ def _fresh() -> PgVectorRAG:
             "WHERE usename IN ('rag_app', 'rag_ingest') AND pid <> pg_backend_pid()"
         )
         c.execute("DROP TABLE IF EXISTS chunks, corpus_stats, audit CASCADE")
-    setup_schema(ADMIN)
+    global KEY
+    KEY = setup_schema(ADMIN)
     app_dsn = psycopg.conninfo.make_conninfo(ADMIN, user="rag_app", password="rag_app")
     ingest_dsn = psycopg.conninfo.make_conninfo(ADMIN, user="rag_ingest", password="rag_ingest")
-    rag = PgVectorRAG(app_dsn, ingest_dsn)
+    rag = PgVectorRAG(app_dsn, ingest_dsn, principal_key=KEY)
     _open.append(rag)
     return rag
 
@@ -94,7 +96,9 @@ def test_rls_is_the_enforcer_not_the_app():
         assert rag.conn.execute("SELECT count(*) FROM chunks").fetchone()[0] == 0
 
     with rag.conn.transaction():
-        rag.conn.execute("SELECT set_config('rag.principals', '*,user:guest', true)")
+        rag.conn.execute(
+            "SELECT set_config('rag.token', %s, true)", (rag.sign_principals(["*", "user:guest"]),)
+        )
         # even SELECT * (no app filtering) yields only the public chunk
         rows = rag.conn.execute("SELECT doc_id FROM chunks").fetchall()
         assert {r[0] for r in rows} == {"handbook"}
@@ -194,7 +198,9 @@ def test_hierarchy_rls_checks_every_level_without_application_filter():
         ),
     ]:
         with rag.conn.transaction():
-            rag.conn.execute("SELECT set_config('rag.principals', %s, true)", (scope,))
+            rag.conn.execute(
+                "SELECT set_config('rag.token', %s, true)", (rag.sign_principals(scope.split(",")),)
+            )
             assert {r[0] for r in rag.conn.execute("SELECT text FROM chunks")} == expected
     with pytest.raises((TypeError, ValueError)):
         rag.add_document("invalid", "lead", ["*"], sections=[{"text": "secret", "acl": []}])
@@ -224,7 +230,9 @@ def test_app_role_cannot_ingest_or_widen_visibility():
     setup_schema(ADMIN)  # re-running setup must migrate the legacy write grants away
     with rag.conn.transaction():
         rag.conn.execute("SELECT set_config('rag.mode', 'ingest', true)")  # forged by the app role
-        rag.conn.execute("SELECT set_config('rag.principals', '*,user:guest', true)")
+        rag.conn.execute(
+            "SELECT set_config('rag.token', %s, true)", (rag.sign_principals(["*", "user:guest"]),)
+        )
         assert {r[0] for r in rag.conn.execute("SELECT doc_id FROM chunks")} == {"handbook"}
     for stmt in (
         "INSERT INTO chunks (id, doc_id, text, acl, acl_doc, acl_section, acl_para, embedding) "
@@ -235,9 +243,33 @@ def test_app_role_cannot_ingest_or_widen_visibility():
         with pytest.raises(psycopg.errors.InsufficientPrivilege):
             with rag.conn.transaction():
                 rag.conn.execute(stmt)
-    reader = PgVectorRAG(psycopg.conninfo.make_conninfo(ADMIN, user="rag_app", password="rag_app"))
+    reader = PgVectorRAG(
+        psycopg.conninfo.make_conninfo(ADMIN, user="rag_app", password="rag_app"), principal_key=KEY
+    )
     _open.append(reader)
     with pytest.raises(PermissionError):
         reader.add_document("new", "text", {"*"})
     with pytest.raises(PermissionError):
         reader.remove_document("handbook")
+
+
+def test_forged_principals_cannot_widen_visibility():
+    """T18: SQL on the app connection can set any session setting, but principals only reach
+    RLS as an HMAC-signed, fresh token verified inside Postgres with a key the app role can't read."""
+    rag = _fresh()
+    _seed(rag)
+    with rag.conn.transaction():  # the old channel: a raw principal list is ignored now
+        rag.conn.execute("SELECT set_config('rag.principals', '*,group:hr,group:exec,group:eng', true)")
+        assert rag.conn.execute("SELECT count(*) FROM chunks").fetchone()[0] == 0
+    for forged in ("*,group:hr|9999999999|" + "0" * 64, "garbage", ""):
+        with rag.conn.transaction():
+            rag.conn.execute("SELECT set_config('rag.token', %s, true)", (forged,))
+            assert rag.conn.execute("SELECT count(*) FROM chunks").fetchone()[0] == 0
+    stale = rag.sign_principals(["*", "group:hr"], now=time.time() - 3600)
+    with rag.conn.transaction():
+        rag.conn.execute("SELECT set_config('rag.token', %s, true)", (stale,))
+        assert rag.conn.execute("SELECT count(*) FROM chunks").fetchone()[0] == 0
+    with pytest.raises(psycopg.errors.InsufficientPrivilege):
+        with rag.conn.transaction():
+            rag.conn.execute("SELECT key FROM rag_secret")
+    assert docs(rag, BOB, "salary bands") == {"salaries"}  # the signed path still works
