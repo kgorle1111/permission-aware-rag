@@ -5,7 +5,7 @@ import pdfplumber
 import pytest
 
 from app import pdf_ingest as P
-from test_pdf_ingest import FDIC31, FDIC171, FEMA, IRS542, _image_only_pdf
+from test_pdf_ingest import FDIC31, FDIC171, FEMA, IRS542, _image_only_pdf, word_recall
 
 FDIC171_TITLES = ['RoE > Matters Requiring Attention 1234',
  'RoE > Matters Requiring Attention 1234',
@@ -324,7 +324,7 @@ def test_ocr_paragraphs_are_split_on_blank_lines_and_unwrapped(tmp_path):
     paras = [p["text"].split("\n", 1)[1] for s in out["sections"] for p in s["paragraphs"]]
     assert len(paras) >= 3
     assert all("\n" not in p and "XX" not in p for p in paras)
-    assert any("Asset quality is one of the most critical areas" in p for p in paras)
+    assert any(word_recall("Asset quality is one of the most critical areas", p) >= 0.8 for p in paras)
 
 
 def test_gutters_need_thirty_words_and_a_real_share_on_each_side():

@@ -5,6 +5,7 @@ real PDF at test time, and table edge cases mutate rows read from a real table.
 """
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -264,6 +265,12 @@ def test_usable_text_and_running_head_normalisation():
     assert pdf_ingest._norm("page 7") != pdf_ingest._norm("chapter 7")
 
 
+def word_recall(phrase: str, text: str) -> float:
+    words = set(re.findall(r"[a-z0-9]+", text.lower()))
+    want = re.findall(r"[a-z0-9]+", phrase.lower())
+    return sum(w in words for w in want) / len(want)
+
+
 def _image_only_pdf(src: Path, page_index: int, dst: Path, dpi: int = 200) -> None:
     """Rasterize one page of a real PDF into an image-only PDF (no text layer)."""
     with pdfplumber.open(src) as pdf:
@@ -279,9 +286,10 @@ def test_ocr_fallback_reads_a_rasterized_real_page(tmp_path):
     out = pdf_ingest.extract_pdf(scan, title="scan")
     assert out["stats"]["ocr_pages"] == 1
     text = " ".join(_text({"sections": out["sections"]}).split())
+    # word recall, not exact substrings: Tesseract builds differ on single glyphs ("is" vs "1s")
     for phrase in ("Asset quality is one of the most critical areas",
                    "credit administration program", "Uniform Financial Institution Rating System"):
-        assert phrase in text
+        assert word_recall(phrase, text) >= 0.8, phrase
     assert out["sections"][0]["title"] == "scan"
 
 
