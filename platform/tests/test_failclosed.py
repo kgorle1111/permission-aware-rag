@@ -8,23 +8,30 @@ from app import retrieval
 from app import config as appconfig
 
 
-def test_broken_vector_store_returns_empty_not_unfiltered(client, monkeypatch):
+def test_broken_vector_store_degrades_to_acl_filtered_keyword_fallback(client, monkeypatch):
     def boom(*a, **k):
         raise RuntimeError("qdrant down")
     monkeypatch.setattr(retrieval, "search", boom)
     r = client.post("/query", json={"query": "what are the salary bands?"},
-                    headers=auth("bob"))
+                    headers=auth("alice"))
     assert r.status_code == 200
     body = r.json()
-    assert body["results"] == []
-    assert "HR-CANARY" not in r.text
+    assert body["source"] == "keyword_fallback" and body["degraded"] is True
+    assert "HR-CANARY" not in r.text   # alice cannot read hr-salaries at any level
 
 
 def test_fail_closed_is_audited(client, monkeypatch):
     from app.store import AuditLog, SessionLocal
-    monkeypatch.setattr(retrieval, "search",
-                        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
-    client.post("/query", json={"query": "anything"}, headers=auth("alice"))
+    from app.store import PermissionState
+    with SessionLocal() as s:
+        s.query(PermissionState).update({"pending": True})
+        s.commit()
+    try:
+        client.post("/query", json={"query": "anything"}, headers=auth("alice"))
+    finally:
+        with SessionLocal() as s:
+            s.query(PermissionState).update({"pending": False})
+            s.commit()
     with SessionLocal() as s:
         row = s.query(AuditLog).order_by(AuditLog.id.desc()).first()
     assert row.fail_closed is True

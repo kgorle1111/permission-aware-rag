@@ -19,7 +19,8 @@ def test_retrieval_preserves_query_vector_result_schema_and_success_audit(client
     monkeypatch.setattr(retrieval, "search_unfiltered_count", denied)
     monkeypatch.setattr(retrieval, "answer", answer)
     result = retrieval.retrieve("original question", principal, k=20)
-    assert result == {"results": [{"doc_id": "permitted", "text": "content", "score": 0.1235}], "answer": "answer"}
+    assert result == {"results": [{"doc_id": "permitted", "text": "content", "score": 0.1235}], "answer": "answer",
+                      "degraded": False, "source": "full_rag"}
     search.assert_called_once_with(vector, principal.principals, top_k=20)
     denied.assert_called_once_with(vector, principal.principals, top_k=20)
     answer.assert_called_once_with("original question", result["results"])
@@ -32,8 +33,15 @@ def test_retrieval_preserves_query_vector_result_schema_and_success_audit(client
 
 
 def test_failed_retrieval_redacts_query_without_fabricated_denials(client, monkeypatch):
-    monkeypatch.setattr(retrieval, "embed_one", Mock(side_effect=RuntimeError("embedding unavailable")))
-    assert retrieval.retrieve("original failed question", Principal("reader")) == retrieval.EMPTY_RESPONSE
+    with store.SessionLocal() as session:   # permission uncertainty, not a dependency outage
+        session.query(store.PermissionState).update({"pending": True})
+        session.commit()
+    try:
+        assert retrieval.retrieve("original failed question", Principal("reader")) == retrieval.EMPTY_RESPONSE
+    finally:
+        with store.SessionLocal() as session:
+            session.query(store.PermissionState).update({"pending": False})
+            session.commit()
     with store.SessionLocal() as session:
         record = session.query(store.AuditLog).one()
         assert record.query == "[redacted]"

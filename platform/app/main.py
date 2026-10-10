@@ -22,7 +22,7 @@ from . import audit as audit_mod
 from . import config
 from .identity import Principal, principal_from_request
 from .retrieval import retrieve
-from .store import init_db, SessionLocal, PermissionState
+from .store import init_db, SessionLocal, PermissionState, fingerprint_problem
 from .sync import sync_once
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
@@ -124,7 +124,10 @@ def readyz():
         with SessionLocal() as session:
             state = session.get(PermissionState, 1)
             if state and not state.pending and not state.rebuild_required:
-                return {"ready": True}
+                problem = fingerprint_problem(session)
+                if problem is None:
+                    return {"ready": True}
+                log.error("not ready: %s", problem)
     except Exception:
         log.exception("readiness check failed")
     raise HTTPException(503, "permission reconciliation required")
