@@ -1,0 +1,11 @@
+{
+  "source_url": "https://www.archives.gov/founding-docs/constitution-transcript",
+  "retrieved_date": "2026-10-08",
+  "source_sha256": "ebf8b43a181e2d8f91370a73cd9e00a1630b2bcfbca27ce1db4c5a226fced0da",
+  "fixture_sha256": "e4f60a85e8239471d82bb3212e503ac817a175f137f3a2ed9ddebc6e62f3cec6",
+  "paragraphs": 87,
+  "permission_overlay": "fictional cyclic eight-pattern v1",
+  "text_rights": "Public-domain U.S. Constitution transcription; NARA reuse policy applies to NARA works",
+  "rights_source": "https://www.archives.gov/global-pages/privacy.html#copyright",
+  "extraction": "HTML p text from We the People through Attest William Jackson Secretary; whitespace normalized; inline links retain their text"
+}

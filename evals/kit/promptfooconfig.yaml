@@ -1,0 +1,9 @@
+description: Deterministic retriever ACL regression gate
+prompts:
+  - Run the fixed permission-isolation fixture
+providers:
+  - id: file://promptfoo-provider.cjs
+tests:
+  - assert:
+      - type: javascript
+        value: output.passed === true

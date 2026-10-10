@@ -1,0 +1,6877 @@
+{
+  "probes": 2088,
+  "visibility_failures": 0,
+  "isolation_failures": 0,
+  "positive_controls": 197,
+  "recall_misses": 0,
+  "errors": 0,
+  "invalid_acl_controls": 0,
+  "invalid_acl_failures": 0,
+  "revocation_controls": 1,
+  "revocation_failures": 0,
+  "examples": [],
+  "passed": true,
+  "fixture": "national-archives-constitution-fictional-acls-v1",
+  "fixture_sha256": "e4f60a85e8239471d82bb3212e503ac817a175f137f3a2ed9ddebc6e62f3cec6",
+  "chunks": 87,
+  "principal_scopes": 8,
+  "python": "3.12.4",
+  "adapter": "ReferenceAdapter",
+  "implementation_sha256": "78644d7b52b47645d836bce11e1d83994c2c179c90c2556115f55ff496e33dd7",
+  "source_commit": "f8a01244506087035a3a79dd23d0382b989d1eda",
+  "mutants": {
+    "NoFilter": {
+      "probes": 2088,
+      "visibility_failures": 1861,
+      "isolation_failures": 2088,
+      "positive_controls": 197,
+      "recall_misses": 0,
+      "errors": 0,
+      "invalid_acl_controls": 0,
+      "invalid_acl_failures": 0,
+      "revocation_controls": 1,
+      "revocation_failures": 1,
+      "examples": [
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p000",
+              106.4902
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              98.0915
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p000",
+              106.4902
+            ],
+            [
+              "constitution-p025",
+              21.485
+            ],
+            [
+              "constitution-p079",
+              16.5323
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              98.0915
+            ],
+            [
+              "constitution-p025",
+              19.2445
+            ],
+            [
+              "constitution-p079",
+              15.1694
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "forbidden": [
+            "constitution-p068",
+            "constitution-p054",
+            "constitution-p077",
+            "constitution-p061",
+            "constitution-p030",
+            "constitution-p078",
+            "constitution-p084",
+            "constitution-p028"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p000",
+              106.4902
+            ],
+            [
+              "constitution-p025",
+              21.485
+            ],
+            [
+              "constitution-p079",
+              16.5323
+            ],
+            [
+              "constitution-p067",
+              10.4085
+            ],
+            [
+              "constitution-p039",
+              9.4791
+            ],
+            [
+              "constitution-p068",
+              9.0939
+            ],
+            [
+              "constitution-p042",
+              8.7102
+            ],
+            [
+              "constitution-p054",
+              8.6597
+            ],
+            [
+              "constitution-p081",
+              8.6373
+            ],
+            [
+              "constitution-p016",
+              8.4663
+            ],
+            [
+              "constitution-p077",
+              8.0338
+            ],
+            [
+              "constitution-p061",
+              8.0019
+            ],
+            [
+              "constitution-p082",
+              7.9748
+            ],
+            [
+              "constitution-p058",
+              7.9058
+            ],
+            [
+              "constitution-p030",
+              7.8567
+            ],
+            [
+              "constitution-p078",
+              7.7093
+            ],
+            [
+              "constitution-p084",
+              7.6493
+            ],
+            [
+              "constitution-p083",
+              7.5035
+            ],
+            [
+              "constitution-p040",
+              7.1665
+            ],
+            [
+              "constitution-p028",
+              7.1368
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              98.0915
+            ],
+            [
+              "constitution-p025",
+              19.2445
+            ],
+            [
+              "constitution-p079",
+              15.1694
+            ],
+            [
+              "constitution-p067",
+              9.628
+            ],
+            [
+              "constitution-p039",
+              8.99
+            ],
+            [
+              "constitution-p042",
+              8.4234
+            ],
+            [
+              "constitution-p081",
+              8.2616
+            ],
+            [
+              "constitution-p016",
+              7.887
+            ],
+            [
+              "constitution-p082",
+              7.5922
+            ],
+            [
+              "constitution-p058",
+              7.3977
+            ],
+            [
+              "constitution-p083",
+              7.0037
+            ],
+            [
+              "constitution-p080",
+              6.7337
+            ],
+            [
+              "constitution-p040",
+              6.7036
+            ],
+            [
+              "constitution-p056",
+              6.6464
+            ],
+            [
+              "constitution-p032",
+              6.394
+            ],
+            [
+              "constitution-p002",
+              6.213
+            ],
+            [
+              "constitution-p024",
+              6.1087
+            ],
+            [
+              "constitution-p019",
+              5.7487
+            ],
+            [
+              "constitution-p075",
+              5.7449
+            ],
+            [
+              "constitution-p031",
+              5.3016
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p001",
+              44.1288
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              40.2444
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p001",
+              44.1288
+            ],
+            [
+              "constitution-p042",
+              15.2727
+            ],
+            [
+              "constitution-p024",
+              12.4952
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              40.2444
+            ],
+            [
+              "constitution-p042",
+              13.8085
+            ],
+            [
+              "constitution-p024",
+              11.5739
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "forbidden": [
+            "constitution-p022",
+            "constitution-p020",
+            "constitution-p054",
+            "constitution-p021",
+            "constitution-p068",
+            "constitution-p069",
+            "constitution-p004"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p001",
+              44.1288
+            ],
+            [
+              "constitution-p042",
+              15.2727
+            ],
+            [
+              "constitution-p024",
+              12.4952
+            ],
+            [
+              "constitution-p056",
+              11.1141
+            ],
+            [
+              "constitution-p022",
+              10.4331
+            ],
+            [
+              "constitution-p023",
+              10.4225
+            ],
+            [
+              "constitution-p063",
+              9.6744
+            ],
+            [
+              "constitution-p067",
+              9.2007
+            ],
+            [
+              "constitution-p020",
+              8.3945
+            ],
+            [
+              "constitution-p055",
+              8.3863
+            ],
+            [
+              "constitution-p054",
+              7.8977
+            ],
+            [
+              "constitution-p021",
+              7.8526
+            ],
+            [
+              "constitution-p068",
+              7.7461
+            ],
+            [
+              "constitution-p050",
+              7.4637
+            ],
+            [
+              "constitution-p080",
+              7.4141
+            ],
+            [
+              "constitution-p083",
+              7.2298
+            ],
+            [
+              "constitution-p082",
+              7.18
+            ],
+            [
+              "constitution-p069",
+              7.1718
+            ],
+            [
+              "constitution-p004",
+              7.0712
+            ],
+            [
+              "constitution-p019",
+              6.8654
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              40.2444
+            ],
+            [
+              "constitution-p042",
+              13.8085
+            ],
+            [
+              "constitution-p024",
+              11.5739
+            ],
+            [
+              "constitution-p056",
+              10.3287
+            ],
+            [
+              "constitution-p023",
+              9.6748
+            ],
+            [
+              "constitution-p063",
+              8.9294
+            ],
+            [
+              "constitution-p067",
+              8.4117
+            ],
+            [
+              "constitution-p055",
+              7.8212
+            ],
+            [
+              "constitution-p083",
+              6.8075
+            ],
+            [
+              "constitution-p080",
+              6.7254
+            ],
+            [
+              "constitution-p050",
+              6.6944
+            ],
+            [
+              "constitution-p002",
+              6.5469
+            ],
+            [
+              "constitution-p082",
+              6.4656
+            ],
+            [
+              "constitution-p019",
+              6.2926
+            ],
+            [
+              "constitution-p041",
+              6.2534
+            ],
+            [
+              "constitution-p071",
+              6.1107
+            ],
+            [
+              "constitution-p011",
+              6.0075
+            ],
+            [
+              "constitution-p057",
+              5.7709
+            ],
+            [
+              "constitution-p003",
+              5.701
+            ],
+            [
+              "constitution-p016",
+              5.6192
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p002",
+              67.3297
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              61.2456
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p002",
+              67.3297
+            ],
+            [
+              "constitution-p007",
+              21.1405
+            ],
+            [
+              "constitution-p008",
+              17.0369
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              61.2456
+            ],
+            [
+              "constitution-p007",
+              19.2152
+            ],
+            [
+              "constitution-p008",
+              15.409
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 20,
+          "forbidden": [
+            "constitution-p014",
+            "constitution-p004",
+            "constitution-p006"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p002",
+              67.3297
+            ],
+            [
+              "constitution-p007",
+              21.1405
+            ],
+            [
+              "constitution-p008",
+              17.0369
+            ],
+            [
+              "constitution-p056",
+              14.1613
+            ],
+            [
+              "constitution-p016",
+              13.8957
+            ],
+            [
+              "constitution-p055",
+              12.5694
+            ],
+            [
+              "constitution-p014",
+              12.2824
+            ],
+            [
+              "constitution-p083",
+              11.7621
+            ],
+            [
+              "constitution-p079",
+              11.6458
+            ],
+            [
+              "constitution-p004",
+              11.0736
+            ],
+            [
+              "constitution-p024",
+              10.7494
+            ],
+            [
+              "constitution-p023",
+              10.5697
+            ],
+            [
+              "constitution-p074",
+              10.3861
+            ],
+            [
+              "constitution-p017",
+              9.7268
+            ],
+            [
+              "constitution-p015",
+              9.6768
+            ],
+            [
+              "constitution-p073",
+              9.2159
+            ],
+            [
+              "constitution-p080",
+              9.0482
+            ],
+            [
+              "constitution-p009",
+              8.6256
+            ],
+            [
+              "constitution-p018",
+              8.5771
+            ],
+            [
+              "constitution-p006",
+              8.4877
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              61.2456
+            ],
+            [
+              "constitution-p007",
+              19.2152
+            ],
+            [
+              "constitution-p008",
+              15.409
+            ],
+            [
+              "constitution-p056",
+              13.3473
+            ],
+            [
+              "constitution-p016",
+              12.4588
+            ],
+            [
+              "constitution-p055",
+              11.56
+            ],
+            [
+              "constitution-p083",
+              10.9146
+            ],
+            [
+              "constitution-p079",
+              10.3136
+            ],
+            [
+              "constitution-p023",
+              9.9868
+            ],
+            [
+              "constitution-p024",
+              9.9098
+            ],
+            [
+              "constitution-p074",
+              9.5089
+            ],
+            [
+              "constitution-p017",
+              8.8778
+            ],
+            [
+              "constitution-p080",
+              8.3146
+            ],
+            [
+              "constitution-p015",
+              8.2921
+            ],
+            [
+              "constitution-p009",
+              8.2376
+            ],
+            [
+              "constitution-p073",
+              8.1395
+            ],
+            [
+              "constitution-p018",
+              7.7886
+            ],
+            [
+              "constitution-p003",
+              7.7115
+            ],
+            [
+              "constitution-p001",
+              7.6295
+            ],
+            [
+              "constitution-p043",
+              7.3823
+            ]
+          ]
+        }
+      ],
+      "passed": false
+    },
+    "GlobalIdf": {
+      "probes": 2088,
+      "visibility_failures": 1382,
+      "isolation_failures": 2067,
+      "positive_controls": 197,
+      "recall_misses": 0,
+      "errors": 0,
+      "invalid_acl_controls": 0,
+      "invalid_acl_failures": 0,
+      "revocation_controls": 1,
+      "revocation_failures": 0,
+      "examples": [
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p000",
+              106.4902
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              98.0915
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p000",
+              106.4902
+            ],
+            [
+              "constitution-p025",
+              21.485
+            ],
+            [
+              "constitution-p079",
+              16.5323
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              98.0915
+            ],
+            [
+              "constitution-p025",
+              19.2445
+            ],
+            [
+              "constitution-p079",
+              15.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p000",
+              106.4902
+            ],
+            [
+              "constitution-p025",
+              21.485
+            ],
+            [
+              "constitution-p079",
+              16.5323
+            ],
+            [
+              "constitution-p067",
+              10.4085
+            ],
+            [
+              "constitution-p039",
+              9.4791
+            ],
+            [
+              "constitution-p042",
+              8.7102
+            ],
+            [
+              "constitution-p081",
+              8.6373
+            ],
+            [
+              "constitution-p016",
+              8.4663
+            ],
+            [
+              "constitution-p082",
+              7.9748
+            ],
+            [
+              "constitution-p058",
+              7.9058
+            ],
+            [
+              "constitution-p083",
+              7.5035
+            ],
+            [
+              "constitution-p040",
+              7.1665
+            ],
+            [
+              "constitution-p032",
+              7.1062
+            ],
+            [
+              "constitution-p080",
+              6.966
+            ],
+            [
+              "constitution-p056",
+              6.8941
+            ],
+            [
+              "constitution-p024",
+              6.8546
+            ],
+            [
+              "constitution-p002",
+              6.7835
+            ],
+            [
+              "constitution-p075",
+              6.091
+            ],
+            [
+              "constitution-p031",
+              5.8265
+            ],
+            [
+              "constitution-p019",
+              5.743
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              98.0915
+            ],
+            [
+              "constitution-p025",
+              19.2445
+            ],
+            [
+              "constitution-p079",
+              15.1694
+            ],
+            [
+              "constitution-p067",
+              9.628
+            ],
+            [
+              "constitution-p039",
+              8.99
+            ],
+            [
+              "constitution-p042",
+              8.4234
+            ],
+            [
+              "constitution-p081",
+              8.2616
+            ],
+            [
+              "constitution-p016",
+              7.887
+            ],
+            [
+              "constitution-p082",
+              7.5922
+            ],
+            [
+              "constitution-p058",
+              7.3977
+            ],
+            [
+              "constitution-p083",
+              7.0037
+            ],
+            [
+              "constitution-p080",
+              6.7337
+            ],
+            [
+              "constitution-p040",
+              6.7036
+            ],
+            [
+              "constitution-p056",
+              6.6464
+            ],
+            [
+              "constitution-p032",
+              6.394
+            ],
+            [
+              "constitution-p002",
+              6.213
+            ],
+            [
+              "constitution-p024",
+              6.1087
+            ],
+            [
+              "constitution-p019",
+              5.7487
+            ],
+            [
+              "constitution-p075",
+              5.7449
+            ],
+            [
+              "constitution-p031",
+              5.3016
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p001",
+              44.1288
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              40.2444
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p001",
+              44.1288
+            ],
+            [
+              "constitution-p042",
+              15.2727
+            ],
+            [
+              "constitution-p024",
+              12.4952
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              40.2444
+            ],
+            [
+              "constitution-p042",
+              13.8085
+            ],
+            [
+              "constitution-p024",
+              11.5739
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p001",
+              44.1288
+            ],
+            [
+              "constitution-p042",
+              15.2727
+            ],
+            [
+              "constitution-p024",
+              12.4952
+            ],
+            [
+              "constitution-p056",
+              11.1141
+            ],
+            [
+              "constitution-p023",
+              10.4225
+            ],
+            [
+              "constitution-p063",
+              9.6744
+            ],
+            [
+              "constitution-p067",
+              9.2007
+            ],
+            [
+              "constitution-p055",
+              8.3863
+            ],
+            [
+              "constitution-p050",
+              7.4637
+            ],
+            [
+              "constitution-p080",
+              7.4141
+            ],
+            [
+              "constitution-p083",
+              7.2298
+            ],
+            [
+              "constitution-p082",
+              7.18
+            ],
+            [
+              "constitution-p019",
+              6.8654
+            ],
+            [
+              "constitution-p041",
+              6.8284
+            ],
+            [
+              "constitution-p071",
+              6.8158
+            ],
+            [
+              "constitution-p002",
+              6.8014
+            ],
+            [
+              "constitution-p011",
+              6.7345
+            ],
+            [
+              "constitution-p057",
+              6.6104
+            ],
+            [
+              "constitution-p003",
+              6.433
+            ],
+            [
+              "constitution-p059",
+              6.2031
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              40.2444
+            ],
+            [
+              "constitution-p042",
+              13.8085
+            ],
+            [
+              "constitution-p024",
+              11.5739
+            ],
+            [
+              "constitution-p056",
+              10.3287
+            ],
+            [
+              "constitution-p023",
+              9.6748
+            ],
+            [
+              "constitution-p063",
+              8.9294
+            ],
+            [
+              "constitution-p067",
+              8.4117
+            ],
+            [
+              "constitution-p055",
+              7.8212
+            ],
+            [
+              "constitution-p083",
+              6.8075
+            ],
+            [
+              "constitution-p080",
+              6.7254
+            ],
+            [
+              "constitution-p050",
+              6.6944
+            ],
+            [
+              "constitution-p002",
+              6.5469
+            ],
+            [
+              "constitution-p082",
+              6.4656
+            ],
+            [
+              "constitution-p019",
+              6.2926
+            ],
+            [
+              "constitution-p041",
+              6.2534
+            ],
+            [
+              "constitution-p071",
+              6.1107
+            ],
+            [
+              "constitution-p011",
+              6.0075
+            ],
+            [
+              "constitution-p057",
+              5.7709
+            ],
+            [
+              "constitution-p003",
+              5.701
+            ],
+            [
+              "constitution-p016",
+              5.6192
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p002",
+              67.3297
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              61.2456
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p002",
+              67.3297
+            ],
+            [
+              "constitution-p007",
+              21.1405
+            ],
+            [
+              "constitution-p008",
+              17.0369
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              61.2456
+            ],
+            [
+              "constitution-p007",
+              19.2152
+            ],
+            [
+              "constitution-p008",
+              15.409
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p002",
+              67.3297
+            ],
+            [
+              "constitution-p007",
+              21.1405
+            ],
+            [
+              "constitution-p008",
+              17.0369
+            ],
+            [
+              "constitution-p056",
+              14.1613
+            ],
+            [
+              "constitution-p016",
+              13.8957
+            ],
+            [
+              "constitution-p055",
+              12.5694
+            ],
+            [
+              "constitution-p083",
+              11.7621
+            ],
+            [
+              "constitution-p079",
+              11.6458
+            ],
+            [
+              "constitution-p024",
+              10.7494
+            ],
+            [
+              "constitution-p023",
+              10.5697
+            ],
+            [
+              "constitution-p074",
+              10.3861
+            ],
+            [
+              "constitution-p017",
+              9.7268
+            ],
+            [
+              "constitution-p015",
+              9.6768
+            ],
+            [
+              "constitution-p073",
+              9.2159
+            ],
+            [
+              "constitution-p080",
+              9.0482
+            ],
+            [
+              "constitution-p009",
+              8.6256
+            ],
+            [
+              "constitution-p018",
+              8.5771
+            ],
+            [
+              "constitution-p043",
+              8.3501
+            ],
+            [
+              "constitution-p003",
+              8.1763
+            ],
+            [
+              "constitution-p001",
+              7.9479
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              61.2456
+            ],
+            [
+              "constitution-p007",
+              19.2152
+            ],
+            [
+              "constitution-p008",
+              15.409
+            ],
+            [
+              "constitution-p056",
+              13.3473
+            ],
+            [
+              "constitution-p016",
+              12.4588
+            ],
+            [
+              "constitution-p055",
+              11.56
+            ],
+            [
+              "constitution-p083",
+              10.9146
+            ],
+            [
+              "constitution-p079",
+              10.3136
+            ],
+            [
+              "constitution-p023",
+              9.9868
+            ],
+            [
+              "constitution-p024",
+              9.9098
+            ],
+            [
+              "constitution-p074",
+              9.5089
+            ],
+            [
+              "constitution-p017",
+              8.8778
+            ],
+            [
+              "constitution-p080",
+              8.3146
+            ],
+            [
+              "constitution-p015",
+              8.2921
+            ],
+            [
+              "constitution-p009",
+              8.2376
+            ],
+            [
+              "constitution-p073",
+              8.1395
+            ],
+            [
+              "constitution-p018",
+              7.7886
+            ],
+            [
+              "constitution-p003",
+              7.7115
+            ],
+            [
+              "constitution-p001",
+              7.6295
+            ],
+            [
+              "constitution-p043",
+              7.3823
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p003",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p003",
+              67.6015
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p003",
+              64.2042
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p003",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p003",
+              67.6015
+            ],
+            [
+              "constitution-p009",
+              52.7664
+            ],
+            [
+              "constitution-p058",
+              34.154
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p003",
+              64.2042
+            ],
+            [
+              "constitution-p009",
+              50.1044
+            ],
+            [
+              "constitution-p058",
+              31.9576
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p003",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p003",
+              67.6015
+            ],
+            [
+              "constitution-p009",
+              52.7664
+            ],
+            [
+              "constitution-p058",
+              34.154
+            ],
+            [
+              "constitution-p055",
+              16.5647
+            ],
+            [
+              "constitution-p023",
+              14.5908
+            ],
+            [
+              "constitution-p056",
+              14.2892
+            ],
+            [
+              "constitution-p075",
+              13.3562
+            ],
+            [
+              "constitution-p007",
+              12.2491
+            ],
+            [
+              "constitution-p080",
+              9.5612
+            ],
+            [
+              "constitution-p011",
+              9.2544
+            ],
+            [
+              "constitution-p065",
+              8.984
+            ],
+            [
+              "constitution-p002",
+              8.5577
+            ],
+            [
+              "constitution-p079",
+              8.2885
+            ],
+            [
+              "constitution-p063",
+              8.2041
+            ],
+            [
+              "constitution-p082",
+              7.7458
+            ],
+            [
+              "constitution-p043",
+              7.5349
+            ],
+            [
+              "constitution-p050",
+              7.4232
+            ],
+            [
+              "constitution-p067",
+              7.3328
+            ],
+            [
+              "constitution-p071",
+              7.2605
+            ],
+            [
+              "constitution-p001",
+              7.2396
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p003",
+              64.2042
+            ],
+            [
+              "constitution-p009",
+              50.1044
+            ],
+            [
+              "constitution-p058",
+              31.9576
+            ],
+            [
+              "constitution-p055",
+              15.8684
+            ],
+            [
+              "constitution-p023",
+              14.142
+            ],
+            [
+              "constitution-p056",
+              13.4714
+            ],
+            [
+              "constitution-p075",
+              12.2197
+            ],
+            [
+              "constitution-p007",
+              11.778
+            ],
+            [
+              "constitution-p011",
+              9.1949
+            ],
+            [
+              "constitution-p080",
+              9.124
+            ],
+            [
+              "constitution-p065",
+              8.7107
+            ],
+            [
+              "constitution-p002",
+              8.1003
+            ],
+            [
+              "constitution-p063",
+              8.0301
+            ],
+            [
+              "constitution-p079",
+              8.0221
+            ],
+            [
+              "constitution-p043",
+              7.1293
+            ],
+            [
+              "constitution-p082",
+              6.9666
+            ],
+            [
+              "constitution-p050",
+              6.9558
+            ],
+            [
+              "constitution-p067",
+              6.8125
+            ],
+            [
+              "constitution-p071",
+              6.7343
+            ],
+            [
+              "constitution-p072",
+              6.5347
+            ]
+          ]
+        }
+      ],
+      "passed": false
+    },
+    "PostFilterTopK": {
+      "probes": 2088,
+      "visibility_failures": 1012,
+      "isolation_failures": 2067,
+      "positive_controls": 197,
+      "recall_misses": 0,
+      "errors": 0,
+      "invalid_acl_controls": 0,
+      "invalid_acl_failures": 0,
+      "revocation_controls": 1,
+      "revocation_failures": 0,
+      "examples": [
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p000",
+              106.4902
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              98.0915
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p000",
+              106.4902
+            ],
+            [
+              "constitution-p025",
+              21.485
+            ],
+            [
+              "constitution-p079",
+              16.5323
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              98.0915
+            ],
+            [
+              "constitution-p025",
+              19.2445
+            ],
+            [
+              "constitution-p079",
+              15.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p000",
+              106.4902
+            ],
+            [
+              "constitution-p025",
+              21.485
+            ],
+            [
+              "constitution-p079",
+              16.5323
+            ],
+            [
+              "constitution-p067",
+              10.4085
+            ],
+            [
+              "constitution-p039",
+              9.4791
+            ],
+            [
+              "constitution-p042",
+              8.7102
+            ],
+            [
+              "constitution-p081",
+              8.6373
+            ],
+            [
+              "constitution-p016",
+              8.4663
+            ],
+            [
+              "constitution-p082",
+              7.9748
+            ],
+            [
+              "constitution-p058",
+              7.9058
+            ],
+            [
+              "constitution-p083",
+              7.5035
+            ],
+            [
+              "constitution-p040",
+              7.1665
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              98.0915
+            ],
+            [
+              "constitution-p025",
+              19.2445
+            ],
+            [
+              "constitution-p079",
+              15.1694
+            ],
+            [
+              "constitution-p067",
+              9.628
+            ],
+            [
+              "constitution-p039",
+              8.99
+            ],
+            [
+              "constitution-p042",
+              8.4234
+            ],
+            [
+              "constitution-p081",
+              8.2616
+            ],
+            [
+              "constitution-p016",
+              7.887
+            ],
+            [
+              "constitution-p082",
+              7.5922
+            ],
+            [
+              "constitution-p058",
+              7.3977
+            ],
+            [
+              "constitution-p083",
+              7.0037
+            ],
+            [
+              "constitution-p080",
+              6.7337
+            ],
+            [
+              "constitution-p040",
+              6.7036
+            ],
+            [
+              "constitution-p056",
+              6.6464
+            ],
+            [
+              "constitution-p032",
+              6.394
+            ],
+            [
+              "constitution-p002",
+              6.213
+            ],
+            [
+              "constitution-p024",
+              6.1087
+            ],
+            [
+              "constitution-p019",
+              5.7487
+            ],
+            [
+              "constitution-p075",
+              5.7449
+            ],
+            [
+              "constitution-p031",
+              5.3016
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p001",
+              44.1288
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              40.2444
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p001",
+              44.1288
+            ],
+            [
+              "constitution-p042",
+              15.2727
+            ],
+            [
+              "constitution-p024",
+              12.4952
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              40.2444
+            ],
+            [
+              "constitution-p042",
+              13.8085
+            ],
+            [
+              "constitution-p024",
+              11.5739
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p001",
+              44.1288
+            ],
+            [
+              "constitution-p042",
+              15.2727
+            ],
+            [
+              "constitution-p024",
+              12.4952
+            ],
+            [
+              "constitution-p056",
+              11.1141
+            ],
+            [
+              "constitution-p023",
+              10.4225
+            ],
+            [
+              "constitution-p063",
+              9.6744
+            ],
+            [
+              "constitution-p067",
+              9.2007
+            ],
+            [
+              "constitution-p055",
+              8.3863
+            ],
+            [
+              "constitution-p050",
+              7.4637
+            ],
+            [
+              "constitution-p080",
+              7.4141
+            ],
+            [
+              "constitution-p083",
+              7.2298
+            ],
+            [
+              "constitution-p082",
+              7.18
+            ],
+            [
+              "constitution-p019",
+              6.8654
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              40.2444
+            ],
+            [
+              "constitution-p042",
+              13.8085
+            ],
+            [
+              "constitution-p024",
+              11.5739
+            ],
+            [
+              "constitution-p056",
+              10.3287
+            ],
+            [
+              "constitution-p023",
+              9.6748
+            ],
+            [
+              "constitution-p063",
+              8.9294
+            ],
+            [
+              "constitution-p067",
+              8.4117
+            ],
+            [
+              "constitution-p055",
+              7.8212
+            ],
+            [
+              "constitution-p083",
+              6.8075
+            ],
+            [
+              "constitution-p080",
+              6.7254
+            ],
+            [
+              "constitution-p050",
+              6.6944
+            ],
+            [
+              "constitution-p002",
+              6.5469
+            ],
+            [
+              "constitution-p082",
+              6.4656
+            ],
+            [
+              "constitution-p019",
+              6.2926
+            ],
+            [
+              "constitution-p041",
+              6.2534
+            ],
+            [
+              "constitution-p071",
+              6.1107
+            ],
+            [
+              "constitution-p011",
+              6.0075
+            ],
+            [
+              "constitution-p057",
+              5.7709
+            ],
+            [
+              "constitution-p003",
+              5.701
+            ],
+            [
+              "constitution-p016",
+              5.6192
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p002",
+              67.3297
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              61.2456
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p002",
+              67.3297
+            ],
+            [
+              "constitution-p007",
+              21.1405
+            ],
+            [
+              "constitution-p008",
+              17.0369
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              61.2456
+            ],
+            [
+              "constitution-p007",
+              19.2152
+            ],
+            [
+              "constitution-p008",
+              15.409
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p002",
+              67.3297
+            ],
+            [
+              "constitution-p007",
+              21.1405
+            ],
+            [
+              "constitution-p008",
+              17.0369
+            ],
+            [
+              "constitution-p056",
+              14.1613
+            ],
+            [
+              "constitution-p016",
+              13.8957
+            ],
+            [
+              "constitution-p055",
+              12.5694
+            ],
+            [
+              "constitution-p083",
+              11.7621
+            ],
+            [
+              "constitution-p079",
+              11.6458
+            ],
+            [
+              "constitution-p024",
+              10.7494
+            ],
+            [
+              "constitution-p023",
+              10.5697
+            ],
+            [
+              "constitution-p074",
+              10.3861
+            ],
+            [
+              "constitution-p017",
+              9.7268
+            ],
+            [
+              "constitution-p015",
+              9.6768
+            ],
+            [
+              "constitution-p073",
+              9.2159
+            ],
+            [
+              "constitution-p080",
+              9.0482
+            ],
+            [
+              "constitution-p009",
+              8.6256
+            ],
+            [
+              "constitution-p018",
+              8.5771
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              61.2456
+            ],
+            [
+              "constitution-p007",
+              19.2152
+            ],
+            [
+              "constitution-p008",
+              15.409
+            ],
+            [
+              "constitution-p056",
+              13.3473
+            ],
+            [
+              "constitution-p016",
+              12.4588
+            ],
+            [
+              "constitution-p055",
+              11.56
+            ],
+            [
+              "constitution-p083",
+              10.9146
+            ],
+            [
+              "constitution-p079",
+              10.3136
+            ],
+            [
+              "constitution-p023",
+              9.9868
+            ],
+            [
+              "constitution-p024",
+              9.9098
+            ],
+            [
+              "constitution-p074",
+              9.5089
+            ],
+            [
+              "constitution-p017",
+              8.8778
+            ],
+            [
+              "constitution-p080",
+              8.3146
+            ],
+            [
+              "constitution-p015",
+              8.2921
+            ],
+            [
+              "constitution-p009",
+              8.2376
+            ],
+            [
+              "constitution-p073",
+              8.1395
+            ],
+            [
+              "constitution-p018",
+              7.7886
+            ],
+            [
+              "constitution-p003",
+              7.7115
+            ],
+            [
+              "constitution-p001",
+              7.6295
+            ],
+            [
+              "constitution-p043",
+              7.3823
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p003",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p003",
+              67.6015
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p003",
+              64.2042
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p003",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p003",
+              67.6015
+            ],
+            [
+              "constitution-p009",
+              52.7664
+            ],
+            [
+              "constitution-p058",
+              34.154
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p003",
+              64.2042
+            ],
+            [
+              "constitution-p009",
+              50.1044
+            ],
+            [
+              "constitution-p058",
+              31.9576
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p003",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p003",
+              67.6015
+            ],
+            [
+              "constitution-p009",
+              52.7664
+            ],
+            [
+              "constitution-p058",
+              34.154
+            ],
+            [
+              "constitution-p055",
+              16.5647
+            ],
+            [
+              "constitution-p023",
+              14.5908
+            ],
+            [
+              "constitution-p056",
+              14.2892
+            ],
+            [
+              "constitution-p075",
+              13.3562
+            ],
+            [
+              "constitution-p007",
+              12.2491
+            ],
+            [
+              "constitution-p080",
+              9.5612
+            ],
+            [
+              "constitution-p011",
+              9.2544
+            ],
+            [
+              "constitution-p065",
+              8.984
+            ],
+            [
+              "constitution-p002",
+              8.5577
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p003",
+              64.2042
+            ],
+            [
+              "constitution-p009",
+              50.1044
+            ],
+            [
+              "constitution-p058",
+              31.9576
+            ],
+            [
+              "constitution-p055",
+              15.8684
+            ],
+            [
+              "constitution-p023",
+              14.142
+            ],
+            [
+              "constitution-p056",
+              13.4714
+            ],
+            [
+              "constitution-p075",
+              12.2197
+            ],
+            [
+              "constitution-p007",
+              11.778
+            ],
+            [
+              "constitution-p011",
+              9.1949
+            ],
+            [
+              "constitution-p080",
+              9.124
+            ],
+            [
+              "constitution-p065",
+              8.7107
+            ],
+            [
+              "constitution-p002",
+              8.1003
+            ],
+            [
+              "constitution-p063",
+              8.0301
+            ],
+            [
+              "constitution-p079",
+              8.0221
+            ],
+            [
+              "constitution-p043",
+              7.1293
+            ],
+            [
+              "constitution-p082",
+              6.9666
+            ],
+            [
+              "constitution-p050",
+              6.9558
+            ],
+            [
+              "constitution-p067",
+              6.8125
+            ],
+            [
+              "constitution-p071",
+              6.7343
+            ],
+            [
+              "constitution-p072",
+              6.5347
+            ]
+          ]
+        }
+      ],
+      "passed": false
+    },
+    "StarSubstring": {
+      "probes": 2088,
+      "visibility_failures": 1173,
+      "isolation_failures": 1809,
+      "positive_controls": 197,
+      "recall_misses": 0,
+      "errors": 0,
+      "invalid_acl_controls": 0,
+      "invalid_acl_failures": 0,
+      "revocation_controls": 1,
+      "revocation_failures": 0,
+      "examples": [
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p000",
+              101.4067
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              98.0915
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p000",
+              101.4067
+            ],
+            [
+              "constitution-p025",
+              20.3559
+            ],
+            [
+              "constitution-p079",
+              15.7812
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              98.0915
+            ],
+            [
+              "constitution-p025",
+              19.2445
+            ],
+            [
+              "constitution-p079",
+              15.1694
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "forbidden": [
+            "constitution-p077",
+            "constitution-p061"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p000",
+              101.4067
+            ],
+            [
+              "constitution-p025",
+              20.3559
+            ],
+            [
+              "constitution-p079",
+              15.7812
+            ],
+            [
+              "constitution-p067",
+              10.2275
+            ],
+            [
+              "constitution-p039",
+              9.301
+            ],
+            [
+              "constitution-p042",
+              8.9544
+            ],
+            [
+              "constitution-p081",
+              8.7339
+            ],
+            [
+              "constitution-p082",
+              8.0132
+            ],
+            [
+              "constitution-p077",
+              7.9349
+            ],
+            [
+              "constitution-p016",
+              7.8839
+            ],
+            [
+              "constitution-p058",
+              7.8111
+            ],
+            [
+              "constitution-p061",
+              7.746
+            ],
+            [
+              "constitution-p083",
+              7.4475
+            ],
+            [
+              "constitution-p040",
+              7.2235
+            ],
+            [
+              "constitution-p080",
+              7.0537
+            ],
+            [
+              "constitution-p056",
+              6.945
+            ],
+            [
+              "constitution-p032",
+              6.9149
+            ],
+            [
+              "constitution-p002",
+              6.6822
+            ],
+            [
+              "constitution-p024",
+              6.4911
+            ],
+            [
+              "constitution-p075",
+              6.0235
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              98.0915
+            ],
+            [
+              "constitution-p025",
+              19.2445
+            ],
+            [
+              "constitution-p079",
+              15.1694
+            ],
+            [
+              "constitution-p067",
+              9.628
+            ],
+            [
+              "constitution-p039",
+              8.99
+            ],
+            [
+              "constitution-p042",
+              8.4234
+            ],
+            [
+              "constitution-p081",
+              8.2616
+            ],
+            [
+              "constitution-p016",
+              7.887
+            ],
+            [
+              "constitution-p082",
+              7.5922
+            ],
+            [
+              "constitution-p058",
+              7.3977
+            ],
+            [
+              "constitution-p083",
+              7.0037
+            ],
+            [
+              "constitution-p080",
+              6.7337
+            ],
+            [
+              "constitution-p040",
+              6.7036
+            ],
+            [
+              "constitution-p056",
+              6.6464
+            ],
+            [
+              "constitution-p032",
+              6.394
+            ],
+            [
+              "constitution-p002",
+              6.213
+            ],
+            [
+              "constitution-p024",
+              6.1087
+            ],
+            [
+              "constitution-p019",
+              5.7487
+            ],
+            [
+              "constitution-p075",
+              5.7449
+            ],
+            [
+              "constitution-p031",
+              5.3016
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p001",
+              42.6483
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              40.2444
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p001",
+              42.6483
+            ],
+            [
+              "constitution-p042",
+              14.8234
+            ],
+            [
+              "constitution-p024",
+              12.4544
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              40.2444
+            ],
+            [
+              "constitution-p042",
+              13.8085
+            ],
+            [
+              "constitution-p024",
+              11.5739
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "forbidden": [
+            "constitution-p021",
+            "constitution-p069"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p001",
+              42.6483
+            ],
+            [
+              "constitution-p042",
+              14.8234
+            ],
+            [
+              "constitution-p024",
+              12.4544
+            ],
+            [
+              "constitution-p056",
+              11.0373
+            ],
+            [
+              "constitution-p023",
+              10.2647
+            ],
+            [
+              "constitution-p063",
+              9.5669
+            ],
+            [
+              "constitution-p067",
+              8.9507
+            ],
+            [
+              "constitution-p055",
+              8.3706
+            ],
+            [
+              "constitution-p021",
+              7.6094
+            ],
+            [
+              "constitution-p083",
+              7.4844
+            ],
+            [
+              "constitution-p080",
+              7.2025
+            ],
+            [
+              "constitution-p050",
+              7.1678
+            ],
+            [
+              "constitution-p082",
+              7.0994
+            ],
+            [
+              "constitution-p002",
+              7.0482
+            ],
+            [
+              "constitution-p069",
+              7.0093
+            ],
+            [
+              "constitution-p041",
+              6.7774
+            ],
+            [
+              "constitution-p019",
+              6.6244
+            ],
+            [
+              "constitution-p071",
+              6.5714
+            ],
+            [
+              "constitution-p011",
+              6.5218
+            ],
+            [
+              "constitution-p057",
+              6.3014
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              40.2444
+            ],
+            [
+              "constitution-p042",
+              13.8085
+            ],
+            [
+              "constitution-p024",
+              11.5739
+            ],
+            [
+              "constitution-p056",
+              10.3287
+            ],
+            [
+              "constitution-p023",
+              9.6748
+            ],
+            [
+              "constitution-p063",
+              8.9294
+            ],
+            [
+              "constitution-p067",
+              8.4117
+            ],
+            [
+              "constitution-p055",
+              7.8212
+            ],
+            [
+              "constitution-p083",
+              6.8075
+            ],
+            [
+              "constitution-p080",
+              6.7254
+            ],
+            [
+              "constitution-p050",
+              6.6944
+            ],
+            [
+              "constitution-p002",
+              6.5469
+            ],
+            [
+              "constitution-p082",
+              6.4656
+            ],
+            [
+              "constitution-p019",
+              6.2926
+            ],
+            [
+              "constitution-p041",
+              6.2534
+            ],
+            [
+              "constitution-p071",
+              6.1107
+            ],
+            [
+              "constitution-p011",
+              6.0075
+            ],
+            [
+              "constitution-p057",
+              5.7709
+            ],
+            [
+              "constitution-p003",
+              5.701
+            ],
+            [
+              "constitution-p016",
+              5.6192
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p002",
+              64.2494
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              61.2456
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p002",
+              64.2494
+            ],
+            [
+              "constitution-p007",
+              20.6754
+            ],
+            [
+              "constitution-p008",
+              15.9932
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              61.2456
+            ],
+            [
+              "constitution-p007",
+              19.2152
+            ],
+            [
+              "constitution-p008",
+              15.409
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p002",
+              64.2494
+            ],
+            [
+              "constitution-p007",
+              20.6754
+            ],
+            [
+              "constitution-p008",
+              15.9932
+            ],
+            [
+              "constitution-p056",
+              14.2444
+            ],
+            [
+              "constitution-p016",
+              13.3626
+            ],
+            [
+              "constitution-p055",
+              12.3621
+            ],
+            [
+              "constitution-p083",
+              11.826
+            ],
+            [
+              "constitution-p079",
+              11.1698
+            ],
+            [
+              "constitution-p024",
+              10.7782
+            ],
+            [
+              "constitution-p023",
+              10.6854
+            ],
+            [
+              "constitution-p074",
+              10.2925
+            ],
+            [
+              "constitution-p017",
+              9.6665
+            ],
+            [
+              "constitution-p015",
+              9.0305
+            ],
+            [
+              "constitution-p080",
+              8.9748
+            ],
+            [
+              "constitution-p073",
+              8.8392
+            ],
+            [
+              "constitution-p009",
+              8.8389
+            ],
+            [
+              "constitution-p018",
+              8.3734
+            ],
+            [
+              "constitution-p001",
+              8.2231
+            ],
+            [
+              "constitution-p003",
+              8.1801
+            ],
+            [
+              "constitution-p043",
+              8.174
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              61.2456
+            ],
+            [
+              "constitution-p007",
+              19.2152
+            ],
+            [
+              "constitution-p008",
+              15.409
+            ],
+            [
+              "constitution-p056",
+              13.3473
+            ],
+            [
+              "constitution-p016",
+              12.4588
+            ],
+            [
+              "constitution-p055",
+              11.56
+            ],
+            [
+              "constitution-p083",
+              10.9146
+            ],
+            [
+              "constitution-p079",
+              10.3136
+            ],
+            [
+              "constitution-p023",
+              9.9868
+            ],
+            [
+              "constitution-p024",
+              9.9098
+            ],
+            [
+              "constitution-p074",
+              9.5089
+            ],
+            [
+              "constitution-p017",
+              8.8778
+            ],
+            [
+              "constitution-p080",
+              8.3146
+            ],
+            [
+              "constitution-p015",
+              8.2921
+            ],
+            [
+              "constitution-p009",
+              8.2376
+            ],
+            [
+              "constitution-p073",
+              8.1395
+            ],
+            [
+              "constitution-p018",
+              7.7886
+            ],
+            [
+              "constitution-p003",
+              7.7115
+            ],
+            [
+              "constitution-p001",
+              7.6295
+            ],
+            [
+              "constitution-p043",
+              7.3823
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p003",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p003",
+              65.8222
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p003",
+              64.2042
+            ]
+          ]
+        }
+      ],
+      "passed": false
+    },
+    "GroupPrefix": {
+      "probes": 2088,
+      "visibility_failures": 497,
+      "isolation_failures": 774,
+      "positive_controls": 197,
+      "recall_misses": 0,
+      "errors": 0,
+      "invalid_acl_controls": 0,
+      "invalid_acl_failures": 0,
+      "revocation_controls": 1,
+      "revocation_failures": 0,
+      "examples": [
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p000",
+              102.6965
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              98.0915
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p000",
+              102.6965
+            ],
+            [
+              "constitution-p025",
+              20.2345
+            ],
+            [
+              "constitution-p079",
+              15.5574
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              98.0915
+            ],
+            [
+              "constitution-p025",
+              19.2445
+            ],
+            [
+              "constitution-p079",
+              15.1694
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "forbidden": [
+            "constitution-p068",
+            "constitution-p084",
+            "constitution-p028"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p000",
+              102.6965
+            ],
+            [
+              "constitution-p025",
+              20.2345
+            ],
+            [
+              "constitution-p079",
+              15.5574
+            ],
+            [
+              "constitution-p067",
+              9.7505
+            ],
+            [
+              "constitution-p039",
+              9.1326
+            ],
+            [
+              "constitution-p068",
+              8.5184
+            ],
+            [
+              "constitution-p016",
+              8.3499
+            ],
+            [
+              "constitution-p042",
+              8.2028
+            ],
+            [
+              "constitution-p081",
+              7.9851
+            ],
+            [
+              "constitution-p082",
+              7.4824
+            ],
+            [
+              "constitution-p058",
+              7.2191
+            ],
+            [
+              "constitution-p084",
+              7.1198
+            ],
+            [
+              "constitution-p083",
+              6.8508
+            ],
+            [
+              "constitution-p040",
+              6.7586
+            ],
+            [
+              "constitution-p080",
+              6.6444
+            ],
+            [
+              "constitution-p032",
+              6.561
+            ],
+            [
+              "constitution-p056",
+              6.533
+            ],
+            [
+              "constitution-p002",
+              6.3522
+            ],
+            [
+              "constitution-p028",
+              6.3303
+            ],
+            [
+              "constitution-p024",
+              6.3062
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              98.0915
+            ],
+            [
+              "constitution-p025",
+              19.2445
+            ],
+            [
+              "constitution-p079",
+              15.1694
+            ],
+            [
+              "constitution-p067",
+              9.628
+            ],
+            [
+              "constitution-p039",
+              8.99
+            ],
+            [
+              "constitution-p042",
+              8.4234
+            ],
+            [
+              "constitution-p081",
+              8.2616
+            ],
+            [
+              "constitution-p016",
+              7.887
+            ],
+            [
+              "constitution-p082",
+              7.5922
+            ],
+            [
+              "constitution-p058",
+              7.3977
+            ],
+            [
+              "constitution-p083",
+              7.0037
+            ],
+            [
+              "constitution-p080",
+              6.7337
+            ],
+            [
+              "constitution-p040",
+              6.7036
+            ],
+            [
+              "constitution-p056",
+              6.6464
+            ],
+            [
+              "constitution-p032",
+              6.394
+            ],
+            [
+              "constitution-p002",
+              6.213
+            ],
+            [
+              "constitution-p024",
+              6.1087
+            ],
+            [
+              "constitution-p019",
+              5.7487
+            ],
+            [
+              "constitution-p075",
+              5.7449
+            ],
+            [
+              "constitution-p031",
+              5.3016
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p001",
+              42.0082
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              40.2444
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p001",
+              42.0082
+            ],
+            [
+              "constitution-p042",
+              14.252
+            ],
+            [
+              "constitution-p024",
+              11.7396
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              40.2444
+            ],
+            [
+              "constitution-p042",
+              13.8085
+            ],
+            [
+              "constitution-p024",
+              11.5739
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "forbidden": [
+            "constitution-p020",
+            "constitution-p068",
+            "constitution-p004"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p001",
+              42.0082
+            ],
+            [
+              "constitution-p042",
+              14.252
+            ],
+            [
+              "constitution-p024",
+              11.7396
+            ],
+            [
+              "constitution-p056",
+              10.5011
+            ],
+            [
+              "constitution-p023",
+              9.8804
+            ],
+            [
+              "constitution-p063",
+              9.2532
+            ],
+            [
+              "constitution-p067",
+              8.6916
+            ],
+            [
+              "constitution-p020",
+              7.9815
+            ],
+            [
+              "constitution-p055",
+              7.8533
+            ],
+            [
+              "constitution-p050",
+              6.8839
+            ],
+            [
+              "constitution-p068",
+              6.8682
+            ],
+            [
+              "constitution-p080",
+              6.8611
+            ],
+            [
+              "constitution-p004",
+              6.6014
+            ],
+            [
+              "constitution-p083",
+              6.5714
+            ],
+            [
+              "constitution-p002",
+              6.5597
+            ],
+            [
+              "constitution-p019",
+              6.5198
+            ],
+            [
+              "constitution-p082",
+              6.3634
+            ],
+            [
+              "constitution-p071",
+              6.2757
+            ],
+            [
+              "constitution-p041",
+              6.2498
+            ],
+            [
+              "constitution-p011",
+              6.075
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              40.2444
+            ],
+            [
+              "constitution-p042",
+              13.8085
+            ],
+            [
+              "constitution-p024",
+              11.5739
+            ],
+            [
+              "constitution-p056",
+              10.3287
+            ],
+            [
+              "constitution-p023",
+              9.6748
+            ],
+            [
+              "constitution-p063",
+              8.9294
+            ],
+            [
+              "constitution-p067",
+              8.4117
+            ],
+            [
+              "constitution-p055",
+              7.8212
+            ],
+            [
+              "constitution-p083",
+              6.8075
+            ],
+            [
+              "constitution-p080",
+              6.7254
+            ],
+            [
+              "constitution-p050",
+              6.6944
+            ],
+            [
+              "constitution-p002",
+              6.5469
+            ],
+            [
+              "constitution-p082",
+              6.4656
+            ],
+            [
+              "constitution-p019",
+              6.2926
+            ],
+            [
+              "constitution-p041",
+              6.2534
+            ],
+            [
+              "constitution-p071",
+              6.1107
+            ],
+            [
+              "constitution-p011",
+              6.0075
+            ],
+            [
+              "constitution-p057",
+              5.7709
+            ],
+            [
+              "constitution-p003",
+              5.701
+            ],
+            [
+              "constitution-p016",
+              5.6192
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p002",
+              64.4561
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              61.2456
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p002",
+              64.4561
+            ],
+            [
+              "constitution-p007",
+              19.9837
+            ],
+            [
+              "constitution-p008",
+              16.4292
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              61.2456
+            ],
+            [
+              "constitution-p007",
+              19.2152
+            ],
+            [
+              "constitution-p008",
+              15.409
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 20,
+          "forbidden": [
+            "constitution-p004",
+            "constitution-p020"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p002",
+              64.4561
+            ],
+            [
+              "constitution-p007",
+              19.9837
+            ],
+            [
+              "constitution-p008",
+              16.4292
+            ],
+            [
+              "constitution-p056",
+              13.6484
+            ],
+            [
+              "constitution-p016",
+              13.0448
+            ],
+            [
+              "constitution-p055",
+              12.0219
+            ],
+            [
+              "constitution-p083",
+              10.9692
+            ],
+            [
+              "constitution-p079",
+              10.8253
+            ],
+            [
+              "constitution-p004",
+              10.566
+            ],
+            [
+              "constitution-p023",
+              10.2085
+            ],
+            [
+              "constitution-p024",
+              10.1002
+            ],
+            [
+              "constitution-p074",
+              9.6609
+            ],
+            [
+              "constitution-p017",
+              9.0971
+            ],
+            [
+              "constitution-p015",
+              8.7498
+            ],
+            [
+              "constitution-p080",
+              8.4789
+            ],
+            [
+              "constitution-p073",
+              8.4667
+            ],
+            [
+              "constitution-p009",
+              8.2212
+            ],
+            [
+              "constitution-p018",
+              8.098
+            ],
+            [
+              "constitution-p003",
+              7.8489
+            ],
+            [
+              "constitution-p020",
+              7.7537
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              61.2456
+            ],
+            [
+              "constitution-p007",
+              19.2152
+            ],
+            [
+              "constitution-p008",
+              15.409
+            ],
+            [
+              "constitution-p056",
+              13.3473
+            ],
+            [
+              "constitution-p016",
+              12.4588
+            ],
+            [
+              "constitution-p055",
+              11.56
+            ],
+            [
+              "constitution-p083",
+              10.9146
+            ],
+            [
+              "constitution-p079",
+              10.3136
+            ],
+            [
+              "constitution-p023",
+              9.9868
+            ],
+            [
+              "constitution-p024",
+              9.9098
+            ],
+            [
+              "constitution-p074",
+              9.5089
+            ],
+            [
+              "constitution-p017",
+              8.8778
+            ],
+            [
+              "constitution-p080",
+              8.3146
+            ],
+            [
+              "constitution-p015",
+              8.2921
+            ],
+            [
+              "constitution-p009",
+              8.2376
+            ],
+            [
+              "constitution-p073",
+              8.1395
+            ],
+            [
+              "constitution-p018",
+              7.7886
+            ],
+            [
+              "constitution-p003",
+              7.7115
+            ],
+            [
+              "constitution-p001",
+              7.6295
+            ],
+            [
+              "constitution-p043",
+              7.3823
+            ]
+          ]
+        }
+      ],
+      "passed": false
+    },
+    "SharedCache": {
+      "probes": 2088,
+      "visibility_failures": 1617,
+      "isolation_failures": 1809,
+      "positive_controls": 197,
+      "recall_misses": 33,
+      "errors": 0,
+      "invalid_acl_controls": 0,
+      "invalid_acl_failures": 0,
+      "revocation_controls": 1,
+      "revocation_failures": 1,
+      "examples": [
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p000",
+              98.0915
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              89.4568
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 3,
+          "forbidden": [
+            "constitution-p079"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p000",
+              98.0915
+            ],
+            [
+              "constitution-p025",
+              19.2445
+            ],
+            [
+              "constitution-p079",
+              15.1694
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              89.4568
+            ],
+            [
+              "constitution-p025",
+              16.9744
+            ],
+            [
+              "constitution-p042",
+              7.7364
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "forbidden": [
+            "constitution-p079",
+            "constitution-p067",
+            "constitution-p039",
+            "constitution-p083",
+            "constitution-p019",
+            "constitution-p075",
+            "constitution-p031"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p000",
+              98.0915
+            ],
+            [
+              "constitution-p025",
+              19.2445
+            ],
+            [
+              "constitution-p079",
+              15.1694
+            ],
+            [
+              "constitution-p067",
+              9.628
+            ],
+            [
+              "constitution-p039",
+              8.99
+            ],
+            [
+              "constitution-p042",
+              8.4234
+            ],
+            [
+              "constitution-p081",
+              8.2616
+            ],
+            [
+              "constitution-p016",
+              7.887
+            ],
+            [
+              "constitution-p082",
+              7.5922
+            ],
+            [
+              "constitution-p058",
+              7.3977
+            ],
+            [
+              "constitution-p083",
+              7.0037
+            ],
+            [
+              "constitution-p080",
+              6.7337
+            ],
+            [
+              "constitution-p040",
+              6.7036
+            ],
+            [
+              "constitution-p056",
+              6.6464
+            ],
+            [
+              "constitution-p032",
+              6.394
+            ],
+            [
+              "constitution-p002",
+              6.213
+            ],
+            [
+              "constitution-p024",
+              6.1087
+            ],
+            [
+              "constitution-p019",
+              5.7487
+            ],
+            [
+              "constitution-p075",
+              5.7449
+            ],
+            [
+              "constitution-p031",
+              5.3016
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              89.4568
+            ],
+            [
+              "constitution-p025",
+              16.9744
+            ],
+            [
+              "constitution-p042",
+              7.7364
+            ],
+            [
+              "constitution-p016",
+              7.7281
+            ],
+            [
+              "constitution-p081",
+              7.0783
+            ],
+            [
+              "constitution-p058",
+              7.0194
+            ],
+            [
+              "constitution-p082",
+              6.7989
+            ],
+            [
+              "constitution-p056",
+              6.72
+            ],
+            [
+              "constitution-p040",
+              6.4851
+            ],
+            [
+              "constitution-p080",
+              6.3005
+            ],
+            [
+              "constitution-p024",
+              5.9043
+            ],
+            [
+              "constitution-p032",
+              5.7792
+            ],
+            [
+              "constitution-p002",
+              5.5667
+            ],
+            [
+              "constitution-p009",
+              4.6559
+            ],
+            [
+              "constitution-p001",
+              4.4731
+            ],
+            [
+              "constitution-p073",
+              4.2032
+            ],
+            [
+              "constitution-p065",
+              4.1877
+            ],
+            [
+              "constitution-p041",
+              3.6048
+            ],
+            [
+              "constitution-p017",
+              3.137
+            ],
+            [
+              "constitution-p066",
+              3.0578
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p001",
+              40.2444
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              38.2614
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p001",
+              40.2444
+            ],
+            [
+              "constitution-p042",
+              13.8085
+            ],
+            [
+              "constitution-p024",
+              11.5739
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              38.2614
+            ],
+            [
+              "constitution-p042",
+              12.8904
+            ],
+            [
+              "constitution-p024",
+              11.4629
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "forbidden": [
+            "constitution-p023",
+            "constitution-p063",
+            "constitution-p067",
+            "constitution-p055",
+            "constitution-p083",
+            "constitution-p019",
+            "constitution-p071",
+            "constitution-p011",
+            "constitution-p003"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p001",
+              40.2444
+            ],
+            [
+              "constitution-p042",
+              13.8085
+            ],
+            [
+              "constitution-p024",
+              11.5739
+            ],
+            [
+              "constitution-p056",
+              10.3287
+            ],
+            [
+              "constitution-p023",
+              9.6748
+            ],
+            [
+              "constitution-p063",
+              8.9294
+            ],
+            [
+              "constitution-p067",
+              8.4117
+            ],
+            [
+              "constitution-p055",
+              7.8212
+            ],
+            [
+              "constitution-p083",
+              6.8075
+            ],
+            [
+              "constitution-p080",
+              6.7254
+            ],
+            [
+              "constitution-p050",
+              6.6944
+            ],
+            [
+              "constitution-p002",
+              6.5469
+            ],
+            [
+              "constitution-p082",
+              6.4656
+            ],
+            [
+              "constitution-p019",
+              6.2926
+            ],
+            [
+              "constitution-p041",
+              6.2534
+            ],
+            [
+              "constitution-p071",
+              6.1107
+            ],
+            [
+              "constitution-p011",
+              6.0075
+            ],
+            [
+              "constitution-p057",
+              5.7709
+            ],
+            [
+              "constitution-p003",
+              5.701
+            ],
+            [
+              "constitution-p016",
+              5.6192
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              38.2614
+            ],
+            [
+              "constitution-p042",
+              12.8904
+            ],
+            [
+              "constitution-p024",
+              11.4629
+            ],
+            [
+              "constitution-p056",
+              10.1087
+            ],
+            [
+              "constitution-p080",
+              6.6866
+            ],
+            [
+              "constitution-p002",
+              6.1853
+            ],
+            [
+              "constitution-p050",
+              6.0789
+            ],
+            [
+              "constitution-p082",
+              6.0098
+            ],
+            [
+              "constitution-p041",
+              5.8103
+            ],
+            [
+              "constitution-p016",
+              5.6241
+            ],
+            [
+              "constitution-p057",
+              5.6069
+            ],
+            [
+              "constitution-p009",
+              5.2713
+            ],
+            [
+              "constitution-p025",
+              5.112
+            ],
+            [
+              "constitution-p018",
+              4.9086
+            ],
+            [
+              "constitution-p064",
+              4.9041
+            ],
+            [
+              "constitution-p010",
+              4.7241
+            ],
+            [
+              "constitution-p073",
+              4.5527
+            ],
+            [
+              "constitution-p049",
+              4.3609
+            ],
+            [
+              "constitution-p058",
+              4.31
+            ],
+            [
+              "constitution-p074",
+              3.9808
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p002",
+              61.2456
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              56.6129
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 3,
+          "forbidden": [
+            "constitution-p007"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p002",
+              61.2456
+            ],
+            [
+              "constitution-p007",
+              19.2152
+            ],
+            [
+              "constitution-p008",
+              15.409
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              56.6129
+            ],
+            [
+              "constitution-p008",
+              14.7036
+            ],
+            [
+              "constitution-p056",
+              12.6973
+            ]
+          ]
+        }
+      ],
+      "passed": false
+    },
+    "AnyLevelGrants": {
+      "probes": 2088,
+      "visibility_failures": 1836,
+      "isolation_failures": 2088,
+      "positive_controls": 197,
+      "recall_misses": 0,
+      "errors": 0,
+      "invalid_acl_controls": 0,
+      "invalid_acl_failures": 0,
+      "revocation_controls": 1,
+      "revocation_failures": 1,
+      "examples": [
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p000",
+              106.4902
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              98.0915
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p000",
+              106.4902
+            ],
+            [
+              "constitution-p025",
+              21.485
+            ],
+            [
+              "constitution-p079",
+              16.5323
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              98.0915
+            ],
+            [
+              "constitution-p025",
+              19.2445
+            ],
+            [
+              "constitution-p079",
+              15.1694
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "forbidden": [
+            "constitution-p068",
+            "constitution-p054",
+            "constitution-p077",
+            "constitution-p061",
+            "constitution-p030",
+            "constitution-p078",
+            "constitution-p084",
+            "constitution-p028"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p000",
+              106.4902
+            ],
+            [
+              "constitution-p025",
+              21.485
+            ],
+            [
+              "constitution-p079",
+              16.5323
+            ],
+            [
+              "constitution-p067",
+              10.4085
+            ],
+            [
+              "constitution-p039",
+              9.4791
+            ],
+            [
+              "constitution-p068",
+              9.0939
+            ],
+            [
+              "constitution-p042",
+              8.7102
+            ],
+            [
+              "constitution-p054",
+              8.6597
+            ],
+            [
+              "constitution-p081",
+              8.6373
+            ],
+            [
+              "constitution-p016",
+              8.4663
+            ],
+            [
+              "constitution-p077",
+              8.0338
+            ],
+            [
+              "constitution-p061",
+              8.0019
+            ],
+            [
+              "constitution-p082",
+              7.9748
+            ],
+            [
+              "constitution-p058",
+              7.9058
+            ],
+            [
+              "constitution-p030",
+              7.8567
+            ],
+            [
+              "constitution-p078",
+              7.7093
+            ],
+            [
+              "constitution-p084",
+              7.6493
+            ],
+            [
+              "constitution-p083",
+              7.5035
+            ],
+            [
+              "constitution-p040",
+              7.1665
+            ],
+            [
+              "constitution-p028",
+              7.1368
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              98.0915
+            ],
+            [
+              "constitution-p025",
+              19.2445
+            ],
+            [
+              "constitution-p079",
+              15.1694
+            ],
+            [
+              "constitution-p067",
+              9.628
+            ],
+            [
+              "constitution-p039",
+              8.99
+            ],
+            [
+              "constitution-p042",
+              8.4234
+            ],
+            [
+              "constitution-p081",
+              8.2616
+            ],
+            [
+              "constitution-p016",
+              7.887
+            ],
+            [
+              "constitution-p082",
+              7.5922
+            ],
+            [
+              "constitution-p058",
+              7.3977
+            ],
+            [
+              "constitution-p083",
+              7.0037
+            ],
+            [
+              "constitution-p080",
+              6.7337
+            ],
+            [
+              "constitution-p040",
+              6.7036
+            ],
+            [
+              "constitution-p056",
+              6.6464
+            ],
+            [
+              "constitution-p032",
+              6.394
+            ],
+            [
+              "constitution-p002",
+              6.213
+            ],
+            [
+              "constitution-p024",
+              6.1087
+            ],
+            [
+              "constitution-p019",
+              5.7487
+            ],
+            [
+              "constitution-p075",
+              5.7449
+            ],
+            [
+              "constitution-p031",
+              5.3016
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p001",
+              44.1288
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              40.2444
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p001",
+              44.1288
+            ],
+            [
+              "constitution-p042",
+              15.2727
+            ],
+            [
+              "constitution-p024",
+              12.4952
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              40.2444
+            ],
+            [
+              "constitution-p042",
+              13.8085
+            ],
+            [
+              "constitution-p024",
+              11.5739
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "forbidden": [
+            "constitution-p022",
+            "constitution-p020",
+            "constitution-p054",
+            "constitution-p021",
+            "constitution-p068",
+            "constitution-p069",
+            "constitution-p004"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p001",
+              44.1288
+            ],
+            [
+              "constitution-p042",
+              15.2727
+            ],
+            [
+              "constitution-p024",
+              12.4952
+            ],
+            [
+              "constitution-p056",
+              11.1141
+            ],
+            [
+              "constitution-p022",
+              10.4331
+            ],
+            [
+              "constitution-p023",
+              10.4225
+            ],
+            [
+              "constitution-p063",
+              9.6744
+            ],
+            [
+              "constitution-p067",
+              9.2007
+            ],
+            [
+              "constitution-p020",
+              8.3945
+            ],
+            [
+              "constitution-p055",
+              8.3863
+            ],
+            [
+              "constitution-p054",
+              7.8977
+            ],
+            [
+              "constitution-p021",
+              7.8526
+            ],
+            [
+              "constitution-p068",
+              7.7461
+            ],
+            [
+              "constitution-p050",
+              7.4637
+            ],
+            [
+              "constitution-p080",
+              7.4141
+            ],
+            [
+              "constitution-p083",
+              7.2298
+            ],
+            [
+              "constitution-p082",
+              7.18
+            ],
+            [
+              "constitution-p069",
+              7.1718
+            ],
+            [
+              "constitution-p004",
+              7.0712
+            ],
+            [
+              "constitution-p019",
+              6.8654
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              40.2444
+            ],
+            [
+              "constitution-p042",
+              13.8085
+            ],
+            [
+              "constitution-p024",
+              11.5739
+            ],
+            [
+              "constitution-p056",
+              10.3287
+            ],
+            [
+              "constitution-p023",
+              9.6748
+            ],
+            [
+              "constitution-p063",
+              8.9294
+            ],
+            [
+              "constitution-p067",
+              8.4117
+            ],
+            [
+              "constitution-p055",
+              7.8212
+            ],
+            [
+              "constitution-p083",
+              6.8075
+            ],
+            [
+              "constitution-p080",
+              6.7254
+            ],
+            [
+              "constitution-p050",
+              6.6944
+            ],
+            [
+              "constitution-p002",
+              6.5469
+            ],
+            [
+              "constitution-p082",
+              6.4656
+            ],
+            [
+              "constitution-p019",
+              6.2926
+            ],
+            [
+              "constitution-p041",
+              6.2534
+            ],
+            [
+              "constitution-p071",
+              6.1107
+            ],
+            [
+              "constitution-p011",
+              6.0075
+            ],
+            [
+              "constitution-p057",
+              5.7709
+            ],
+            [
+              "constitution-p003",
+              5.701
+            ],
+            [
+              "constitution-p016",
+              5.6192
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p002",
+              67.3297
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              61.2456
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p002",
+              67.3297
+            ],
+            [
+              "constitution-p007",
+              21.1405
+            ],
+            [
+              "constitution-p008",
+              17.0369
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              61.2456
+            ],
+            [
+              "constitution-p007",
+              19.2152
+            ],
+            [
+              "constitution-p008",
+              15.409
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 20,
+          "forbidden": [
+            "constitution-p014",
+            "constitution-p004",
+            "constitution-p006"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p002",
+              67.3297
+            ],
+            [
+              "constitution-p007",
+              21.1405
+            ],
+            [
+              "constitution-p008",
+              17.0369
+            ],
+            [
+              "constitution-p056",
+              14.1613
+            ],
+            [
+              "constitution-p016",
+              13.8957
+            ],
+            [
+              "constitution-p055",
+              12.5694
+            ],
+            [
+              "constitution-p014",
+              12.2824
+            ],
+            [
+              "constitution-p083",
+              11.7621
+            ],
+            [
+              "constitution-p079",
+              11.6458
+            ],
+            [
+              "constitution-p004",
+              11.0736
+            ],
+            [
+              "constitution-p024",
+              10.7494
+            ],
+            [
+              "constitution-p023",
+              10.5697
+            ],
+            [
+              "constitution-p074",
+              10.3861
+            ],
+            [
+              "constitution-p017",
+              9.7268
+            ],
+            [
+              "constitution-p015",
+              9.6768
+            ],
+            [
+              "constitution-p073",
+              9.2159
+            ],
+            [
+              "constitution-p080",
+              9.0482
+            ],
+            [
+              "constitution-p009",
+              8.6256
+            ],
+            [
+              "constitution-p018",
+              8.5771
+            ],
+            [
+              "constitution-p006",
+              8.4877
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              61.2456
+            ],
+            [
+              "constitution-p007",
+              19.2152
+            ],
+            [
+              "constitution-p008",
+              15.409
+            ],
+            [
+              "constitution-p056",
+              13.3473
+            ],
+            [
+              "constitution-p016",
+              12.4588
+            ],
+            [
+              "constitution-p055",
+              11.56
+            ],
+            [
+              "constitution-p083",
+              10.9146
+            ],
+            [
+              "constitution-p079",
+              10.3136
+            ],
+            [
+              "constitution-p023",
+              9.9868
+            ],
+            [
+              "constitution-p024",
+              9.9098
+            ],
+            [
+              "constitution-p074",
+              9.5089
+            ],
+            [
+              "constitution-p017",
+              8.8778
+            ],
+            [
+              "constitution-p080",
+              8.3146
+            ],
+            [
+              "constitution-p015",
+              8.2921
+            ],
+            [
+              "constitution-p009",
+              8.2376
+            ],
+            [
+              "constitution-p073",
+              8.1395
+            ],
+            [
+              "constitution-p018",
+              7.7886
+            ],
+            [
+              "constitution-p003",
+              7.7115
+            ],
+            [
+              "constitution-p001",
+              7.6295
+            ],
+            [
+              "constitution-p043",
+              7.3823
+            ]
+          ]
+        }
+      ],
+      "passed": false
+    },
+    "FlattenIntersection": {
+      "probes": 2088,
+      "visibility_failures": 0,
+      "isolation_failures": 0,
+      "positive_controls": 197,
+      "recall_misses": 32,
+      "errors": 0,
+      "invalid_acl_controls": 0,
+      "invalid_acl_failures": 0,
+      "revocation_controls": 1,
+      "revocation_failures": 0,
+      "examples": [
+        {
+          "kind": "recall_misses",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002"
+        },
+        {
+          "kind": "recall_misses",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p007"
+        },
+        {
+          "kind": "recall_misses",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p010"
+        },
+        {
+          "kind": "recall_misses",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p015"
+        },
+        {
+          "kind": "recall_misses",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p018"
+        },
+        {
+          "kind": "recall_misses",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p023"
+        },
+        {
+          "kind": "recall_misses",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p026"
+        },
+        {
+          "kind": "recall_misses",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p031"
+        },
+        {
+          "kind": "recall_misses",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p034"
+        },
+        {
+          "kind": "recall_misses",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p039"
+        },
+        {
+          "kind": "recall_misses",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p042"
+        },
+        {
+          "kind": "recall_misses",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p047"
+        }
+      ],
+      "passed": false
+    }
+  },
+  "mutants_caught": 8,
+  "mutants_total": 8,
+  "score_sidechannel_control": {
+    "probes": 2088,
+    "visibility_failures": 0,
+    "isolation_failures": 2067,
+    "positive_controls": 305,
+    "recall_misses": 0,
+    "errors": 0,
+    "invalid_acl_controls": 0,
+    "invalid_acl_failures": 0,
+    "revocation_controls": 1,
+    "revocation_failures": 0,
+    "examples": [
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p000",
+        "k": 1,
+        "got": [
+          [
+            "constitution-p000",
+            106.4902
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p000",
+            98.0915
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p000",
+        "k": 3,
+        "got": [
+          [
+            "constitution-p000",
+            106.4902
+          ],
+          [
+            "constitution-p025",
+            21.485
+          ],
+          [
+            "constitution-p079",
+            16.5323
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p000",
+            98.0915
+          ],
+          [
+            "constitution-p025",
+            19.2445
+          ],
+          [
+            "constitution-p079",
+            15.1694
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p000",
+        "k": 20,
+        "got": [
+          [
+            "constitution-p000",
+            106.4902
+          ],
+          [
+            "constitution-p025",
+            21.485
+          ],
+          [
+            "constitution-p079",
+            16.5323
+          ],
+          [
+            "constitution-p067",
+            10.4085
+          ],
+          [
+            "constitution-p039",
+            9.4791
+          ],
+          [
+            "constitution-p042",
+            8.7102
+          ],
+          [
+            "constitution-p081",
+            8.6373
+          ],
+          [
+            "constitution-p016",
+            8.4663
+          ],
+          [
+            "constitution-p082",
+            7.9748
+          ],
+          [
+            "constitution-p058",
+            7.9058
+          ],
+          [
+            "constitution-p083",
+            7.5035
+          ],
+          [
+            "constitution-p040",
+            7.1665
+          ],
+          [
+            "constitution-p032",
+            7.1062
+          ],
+          [
+            "constitution-p080",
+            6.966
+          ],
+          [
+            "constitution-p056",
+            6.8941
+          ],
+          [
+            "constitution-p024",
+            6.8546
+          ],
+          [
+            "constitution-p002",
+            6.7835
+          ],
+          [
+            "constitution-p075",
+            6.091
+          ],
+          [
+            "constitution-p031",
+            5.8265
+          ],
+          [
+            "constitution-p019",
+            5.743
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p000",
+            98.0915
+          ],
+          [
+            "constitution-p025",
+            19.2445
+          ],
+          [
+            "constitution-p079",
+            15.1694
+          ],
+          [
+            "constitution-p067",
+            9.628
+          ],
+          [
+            "constitution-p039",
+            8.99
+          ],
+          [
+            "constitution-p042",
+            8.4234
+          ],
+          [
+            "constitution-p081",
+            8.2616
+          ],
+          [
+            "constitution-p016",
+            7.887
+          ],
+          [
+            "constitution-p082",
+            7.5922
+          ],
+          [
+            "constitution-p058",
+            7.3977
+          ],
+          [
+            "constitution-p083",
+            7.0037
+          ],
+          [
+            "constitution-p080",
+            6.7337
+          ],
+          [
+            "constitution-p040",
+            6.7036
+          ],
+          [
+            "constitution-p056",
+            6.6464
+          ],
+          [
+            "constitution-p032",
+            6.394
+          ],
+          [
+            "constitution-p002",
+            6.213
+          ],
+          [
+            "constitution-p024",
+            6.1087
+          ],
+          [
+            "constitution-p019",
+            5.7487
+          ],
+          [
+            "constitution-p075",
+            5.7449
+          ],
+          [
+            "constitution-p031",
+            5.3016
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p001",
+        "k": 1,
+        "got": [
+          [
+            "constitution-p001",
+            44.1288
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p001",
+            40.2444
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p001",
+        "k": 3,
+        "got": [
+          [
+            "constitution-p001",
+            44.1288
+          ],
+          [
+            "constitution-p042",
+            15.2727
+          ],
+          [
+            "constitution-p024",
+            12.4952
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p001",
+            40.2444
+          ],
+          [
+            "constitution-p042",
+            13.8085
+          ],
+          [
+            "constitution-p024",
+            11.5739
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p001",
+        "k": 20,
+        "got": [
+          [
+            "constitution-p001",
+            44.1288
+          ],
+          [
+            "constitution-p042",
+            15.2727
+          ],
+          [
+            "constitution-p024",
+            12.4952
+          ],
+          [
+            "constitution-p056",
+            11.1141
+          ],
+          [
+            "constitution-p023",
+            10.4225
+          ],
+          [
+            "constitution-p063",
+            9.6744
+          ],
+          [
+            "constitution-p067",
+            9.2007
+          ],
+          [
+            "constitution-p055",
+            8.3863
+          ],
+          [
+            "constitution-p050",
+            7.4637
+          ],
+          [
+            "constitution-p080",
+            7.4141
+          ],
+          [
+            "constitution-p083",
+            7.2298
+          ],
+          [
+            "constitution-p082",
+            7.18
+          ],
+          [
+            "constitution-p019",
+            6.8654
+          ],
+          [
+            "constitution-p041",
+            6.8284
+          ],
+          [
+            "constitution-p071",
+            6.8158
+          ],
+          [
+            "constitution-p002",
+            6.8014
+          ],
+          [
+            "constitution-p011",
+            6.7345
+          ],
+          [
+            "constitution-p057",
+            6.6104
+          ],
+          [
+            "constitution-p003",
+            6.433
+          ],
+          [
+            "constitution-p059",
+            6.2031
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p001",
+            40.2444
+          ],
+          [
+            "constitution-p042",
+            13.8085
+          ],
+          [
+            "constitution-p024",
+            11.5739
+          ],
+          [
+            "constitution-p056",
+            10.3287
+          ],
+          [
+            "constitution-p023",
+            9.6748
+          ],
+          [
+            "constitution-p063",
+            8.9294
+          ],
+          [
+            "constitution-p067",
+            8.4117
+          ],
+          [
+            "constitution-p055",
+            7.8212
+          ],
+          [
+            "constitution-p083",
+            6.8075
+          ],
+          [
+            "constitution-p080",
+            6.7254
+          ],
+          [
+            "constitution-p050",
+            6.6944
+          ],
+          [
+            "constitution-p002",
+            6.5469
+          ],
+          [
+            "constitution-p082",
+            6.4656
+          ],
+          [
+            "constitution-p019",
+            6.2926
+          ],
+          [
+            "constitution-p041",
+            6.2534
+          ],
+          [
+            "constitution-p071",
+            6.1107
+          ],
+          [
+            "constitution-p011",
+            6.0075
+          ],
+          [
+            "constitution-p057",
+            5.7709
+          ],
+          [
+            "constitution-p003",
+            5.701
+          ],
+          [
+            "constitution-p016",
+            5.6192
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p002",
+        "k": 1,
+        "got": [
+          [
+            "constitution-p002",
+            67.3297
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p002",
+            61.2456
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p002",
+        "k": 3,
+        "got": [
+          [
+            "constitution-p002",
+            67.3297
+          ],
+          [
+            "constitution-p007",
+            21.1405
+          ],
+          [
+            "constitution-p008",
+            17.0369
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p002",
+            61.2456
+          ],
+          [
+            "constitution-p007",
+            19.2152
+          ],
+          [
+            "constitution-p008",
+            15.409
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p002",
+        "k": 20,
+        "got": [
+          [
+            "constitution-p002",
+            67.3297
+          ],
+          [
+            "constitution-p007",
+            21.1405
+          ],
+          [
+            "constitution-p008",
+            17.0369
+          ],
+          [
+            "constitution-p056",
+            14.1613
+          ],
+          [
+            "constitution-p016",
+            13.8957
+          ],
+          [
+            "constitution-p055",
+            12.5694
+          ],
+          [
+            "constitution-p083",
+            11.7621
+          ],
+          [
+            "constitution-p079",
+            11.6458
+          ],
+          [
+            "constitution-p024",
+            10.7494
+          ],
+          [
+            "constitution-p023",
+            10.5697
+          ],
+          [
+            "constitution-p074",
+            10.3861
+          ],
+          [
+            "constitution-p017",
+            9.7268
+          ],
+          [
+            "constitution-p015",
+            9.6768
+          ],
+          [
+            "constitution-p073",
+            9.2159
+          ],
+          [
+            "constitution-p080",
+            9.0482
+          ],
+          [
+            "constitution-p009",
+            8.6256
+          ],
+          [
+            "constitution-p018",
+            8.5771
+          ],
+          [
+            "constitution-p043",
+            8.3501
+          ],
+          [
+            "constitution-p003",
+            8.1763
+          ],
+          [
+            "constitution-p001",
+            7.9479
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p002",
+            61.2456
+          ],
+          [
+            "constitution-p007",
+            19.2152
+          ],
+          [
+            "constitution-p008",
+            15.409
+          ],
+          [
+            "constitution-p056",
+            13.3473
+          ],
+          [
+            "constitution-p016",
+            12.4588
+          ],
+          [
+            "constitution-p055",
+            11.56
+          ],
+          [
+            "constitution-p083",
+            10.9146
+          ],
+          [
+            "constitution-p079",
+            10.3136
+          ],
+          [
+            "constitution-p023",
+            9.9868
+          ],
+          [
+            "constitution-p024",
+            9.9098
+          ],
+          [
+            "constitution-p074",
+            9.5089
+          ],
+          [
+            "constitution-p017",
+            8.8778
+          ],
+          [
+            "constitution-p080",
+            8.3146
+          ],
+          [
+            "constitution-p015",
+            8.2921
+          ],
+          [
+            "constitution-p009",
+            8.2376
+          ],
+          [
+            "constitution-p073",
+            8.1395
+          ],
+          [
+            "constitution-p018",
+            7.7886
+          ],
+          [
+            "constitution-p003",
+            7.7115
+          ],
+          [
+            "constitution-p001",
+            7.6295
+          ],
+          [
+            "constitution-p043",
+            7.3823
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p003",
+        "k": 1,
+        "got": [
+          [
+            "constitution-p003",
+            67.6015
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p003",
+            64.2042
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p003",
+        "k": 3,
+        "got": [
+          [
+            "constitution-p003",
+            67.6015
+          ],
+          [
+            "constitution-p009",
+            52.7664
+          ],
+          [
+            "constitution-p058",
+            34.154
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p003",
+            64.2042
+          ],
+          [
+            "constitution-p009",
+            50.1044
+          ],
+          [
+            "constitution-p058",
+            31.9576
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p003",
+        "k": 20,
+        "got": [
+          [
+            "constitution-p003",
+            67.6015
+          ],
+          [
+            "constitution-p009",
+            52.7664
+          ],
+          [
+            "constitution-p058",
+            34.154
+          ],
+          [
+            "constitution-p055",
+            16.5647
+          ],
+          [
+            "constitution-p023",
+            14.5908
+          ],
+          [
+            "constitution-p056",
+            14.2892
+          ],
+          [
+            "constitution-p075",
+            13.3562
+          ],
+          [
+            "constitution-p007",
+            12.2491
+          ],
+          [
+            "constitution-p080",
+            9.5612
+          ],
+          [
+            "constitution-p011",
+            9.2544
+          ],
+          [
+            "constitution-p065",
+            8.984
+          ],
+          [
+            "constitution-p002",
+            8.5577
+          ],
+          [
+            "constitution-p079",
+            8.2885
+          ],
+          [
+            "constitution-p063",
+            8.2041
+          ],
+          [
+            "constitution-p082",
+            7.7458
+          ],
+          [
+            "constitution-p043",
+            7.5349
+          ],
+          [
+            "constitution-p050",
+            7.4232
+          ],
+          [
+            "constitution-p067",
+            7.3328
+          ],
+          [
+            "constitution-p071",
+            7.2605
+          ],
+          [
+            "constitution-p001",
+            7.2396
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p003",
+            64.2042
+          ],
+          [
+            "constitution-p009",
+            50.1044
+          ],
+          [
+            "constitution-p058",
+            31.9576
+          ],
+          [
+            "constitution-p055",
+            15.8684
+          ],
+          [
+            "constitution-p023",
+            14.142
+          ],
+          [
+            "constitution-p056",
+            13.4714
+          ],
+          [
+            "constitution-p075",
+            12.2197
+          ],
+          [
+            "constitution-p007",
+            11.778
+          ],
+          [
+            "constitution-p011",
+            9.1949
+          ],
+          [
+            "constitution-p080",
+            9.124
+          ],
+          [
+            "constitution-p065",
+            8.7107
+          ],
+          [
+            "constitution-p002",
+            8.1003
+          ],
+          [
+            "constitution-p063",
+            8.0301
+          ],
+          [
+            "constitution-p079",
+            8.0221
+          ],
+          [
+            "constitution-p043",
+            7.1293
+          ],
+          [
+            "constitution-p082",
+            6.9666
+          ],
+          [
+            "constitution-p050",
+            6.9558
+          ],
+          [
+            "constitution-p067",
+            6.8125
+          ],
+          [
+            "constitution-p071",
+            6.7343
+          ],
+          [
+            "constitution-p072",
+            6.5347
+          ]
+        ]
+      }
+    ],
+    "passed": false
+  }
+}

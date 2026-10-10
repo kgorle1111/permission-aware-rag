@@ -159,4 +159,6 @@ Everything else: [ROADMAP.md](ROADMAP.md).
 
 Apache License 2.0. See [LICENSE](LICENSE).
 
-Latest hierarchy and scale-prerequisite verification: [2026-10-07 results](evals/results/2026-10-07-hierarchy/table.md). The 100k-document performance benchmark remains open.
+Latest hierarchy and scale-prerequisite verification: [2026-10-07 results](evals/results/2026-10-07-hierarchy/table.md). The first scale measurement is linked below; broader performance targets remain open.
+
+New evidence: [100k documents / 1.5M chunks](evals/results/2026-10-08-scale/table.md) — local filtered search p95 4.15–8.00 ms; folder reconciliation **104.92 s**, missing the 60 s goal. [Public-text fixture](evals/results/2026-10-08-public-kit/table.md) uses fictional ACLs and reports 0/2,088 isolation/visibility failures. Try the [retriever adapter kit](evals/kit/README.md), read the [write-up](docs/PORTFOLIO_WRITEUP.md), or follow the [interview walkthrough](docs/WALKTHROUGH.md).

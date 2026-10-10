@@ -237,3 +237,5 @@ verified on 2026-10-07: allowed retrieval, forbidden-document check, retrieval-o
 answers and auditor query redaction all passed; the junior claims workflow was
 also verified in the browser. Demo role selection is not real-user authentication.
 Audit history is ephemeral across container replacement.
+
+Latest standalone evidence: [100k-document engine/sync benchmark](evals/results/2026-10-08-scale/table.md), [public-text isolation](evals/results/2026-10-08-public-kit/table.md), and [bring-your-own-retriever kit](evals/kit/README.md). The scale run publishes the folder-reconciliation target miss and distinguishes streamed harness ingest from production ingestion.

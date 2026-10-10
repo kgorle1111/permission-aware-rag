@@ -21,6 +21,15 @@ Current implementation work is in [PR #6](https://github.com/kgorle1111/permissi
 | 2026-10-07 | Qdrant keyword indexes, document-filtered batched ACL updates, on-disk payload/vectors and int8 configuration; durable retry barriers | `platform/tests/test_scale_acl.py`, `platform/tests/test_hardening.py`, `evals/verify_qdrant_storage.py` |
 | 2026-10-07 | AWS Lightsail HTTPS portfolio demo, with synthetic documents and retrieval-only roles | [deployment guide](deploy/aws/README.md) |
 
+### Evidence batch — 2026-10-08
+
+The reports, kit and narrative drafts are in [draft PR #7](https://github.com/kgorle1111/permission-aware-rag/pull/7), stacked on PR #6. They are not merged.
+
+- [100k-document / 1.5M-chunk local measurement](evals/results/2026-10-08-scale/table.md): filtered engine retrieval met the local p95 target; actual folder reconciliation took **104.92 s**, missing the <60 s target. Production full-materialization ingest and end-to-end API timing remain unmeasured.
+- [Public-input fixture and adapter evidence](evals/results/2026-10-08-public-kit/table.md): 87 National Archives paragraphs with fictional permissions; zero failures in 2,088 visibility/isolation probes, 197/197 required hits, and eight planted faults caught. The missing historical corpus remains unrecovered.
+- [Portable leak-test kit](evals/kit/README.md) with an independent ACL oracle, positive controls, reference/standalone adapters and an optional promptfoo shim. An external unassisted integration remains unproven.
+- [Write-up](docs/PORTFOLIO_WRITEUP.md) and [five-minute walkthrough](docs/WALKTHROUGH.md) drafted; publication outside this repository and rehearsal are not claimed.
+
 ### First adversarial security review (2026-07-20)
 
 | # | Severity | Finding | Status |
@@ -47,11 +56,11 @@ These were written before the scaled eval ran. Negative results get published th
 **Security regressions:** document text/id breakout, CSV formulas, newest-entry edits, citation ids and malformed field types are pinned by `app/test_security.py`. List bodies already returned 400 on both endpoints; explicit validation also works with Python assertions disabled. Auditors receive other users' query text redacted. Local JSONL tail checkpoints and their storage-attacker limits are documented in [T12](docs/THREAT_MODEL.md).
 ## Next
 
-1. **Review and complete CI for PR #6.** The ACL and storage prerequisites have passed local gates; a live-demo update remains separate.
-2. **100,000-document benchmark:** measure ingest, memory, retrieval latency at multiple selectivities and revocation time. Publish misses against the targets below.
-3. **Real-world eval:** leak count, recall and citation validity on documents this project did not write, with realistic permission groups and confidence intervals.
-4. **A leak-test kit you can point at your own retriever:** independent ACL fixtures and an isolation oracle, with adapters to established evaluation runners.
-5. **Write-up and interview walkthrough**, using the [live demo](https://permission-rag-demo.b9hphyfz7skjm.us-east-2.cs.amazonlightsail.com/).
+1. **Review PR #6**, whose CI checks passed, and the subsequent evidence batch. The live demo still runs the prior stable image.
+2. **Measured reconciliation bottleneck:** track pending document changes durably to avoid full SQL scans and all-document replay while preserving retry and deletion barriers. Remeasure against the missed folder target; this fix is not implemented yet.
+3. **Broader real-world eval:** realistic domain input and independent questions/permission provenance, beyond the small public-text fixture.
+4. **External integration:** have an engineer run the kit unassisted against a separate retriever (L4).
+5. **Publish the write-up and rehearse the interview walkthrough.**
 
 ## Permissions that scale to 100,000 documents
 
@@ -65,7 +74,7 @@ These were written before the scaled eval ran. Negative results get published th
 - **Prerequisite fixes:** payload indexes on the permission fields, batched permission updates, and vector quantization.
 - **Hybrid search must never use collection-wide IDF.** It would reopen the score side channel that S1 closed.
 
-Hierarchy and the Qdrant configuration fixes are implemented. The remote-server diagnostic verifies storage settings, engine filtering and bulk revocation; it does not measure resident memory or large-scale latency. Permission reconciliation still scans the SQL mirror. Performance goals remain design targets until a 100k-document benchmark measures them. The goals: retrieval p95 under 100 ms at every selectivity level, a 10k-document folder revocation in under 60 seconds, and zero leaks. Misses get published.
+Hierarchy and the Qdrant configuration fixes are implemented. The remote-server diagnostic verifies storage settings, engine filtering and bulk revocation; it does not measure resident memory or large-scale latency. Permission reconciliation still scans the SQL mirror. The first [100k-document benchmark](evals/results/2026-10-08-scale/table.md) measured engine search and actual reconciliation: warm local search met the latency target, while folder reconciliation missed its target. Production ingest, concurrency and API latency remain unmeasured. The goals: retrieval p95 under 100 ms at every selectivity level, a 10k-document folder revocation in under 60 seconds, and zero leaks. Misses get published.
 
 ## Scoped, not scheduled
 

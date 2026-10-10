@@ -1,0 +1,3627 @@
+{
+  "probes": 192,
+  "visibility_failures": 0,
+  "isolation_failures": 0,
+  "positive_controls": 18,
+  "recall_misses": 0,
+  "errors": 0,
+  "invalid_acl_controls": 12,
+  "invalid_acl_failures": 0,
+  "revocation_controls": 1,
+  "revocation_failures": 0,
+  "examples": [],
+  "passed": true,
+  "fixture": "deterministic-acl-controls-v1",
+  "fixture_sha256": "78f6aab5e1053595f7471dad372878f7ce8e39af93d7c443728998c97d01436e",
+  "chunks": 8,
+  "principal_scopes": 8,
+  "python": "3.12.4",
+  "adapter": "ReferenceAdapter",
+  "implementation_sha256": "78644d7b52b47645d836bce11e1d83994c2c179c90c2556115f55ff496e33dd7",
+  "source_commit": "f8a01244506087035a3a79dd23d0382b989d1eda",
+  "mutants": {
+    "NoFilter": {
+      "probes": 192,
+      "visibility_failures": 170,
+      "isolation_failures": 192,
+      "positive_controls": 18,
+      "recall_misses": 0,
+      "errors": 0,
+      "invalid_acl_controls": 12,
+      "invalid_acl_failures": 0,
+      "revocation_controls": 1,
+      "revocation_failures": 1,
+      "examples": [
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p000",
+              7.6646
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              5.9631
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p000",
+              7.6646
+            ],
+            [
+              "constitution-p001",
+              0.1203
+            ],
+            [
+              "constitution-p002",
+              0.1124
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              5.9631
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "forbidden": [
+            "constitution-p004",
+            "constitution-p005",
+            "constitution-p006"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p000",
+              7.6646
+            ],
+            [
+              "constitution-p001",
+              0.1203
+            ],
+            [
+              "constitution-p002",
+              0.1124
+            ],
+            [
+              "constitution-p003",
+              0.1124
+            ],
+            [
+              "constitution-p004",
+              0.1124
+            ],
+            [
+              "constitution-p005",
+              0.1124
+            ],
+            [
+              "constitution-p006",
+              0.1124
+            ],
+            [
+              "constitution-p007",
+              0.1124
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              5.9631
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ],
+            [
+              "constitution-p003",
+              0.1694
+            ],
+            [
+              "constitution-p007",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p001",
+              7.1269
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              5.9631
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 3,
+          "forbidden": [
+            "constitution-p004"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p001",
+              7.1269
+            ],
+            [
+              "constitution-p004",
+              1.3724
+            ],
+            [
+              "constitution-p000",
+              0.1203
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              5.9631
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "forbidden": [
+            "constitution-p004",
+            "constitution-p005",
+            "constitution-p006"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p001",
+              7.1269
+            ],
+            [
+              "constitution-p004",
+              1.3724
+            ],
+            [
+              "constitution-p000",
+              0.1203
+            ],
+            [
+              "constitution-p002",
+              0.1124
+            ],
+            [
+              "constitution-p003",
+              0.1124
+            ],
+            [
+              "constitution-p005",
+              0.1124
+            ],
+            [
+              "constitution-p006",
+              0.1124
+            ],
+            [
+              "constitution-p007",
+              0.1124
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              5.9631
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ],
+            [
+              "constitution-p003",
+              0.1694
+            ],
+            [
+              "constitution-p007",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p002",
+              8.4219
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              6.4196
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p002",
+              8.4219
+            ],
+            [
+              "constitution-p007",
+              1.3724
+            ],
+            [
+              "constitution-p000",
+              0.1203
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              6.4196
+            ],
+            [
+              "constitution-p007",
+              1.0216
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 20,
+          "forbidden": [
+            "constitution-p004",
+            "constitution-p005",
+            "constitution-p006"
+          ]
+        }
+      ],
+      "passed": false
+    },
+    "GlobalIdf": {
+      "probes": 192,
+      "visibility_failures": 124,
+      "isolation_failures": 192,
+      "positive_controls": 18,
+      "recall_misses": 0,
+      "errors": 0,
+      "invalid_acl_controls": 12,
+      "invalid_acl_failures": 0,
+      "revocation_controls": 1,
+      "revocation_failures": 0,
+      "examples": [
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p000",
+              7.6646
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              5.9631
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p000",
+              7.6646
+            ],
+            [
+              "constitution-p001",
+              0.1203
+            ],
+            [
+              "constitution-p002",
+              0.1124
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              5.9631
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p000",
+              7.6646
+            ],
+            [
+              "constitution-p001",
+              0.1203
+            ],
+            [
+              "constitution-p002",
+              0.1124
+            ],
+            [
+              "constitution-p003",
+              0.1124
+            ],
+            [
+              "constitution-p007",
+              0.1124
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              5.9631
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ],
+            [
+              "constitution-p003",
+              0.1694
+            ],
+            [
+              "constitution-p007",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p001",
+              7.1269
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              5.9631
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p001",
+              7.1269
+            ],
+            [
+              "constitution-p000",
+              0.1203
+            ],
+            [
+              "constitution-p002",
+              0.1124
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              5.9631
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p001",
+              7.1269
+            ],
+            [
+              "constitution-p000",
+              0.1203
+            ],
+            [
+              "constitution-p002",
+              0.1124
+            ],
+            [
+              "constitution-p003",
+              0.1124
+            ],
+            [
+              "constitution-p007",
+              0.1124
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              5.9631
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ],
+            [
+              "constitution-p003",
+              0.1694
+            ],
+            [
+              "constitution-p007",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p002",
+              8.4219
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              6.4196
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p002",
+              8.4219
+            ],
+            [
+              "constitution-p007",
+              1.3724
+            ],
+            [
+              "constitution-p000",
+              0.1203
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              6.4196
+            ],
+            [
+              "constitution-p007",
+              1.0216
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p002",
+              8.4219
+            ],
+            [
+              "constitution-p007",
+              1.3724
+            ],
+            [
+              "constitution-p000",
+              0.1203
+            ],
+            [
+              "constitution-p001",
+              0.1203
+            ],
+            [
+              "constitution-p003",
+              0.1124
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              6.4196
+            ],
+            [
+              "constitution-p007",
+              1.0216
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p003",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p003",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p003",
+              8.4219
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p003",
+              6.9169
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p003",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p003",
+              8.4219
+            ],
+            [
+              "constitution-p000",
+              0.1203
+            ],
+            [
+              "constitution-p001",
+              0.1203
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p003",
+              6.9169
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p003",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p003",
+              8.4219
+            ],
+            [
+              "constitution-p000",
+              0.1203
+            ],
+            [
+              "constitution-p001",
+              0.1203
+            ],
+            [
+              "constitution-p002",
+              0.1124
+            ],
+            [
+              "constitution-p007",
+              0.1124
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p003",
+              6.9169
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ],
+            [
+              "constitution-p007",
+              0.1694
+            ]
+          ]
+        }
+      ],
+      "passed": false
+    },
+    "PostFilterTopK": {
+      "probes": 192,
+      "visibility_failures": 85,
+      "isolation_failures": 192,
+      "positive_controls": 18,
+      "recall_misses": 0,
+      "errors": 0,
+      "invalid_acl_controls": 12,
+      "invalid_acl_failures": 0,
+      "revocation_controls": 1,
+      "revocation_failures": 0,
+      "examples": [
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p000",
+              7.6646
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              5.9631
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p000",
+              7.6646
+            ],
+            [
+              "constitution-p001",
+              0.1203
+            ],
+            [
+              "constitution-p002",
+              0.1124
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              5.9631
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p000",
+              7.6646
+            ],
+            [
+              "constitution-p001",
+              0.1203
+            ],
+            [
+              "constitution-p002",
+              0.1124
+            ],
+            [
+              "constitution-p003",
+              0.1124
+            ],
+            [
+              "constitution-p007",
+              0.1124
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              5.9631
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ],
+            [
+              "constitution-p003",
+              0.1694
+            ],
+            [
+              "constitution-p007",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p001",
+              7.1269
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              5.9631
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p001",
+              7.1269
+            ],
+            [
+              "constitution-p000",
+              0.1203
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              5.9631
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p001",
+              7.1269
+            ],
+            [
+              "constitution-p000",
+              0.1203
+            ],
+            [
+              "constitution-p002",
+              0.1124
+            ],
+            [
+              "constitution-p003",
+              0.1124
+            ],
+            [
+              "constitution-p007",
+              0.1124
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              5.9631
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ],
+            [
+              "constitution-p003",
+              0.1694
+            ],
+            [
+              "constitution-p007",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p002",
+              8.4219
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              6.4196
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p002",
+              8.4219
+            ],
+            [
+              "constitution-p007",
+              1.3724
+            ],
+            [
+              "constitution-p000",
+              0.1203
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              6.4196
+            ],
+            [
+              "constitution-p007",
+              1.0216
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p002",
+              8.4219
+            ],
+            [
+              "constitution-p007",
+              1.3724
+            ],
+            [
+              "constitution-p000",
+              0.1203
+            ],
+            [
+              "constitution-p001",
+              0.1203
+            ],
+            [
+              "constitution-p003",
+              0.1124
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              6.4196
+            ],
+            [
+              "constitution-p007",
+              1.0216
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p003",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p003",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p003",
+              8.4219
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p003",
+              6.9169
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p003",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p003",
+              8.4219
+            ],
+            [
+              "constitution-p000",
+              0.1203
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p003",
+              6.9169
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p003",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p003",
+              8.4219
+            ],
+            [
+              "constitution-p000",
+              0.1203
+            ],
+            [
+              "constitution-p001",
+              0.1203
+            ],
+            [
+              "constitution-p002",
+              0.1124
+            ],
+            [
+              "constitution-p007",
+              0.1124
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p003",
+              6.9169
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ],
+            [
+              "constitution-p007",
+              0.1694
+            ]
+          ]
+        }
+      ],
+      "passed": false
+    },
+    "StarSubstring": {
+      "probes": 192,
+      "visibility_failures": 105,
+      "isolation_failures": 168,
+      "positive_controls": 18,
+      "recall_misses": 0,
+      "errors": 0,
+      "invalid_acl_controls": 12,
+      "invalid_acl_failures": 0,
+      "revocation_controls": 1,
+      "revocation_failures": 0,
+      "examples": [
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p000",
+              6.6073
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              5.9631
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p000",
+              6.6073
+            ],
+            [
+              "constitution-p001",
+              0.1552
+            ],
+            [
+              "constitution-p002",
+              0.145
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              5.9631
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "forbidden": [
+            "constitution-p005"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p000",
+              6.6073
+            ],
+            [
+              "constitution-p001",
+              0.1552
+            ],
+            [
+              "constitution-p002",
+              0.145
+            ],
+            [
+              "constitution-p003",
+              0.145
+            ],
+            [
+              "constitution-p005",
+              0.145
+            ],
+            [
+              "constitution-p007",
+              0.145
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              5.9631
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ],
+            [
+              "constitution-p003",
+              0.1694
+            ],
+            [
+              "constitution-p007",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p001",
+              6.6073
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              5.9631
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p001",
+              6.6073
+            ],
+            [
+              "constitution-p000",
+              0.1552
+            ],
+            [
+              "constitution-p002",
+              0.145
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              5.9631
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "forbidden": [
+            "constitution-p005"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p001",
+              6.6073
+            ],
+            [
+              "constitution-p000",
+              0.1552
+            ],
+            [
+              "constitution-p002",
+              0.145
+            ],
+            [
+              "constitution-p003",
+              0.145
+            ],
+            [
+              "constitution-p005",
+              0.145
+            ],
+            [
+              "constitution-p007",
+              0.145
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              5.9631
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ],
+            [
+              "constitution-p003",
+              0.1694
+            ],
+            [
+              "constitution-p007",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p002",
+              7.1781
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              6.4196
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p002",
+              7.1781
+            ],
+            [
+              "constitution-p007",
+              1.1519
+            ],
+            [
+              "constitution-p000",
+              0.1552
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              6.4196
+            ],
+            [
+              "constitution-p007",
+              1.0216
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 20,
+          "forbidden": [
+            "constitution-p005"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p002",
+              7.1781
+            ],
+            [
+              "constitution-p007",
+              1.1519
+            ],
+            [
+              "constitution-p000",
+              0.1552
+            ],
+            [
+              "constitution-p001",
+              0.1552
+            ],
+            [
+              "constitution-p003",
+              0.145
+            ],
+            [
+              "constitution-p005",
+              0.145
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              6.4196
+            ],
+            [
+              "constitution-p007",
+              1.0216
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p003",
+              0.1694
+            ]
+          ]
+        }
+      ],
+      "passed": false
+    },
+    "GroupPrefix": {
+      "probes": 192,
+      "visibility_failures": 39,
+      "isolation_failures": 72,
+      "positive_controls": 18,
+      "recall_misses": 0,
+      "errors": 0,
+      "invalid_acl_controls": 12,
+      "invalid_acl_failures": 0,
+      "revocation_controls": 1,
+      "revocation_failures": 0,
+      "examples": [
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p000",
+              6.6073
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              5.9631
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p000",
+              6.6073
+            ],
+            [
+              "constitution-p001",
+              0.1552
+            ],
+            [
+              "constitution-p002",
+              0.145
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              5.9631
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "forbidden": [
+            "constitution-p004"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p000",
+              6.6073
+            ],
+            [
+              "constitution-p001",
+              0.1552
+            ],
+            [
+              "constitution-p002",
+              0.145
+            ],
+            [
+              "constitution-p003",
+              0.145
+            ],
+            [
+              "constitution-p004",
+              0.145
+            ],
+            [
+              "constitution-p007",
+              0.145
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              5.9631
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ],
+            [
+              "constitution-p003",
+              0.1694
+            ],
+            [
+              "constitution-p007",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p001",
+              6.0724
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              5.9631
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 3,
+          "forbidden": [
+            "constitution-p004"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p001",
+              6.0724
+            ],
+            [
+              "constitution-p004",
+              1.1519
+            ],
+            [
+              "constitution-p000",
+              0.1552
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              5.9631
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "forbidden": [
+            "constitution-p004"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p001",
+              6.0724
+            ],
+            [
+              "constitution-p004",
+              1.1519
+            ],
+            [
+              "constitution-p000",
+              0.1552
+            ],
+            [
+              "constitution-p002",
+              0.145
+            ],
+            [
+              "constitution-p003",
+              0.145
+            ],
+            [
+              "constitution-p007",
+              0.145
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              5.9631
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ],
+            [
+              "constitution-p003",
+              0.1694
+            ],
+            [
+              "constitution-p007",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p002",
+              7.1781
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              6.4196
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p002",
+              7.1781
+            ],
+            [
+              "constitution-p007",
+              1.1519
+            ],
+            [
+              "constitution-p000",
+              0.1552
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              6.4196
+            ],
+            [
+              "constitution-p007",
+              1.0216
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 20,
+          "forbidden": [
+            "constitution-p004"
+          ]
+        }
+      ],
+      "passed": false
+    },
+    "SharedCache": {
+      "probes": 192,
+      "visibility_failures": 145,
+      "isolation_failures": 168,
+      "positive_controls": 18,
+      "recall_misses": 3,
+      "errors": 0,
+      "invalid_acl_controls": 12,
+      "invalid_acl_failures": 0,
+      "revocation_controls": 1,
+      "revocation_failures": 1,
+      "examples": [
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p000",
+              5.9631
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              4.292
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p000",
+              5.9631
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              4.292
+            ],
+            [
+              "constitution-p001",
+              0.2735
+            ],
+            [
+              "constitution-p002",
+              0.255
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "forbidden": [
+            "constitution-p003",
+            "constitution-p007"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p000",
+              5.9631
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ],
+            [
+              "constitution-p003",
+              0.1694
+            ],
+            [
+              "constitution-p007",
+              0.1694
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              4.292
+            ],
+            [
+              "constitution-p001",
+              0.2735
+            ],
+            [
+              "constitution-p002",
+              0.255
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p001",
+              5.9631
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              4.292
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p001",
+              5.9631
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              4.292
+            ],
+            [
+              "constitution-p000",
+              0.2735
+            ],
+            [
+              "constitution-p002",
+              0.255
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "forbidden": [
+            "constitution-p003",
+            "constitution-p007"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p001",
+              5.9631
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ],
+            [
+              "constitution-p003",
+              0.1694
+            ],
+            [
+              "constitution-p007",
+              0.1694
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              4.292
+            ],
+            [
+              "constitution-p000",
+              0.2735
+            ],
+            [
+              "constitution-p002",
+              0.255
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p002",
+              6.4196
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              4.9373
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 3,
+          "forbidden": [
+            "constitution-p007"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p002",
+              6.4196
+            ],
+            [
+              "constitution-p007",
+              1.0216
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              4.9373
+            ],
+            [
+              "constitution-p000",
+              0.2735
+            ],
+            [
+              "constitution-p001",
+              0.2735
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 20,
+          "forbidden": [
+            "constitution-p007",
+            "constitution-p003"
+          ]
+        }
+      ],
+      "passed": false
+    },
+    "AnyLevelGrants": {
+      "probes": 192,
+      "visibility_failures": 170,
+      "isolation_failures": 192,
+      "positive_controls": 18,
+      "recall_misses": 0,
+      "errors": 0,
+      "invalid_acl_controls": 12,
+      "invalid_acl_failures": 0,
+      "revocation_controls": 1,
+      "revocation_failures": 1,
+      "examples": [
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p000",
+              7.6646
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              5.9631
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p000",
+              7.6646
+            ],
+            [
+              "constitution-p001",
+              0.1203
+            ],
+            [
+              "constitution-p002",
+              0.1124
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              5.9631
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "forbidden": [
+            "constitution-p004",
+            "constitution-p005",
+            "constitution-p006"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p000",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p000",
+              7.6646
+            ],
+            [
+              "constitution-p001",
+              0.1203
+            ],
+            [
+              "constitution-p002",
+              0.1124
+            ],
+            [
+              "constitution-p003",
+              0.1124
+            ],
+            [
+              "constitution-p004",
+              0.1124
+            ],
+            [
+              "constitution-p005",
+              0.1124
+            ],
+            [
+              "constitution-p006",
+              0.1124
+            ],
+            [
+              "constitution-p007",
+              0.1124
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p000",
+              5.9631
+            ],
+            [
+              "constitution-p001",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ],
+            [
+              "constitution-p003",
+              0.1694
+            ],
+            [
+              "constitution-p007",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p001",
+              7.1269
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              5.9631
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 3,
+          "forbidden": [
+            "constitution-p004"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p001",
+              7.1269
+            ],
+            [
+              "constitution-p004",
+              1.3724
+            ],
+            [
+              "constitution-p000",
+              0.1203
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              5.9631
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "forbidden": [
+            "constitution-p004",
+            "constitution-p005",
+            "constitution-p006"
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p001",
+          "k": 20,
+          "got": [
+            [
+              "constitution-p001",
+              7.1269
+            ],
+            [
+              "constitution-p004",
+              1.3724
+            ],
+            [
+              "constitution-p000",
+              0.1203
+            ],
+            [
+              "constitution-p002",
+              0.1124
+            ],
+            [
+              "constitution-p003",
+              0.1124
+            ],
+            [
+              "constitution-p005",
+              0.1124
+            ],
+            [
+              "constitution-p006",
+              0.1124
+            ],
+            [
+              "constitution-p007",
+              0.1124
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p001",
+              5.9631
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ],
+            [
+              "constitution-p002",
+              0.1694
+            ],
+            [
+              "constitution-p003",
+              0.1694
+            ],
+            [
+              "constitution-p007",
+              0.1694
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 1,
+          "got": [
+            [
+              "constitution-p002",
+              8.4219
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              6.4196
+            ]
+          ]
+        },
+        {
+          "kind": "isolation_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 3,
+          "got": [
+            [
+              "constitution-p002",
+              8.4219
+            ],
+            [
+              "constitution-p007",
+              1.3724
+            ],
+            [
+              "constitution-p000",
+              0.1203
+            ]
+          ],
+          "want": [
+            [
+              "constitution-p002",
+              6.4196
+            ],
+            [
+              "constitution-p007",
+              1.0216
+            ],
+            [
+              "constitution-p000",
+              0.1814
+            ]
+          ]
+        },
+        {
+          "kind": "visibility_failures",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002",
+          "k": 20,
+          "forbidden": [
+            "constitution-p004",
+            "constitution-p005",
+            "constitution-p006"
+          ]
+        }
+      ],
+      "passed": false
+    },
+    "FlattenIntersection": {
+      "probes": 192,
+      "visibility_failures": 0,
+      "isolation_failures": 0,
+      "positive_controls": 18,
+      "recall_misses": 3,
+      "errors": 0,
+      "invalid_acl_controls": 12,
+      "invalid_acl_failures": 0,
+      "revocation_controls": 1,
+      "revocation_failures": 0,
+      "examples": [
+        {
+          "kind": "recall_misses",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p002"
+        },
+        {
+          "kind": "recall_misses",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr",
+              "finance",
+              "exec"
+            ]
+          },
+          "chunk": "constitution-p007"
+        },
+        {
+          "kind": "recall_misses",
+          "principal": {
+            "id": "bob",
+            "groups": [
+              "hr"
+            ]
+          },
+          "chunk": "constitution-p002"
+        }
+      ],
+      "passed": false
+    }
+  },
+  "mutants_caught": 8,
+  "mutants_total": 8,
+  "score_sidechannel_control": {
+    "probes": 192,
+    "visibility_failures": 0,
+    "isolation_failures": 192,
+    "positive_controls": 28,
+    "recall_misses": 0,
+    "errors": 0,
+    "invalid_acl_controls": 12,
+    "invalid_acl_failures": 0,
+    "revocation_controls": 1,
+    "revocation_failures": 0,
+    "examples": [
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p000",
+        "k": 1,
+        "got": [
+          [
+            "constitution-p000",
+            7.6646
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p000",
+            5.9631
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p000",
+        "k": 3,
+        "got": [
+          [
+            "constitution-p000",
+            7.6646
+          ],
+          [
+            "constitution-p001",
+            0.1203
+          ],
+          [
+            "constitution-p002",
+            0.1124
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p000",
+            5.9631
+          ],
+          [
+            "constitution-p001",
+            0.1814
+          ],
+          [
+            "constitution-p002",
+            0.1694
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p000",
+        "k": 20,
+        "got": [
+          [
+            "constitution-p000",
+            7.6646
+          ],
+          [
+            "constitution-p001",
+            0.1203
+          ],
+          [
+            "constitution-p002",
+            0.1124
+          ],
+          [
+            "constitution-p003",
+            0.1124
+          ],
+          [
+            "constitution-p007",
+            0.1124
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p000",
+            5.9631
+          ],
+          [
+            "constitution-p001",
+            0.1814
+          ],
+          [
+            "constitution-p002",
+            0.1694
+          ],
+          [
+            "constitution-p003",
+            0.1694
+          ],
+          [
+            "constitution-p007",
+            0.1694
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p001",
+        "k": 1,
+        "got": [
+          [
+            "constitution-p001",
+            7.1269
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p001",
+            5.9631
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p001",
+        "k": 3,
+        "got": [
+          [
+            "constitution-p001",
+            7.1269
+          ],
+          [
+            "constitution-p000",
+            0.1203
+          ],
+          [
+            "constitution-p002",
+            0.1124
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p001",
+            5.9631
+          ],
+          [
+            "constitution-p000",
+            0.1814
+          ],
+          [
+            "constitution-p002",
+            0.1694
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p001",
+        "k": 20,
+        "got": [
+          [
+            "constitution-p001",
+            7.1269
+          ],
+          [
+            "constitution-p000",
+            0.1203
+          ],
+          [
+            "constitution-p002",
+            0.1124
+          ],
+          [
+            "constitution-p003",
+            0.1124
+          ],
+          [
+            "constitution-p007",
+            0.1124
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p001",
+            5.9631
+          ],
+          [
+            "constitution-p000",
+            0.1814
+          ],
+          [
+            "constitution-p002",
+            0.1694
+          ],
+          [
+            "constitution-p003",
+            0.1694
+          ],
+          [
+            "constitution-p007",
+            0.1694
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p002",
+        "k": 1,
+        "got": [
+          [
+            "constitution-p002",
+            8.4219
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p002",
+            6.4196
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p002",
+        "k": 3,
+        "got": [
+          [
+            "constitution-p002",
+            8.4219
+          ],
+          [
+            "constitution-p007",
+            1.3724
+          ],
+          [
+            "constitution-p000",
+            0.1203
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p002",
+            6.4196
+          ],
+          [
+            "constitution-p007",
+            1.0216
+          ],
+          [
+            "constitution-p000",
+            0.1814
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p002",
+        "k": 20,
+        "got": [
+          [
+            "constitution-p002",
+            8.4219
+          ],
+          [
+            "constitution-p007",
+            1.3724
+          ],
+          [
+            "constitution-p000",
+            0.1203
+          ],
+          [
+            "constitution-p001",
+            0.1203
+          ],
+          [
+            "constitution-p003",
+            0.1124
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p002",
+            6.4196
+          ],
+          [
+            "constitution-p007",
+            1.0216
+          ],
+          [
+            "constitution-p000",
+            0.1814
+          ],
+          [
+            "constitution-p001",
+            0.1814
+          ],
+          [
+            "constitution-p003",
+            0.1694
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p003",
+        "k": 1,
+        "got": [
+          [
+            "constitution-p003",
+            8.4219
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p003",
+            6.9169
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p003",
+        "k": 3,
+        "got": [
+          [
+            "constitution-p003",
+            8.4219
+          ],
+          [
+            "constitution-p000",
+            0.1203
+          ],
+          [
+            "constitution-p001",
+            0.1203
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p003",
+            6.9169
+          ],
+          [
+            "constitution-p000",
+            0.1814
+          ],
+          [
+            "constitution-p001",
+            0.1814
+          ]
+        ]
+      },
+      {
+        "kind": "isolation_failures",
+        "principal": {
+          "id": "bob",
+          "groups": [
+            "hr",
+            "finance",
+            "exec"
+          ]
+        },
+        "chunk": "constitution-p003",
+        "k": 20,
+        "got": [
+          [
+            "constitution-p003",
+            8.4219
+          ],
+          [
+            "constitution-p000",
+            0.1203
+          ],
+          [
+            "constitution-p001",
+            0.1203
+          ],
+          [
+            "constitution-p002",
+            0.1124
+          ],
+          [
+            "constitution-p007",
+            0.1124
+          ]
+        ],
+        "want": [
+          [
+            "constitution-p003",
+            6.9169
+          ],
+          [
+            "constitution-p000",
+            0.1814
+          ],
+          [
+            "constitution-p001",
+            0.1814
+          ],
+          [
+            "constitution-p002",
+            0.1694
+          ],
+          [
+            "constitution-p007",
+            0.1694
+          ]
+        ]
+      }
+    ],
+    "passed": false
+  }
+}
