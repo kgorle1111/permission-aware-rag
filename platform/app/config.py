@@ -65,3 +65,6 @@ EMBED_MODEL = os.getenv("EMBED_MODEL", "")
 # Circuit breakers (embedder / vector store / LLM): consecutive failures to open, seconds to half-open
 BREAKER_THRESHOLD = int(os.getenv("BREAKER_THRESHOLD", "3"))
 BREAKER_RESET_S = float(os.getenv("BREAKER_RESET_S", "30"))
+
+# UTC-day estimated LLM spend cap; once reached, answers fall back to retrieval-only (0 disables the LLM)
+DAILY_BUDGET_USD = float(os.getenv("DAILY_BUDGET_USD", "5.0"))

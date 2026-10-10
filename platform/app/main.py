@@ -11,15 +11,19 @@ from __future__ import annotations
 import logging
 import asyncio
 import hmac
+import time
+import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
-from fastapi.responses import HTMLResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
 from . import audit as audit_mod
 from . import config
+from . import observability
 from .identity import Principal, principal_from_request
 from .retrieval import retrieve
 from .store import init_db, SessionLocal, PermissionState, fingerprint_problem
@@ -61,6 +65,14 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Permission-Aware RAG", lifespan=lifespan)
 
 
+@app.exception_handler(RequestValidationError)
+async def validation_error(request: Request, exc: RequestValidationError):
+    """422 without echoing the rejected input: the default handler returns it verbatim, and a lone
+    surrogate in it cannot be encoded, which turned a bad request into a 500."""
+    return JSONResponse(status_code=422, content={"detail": [
+        {"loc": list(e["loc"]), "msg": e["msg"], "type": e["type"]} for e in exc.errors()]})
+
+
 class QueryIn(BaseModel):
     query: str = Field(min_length=1, max_length=2000)
     k: int = Field(default=0, ge=0, le=20)
@@ -73,16 +85,35 @@ class QueryIn(BaseModel):
         return value
 
 
+@app.middleware("http")
+async def request_id_and_rejections(request: Request, call_next):
+    """X-Request-ID on every response (a header, not a body field: fail-closed and no-match
+    bodies must stay byte-identical). /query requests that never reach retrieval (401, 422, 405)
+    get their one log line here; retrieve() logs the ones that do (it always answers 200)."""
+    request_id, started = uuid.uuid4().hex, time.perf_counter()
+    request.state.request_id = request_id
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    if request.url.path == "/query" and response.status_code != 200:
+        rec = observability.new_record(request_id)
+        rec["outcome"] = "bad_request"
+        rec["total_ms"] = round((time.perf_counter() - started) * 1000, 1)
+        observability.OPS.record(rec)
+        observability.emit(rec)
+    return response
+
+
 @app.post("/query")
-def query(body: QueryIn, principal: Principal = Depends(principal_from_request)):
-    return retrieve(body.query, principal, k=body.k or None)
+def query(request: Request, body: QueryIn, principal: Principal = Depends(principal_from_request)):
+    return retrieve(body.query, principal, k=body.k or None, request_id=request.state.request_id)
 
 
 @app.get("/audit")
 def audit(principal: Principal = Depends(principal_from_request)):
     if "security" not in principal.groups:
         raise HTTPException(403, "audit access requires group:security")
-    return {"recent": audit_mod.recent(), "denied_heatmap": audit_mod.denied_heatmap()}
+    return {"recent": audit_mod.recent(), "denied_heatmap": audit_mod.denied_heatmap(),
+            "ops": observability.OPS.summary()}
 
 
 @app.post("/sync")

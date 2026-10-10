@@ -118,7 +118,12 @@ def test():
         with mock.patch.object(
             srv.llm,
             "ask",
-            return_value={"answer": "ok [policy-10023]", "usage": usage, "unverified_citations": []},
+            return_value={
+                "answer": "ok [policy-10023]",
+                "usage": usage,
+                "unverified_citations": [],
+                "uncited_claims": [],
+            },
         ):
             code, d = _post(base, "/ask", {"user": "junior", "q": "policy 10023 status"})
         assert code == 200 and "llm_ms" in d

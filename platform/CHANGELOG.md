@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add one JSON request log line per `/query` (ids, counts, timings; no text), an `X-Request-ID` header, an in-process `ops` summary in `/audit`, and a `DAILY_BUDGET_USD` spend cap that falls back to retrieval-only.
+- Make provider failures visible to the LLM circuit breaker without changing `generation.answer`'s string result; 422 responses no longer echo rejected input.
+- Add a red-team suite driven by `platform/tests/redteam/attacks.json` (mocked model; structural claims only).
 - Preserve section restrictions during permission updates and persist reconciliation barriers across failures.
 - Serialize retrieval, generation, and audit commits against permission mutations; prevent superseded work from clearing a newer barrier.
 - Fail closed on malformed ACLs, invalid identities, missing indexed chunks, and audit failures.
