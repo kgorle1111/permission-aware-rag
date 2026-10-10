@@ -113,6 +113,8 @@ def test_retrieval_uses_configured_default_limit_when_k_is_omitted(
     assert retrieval.retrieve("default limit contract", Principal("reader@example.test")) == {
         "results": [],
         "answer": "No results found.",
+        "degraded": False,
+        "source": "full_rag",
     }
     assert limits == [config.TOP_K]
 

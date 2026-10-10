@@ -9,9 +9,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .embeddings import embed
+from .embeddings import embed, fingerprint
+from .redact import redact
 from .store import (ChunkACL, ChunkPolicy, SourceCheckpoint, PermissionMutation,
-                    PendingSourceCheckpoint, permission_transaction)
+                    PendingSourceCheckpoint, ChunkText, IndexFingerprint,
+                    permission_transaction)
 from .vectorstore import reset_collection, upsert_chunks
 
 OWNER_ONLY = []  # empty means deny everyone; no forgeable sentinel principal
@@ -64,7 +66,7 @@ def chunk_document(doc: dict) -> list[dict]:
                 continue
             # Flat metadata remains conservative, never used to authorize.
             acl = strictest(strictest(doc_acl, section_acl), para_acl)
-            chunks.append({"doc_id": doc["doc_id"], "text": para["text"].strip(), "acl": acl,
+            chunks.append({"doc_id": doc["doc_id"], "text": redact(para["text"].strip()), "acl": acl,
                            "acl_doc": doc_acl, "acl_section": section_acl, "acl_para": para_acl,
                            "doc_acl": doc_acl, "section_acl": section_acl, "paragraph_acl": para_acl})
     return chunks
@@ -108,8 +110,13 @@ def ingest_corpus(corpus_path: str | Path, reset: bool = True) -> int:
         s.query(SourceCheckpoint).delete()
         s.query(PermissionMutation).delete()
         s.query(PendingSourceCheckpoint).delete()
+        s.query(ChunkText).delete()
+        s.query(IndexFingerprint).delete()
+        backend, model, dim = fingerprint()
+        s.add(IndexFingerprint(id=1, backend=backend, model=model, dim=dim))
         for ch in all_chunks:
             s.add(ChunkACL(chunk_id=ch["id"], doc_id=ch["doc_id"], acl=ch["acl"]))
+            s.add(ChunkText(chunk_id=ch["id"], text=ch["text"]))
             s.add(ChunkPolicy(chunk_id=ch["id"], doc_acl=ch["doc_acl"],
                               section_acl=ch["section_acl"], paragraph_acl=ch["paragraph_acl"]))
         state.revision += 1

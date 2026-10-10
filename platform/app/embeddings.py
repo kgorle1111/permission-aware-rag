@@ -44,6 +44,16 @@ def _hash_embed(text: str, dim: int) -> list[float]:
     return [v / norm for v in vec]
 
 
+def model_name() -> str:
+    default = "BAAI/bge-small-en-v1.5" if config.EMBED_BACKEND == "st" else "hash-ngram-v1"
+    return config.EMBED_MODEL or default
+
+
+def fingerprint() -> tuple[str, str, int]:
+    """Identity of the embedding space; vectors from different spaces are not comparable."""
+    return config.EMBED_BACKEND, model_name(), config.EMBED_DIM
+
+
 def embed(texts: list[str]) -> list[list[float]]:
     if config.EMBED_BACKEND not in {"hash", "st"} or config.EMBED_DIM < 1:
         raise ValueError("invalid embedding backend or dimension")
@@ -51,7 +61,7 @@ def embed(texts: list[str]) -> list[list[float]]:
         global _st_model
         if _st_model is None:
             from sentence_transformers import SentenceTransformer
-            _st_model = SentenceTransformer("BAAI/bge-small-en-v1.5")
+            _st_model = SentenceTransformer(model_name())
         return _st_model.encode(texts, normalize_embeddings=True).tolist()
     return [_hash_embed(t, config.EMBED_DIM) for t in texts]
 
