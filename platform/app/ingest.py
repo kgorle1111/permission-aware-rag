@@ -10,7 +10,8 @@ import json
 from pathlib import Path
 
 from .embeddings import embed
-from .store import ChunkACL, ChunkPolicy, SourceCheckpoint, permission_transaction
+from .store import (ChunkACL, ChunkPolicy, SourceCheckpoint, PermissionMutation,
+                    PendingSourceCheckpoint, permission_transaction)
 from .vectorstore import reset_collection, upsert_chunks
 
 OWNER_ONLY = []  # empty means deny everyone; no forgeable sentinel principal
@@ -105,6 +106,8 @@ def ingest_corpus(corpus_path: str | Path, reset: bool = True) -> int:
         s.query(ChunkACL).delete()
         s.query(ChunkPolicy).delete()
         s.query(SourceCheckpoint).delete()
+        s.query(PermissionMutation).delete()
+        s.query(PendingSourceCheckpoint).delete()
         for ch in all_chunks:
             s.add(ChunkACL(chunk_id=ch["id"], doc_id=ch["doc_id"], acl=ch["acl"]))
             s.add(ChunkPolicy(chunk_id=ch["id"], doc_acl=ch["doc_acl"],

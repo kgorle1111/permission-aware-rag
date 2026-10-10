@@ -37,12 +37,12 @@
       "reason": "Missing header default 'XXXX' fails startswith('Bearer ') exactly like '' and raises the same 401 'missing bearer token'."
     },
     "app.ingest.x_chunk_document__mutmut_4": {
-      "source_sha256": "17db91125e1465a32c66940f5fcc7867ad08ac30f1a63d6cb4c3fb699d6cc69a",
+      "source_sha256": "073cdfccd0c2dfac04c083a23004970c9b6c0490cefb6d130e0518dd475b558e",
       "mutant_sha256": "017b783a117813995c86837d2ed0ae95988174e95776c3efd591579176cd548b",
       "reason": "validate_acl(None) returns [] (non-list) and validate_acl([]) returns [] (empty clean list): identical doc ACL."
     },
     "app.ingest.x_chunk_document__mutmut_6": {
-      "source_sha256": "17db91125e1465a32c66940f5fcc7867ad08ac30f1a63d6cb4c3fb699d6cc69a",
+      "source_sha256": "073cdfccd0c2dfac04c083a23004970c9b6c0490cefb6d130e0518dd475b558e",
       "mutant_sha256": "d11ad45ed1ebac6007f5975d10c96b8cab1d77dd90d45ad74d3c5afb96ff6cd1",
       "reason": "doc.get('acl') defaults to None; validate_acl(None) and validate_acl([]) both return [], so the doc ACL is identical."
     },
@@ -53,26 +53,26 @@
     },
     "app.store.x_init_db__mutmut_20": {
       "reason": "SQL keywords and unquoted lowercase table/column identifiers and JSON type are case-insensitive in supported SQLite and PostgreSQL; changing this statement to lowercase preserves the same migration and durable barrier.",
-      "source_sha256": "e3dc042ab856eda8ec65f59a9f699d4ddbb1807b91fb078f5db689718ecdd723",
+      "source_sha256": "e7d908aa122333ff0f509371254c9032400212b0f94ada6397a29b91bd58a39d",
       "mutant_sha256": "6f0233d66baba9748de26af08218c30847535af60f6291006175541b9f84d73b"
     },
     "app.store.x_init_db__mutmut_42": {
-      "source_sha256": "e3dc042ab856eda8ec65f59a9f699d4ddbb1807b91fb078f5db689718ecdd723",
+      "source_sha256": "e7d908aa122333ff0f509371254c9032400212b0f94ada6397a29b91bd58a39d",
       "mutant_sha256": "cee69bf80ad02b5b9c0b8fc56153599947014cf97a38e7237d239b82624ce872",
       "reason": "SQLAlchemy applies the column default (0) when revision=None is passed; probed: row persists revision 0, pending True."
     },
     "app.store.x_init_db__mutmut_43": {
-      "source_sha256": "e3dc042ab856eda8ec65f59a9f699d4ddbb1807b91fb078f5db689718ecdd723",
+      "source_sha256": "e7d908aa122333ff0f509371254c9032400212b0f94ada6397a29b91bd58a39d",
       "mutant_sha256": "d2a441dbdd8ceec6d299f0f6d3ec1890aaac63ccb9e1eead6263e1343f65ca61",
       "reason": "SQLAlchemy applies the column default (True) when pending=None is passed; probed: row persists revision 0, pending True."
     },
     "app.store.x_init_db__mutmut_45": {
-      "source_sha256": "e3dc042ab856eda8ec65f59a9f699d4ddbb1807b91fb078f5db689718ecdd723",
+      "source_sha256": "e7d908aa122333ff0f509371254c9032400212b0f94ada6397a29b91bd58a39d",
       "mutant_sha256": "907b4b292ff0fbce073d9f66f06e5a475fbf6256ef984f47577b972e34338c55",
       "reason": "Omitting revision uses Column(default=0); probed on SQLite: persisted row identical to revision=0."
     },
     "app.store.x_init_db__mutmut_46": {
-      "source_sha256": "e3dc042ab856eda8ec65f59a9f699d4ddbb1807b91fb078f5db689718ecdd723",
+      "source_sha256": "e7d908aa122333ff0f509371254c9032400212b0f94ada6397a29b91bd58a39d",
       "mutant_sha256": "dad6cdb5a546cf06ebd1f288aa2f6206d462c7363ae383ed08920ce6d97aa417",
       "reason": "Omitting pending uses Column(default=True); probed on SQLite: persisted row identical to pending=True."
     }

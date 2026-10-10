@@ -91,6 +91,11 @@ def run(args):
             "source_commit": subprocess.check_output(
                 ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
             ).strip(),
+            "harness_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            "runtime_source_sha256": {
+                str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
+                for path in sorted((ROOT / "platform" / "app").rglob("*.py"))
+            },
             "documents": args.documents,
             "chunks_per_document": args.chunks,
             "points": args.documents * args.chunks,

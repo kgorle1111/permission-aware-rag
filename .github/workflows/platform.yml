@@ -38,8 +38,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-          cache-dependency-path: platform/requirements-dev.txt
       - name: Run mutations in Linux container
         run: |
           docker run --rm --volume "$PWD:/src" --workdir /src python:3.12-slim \
