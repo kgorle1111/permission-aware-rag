@@ -14,14 +14,15 @@ def test_recent_audit_has_complete_schema_newest_order_and_exact_limits(client):
                           number, number % 2 == 1)
     rows = audit.recent()
     assert len(rows) == 50
-    assert [row["query"] for row in rows] == [f"query-{n}" for n in range(51, 1, -1)]
+    assert [row["returned_docs"] for row in rows] == [[f"doc-{n}"] for n in range(51, 1, -1)]
+    assert all(row["query"] == "[redacted]" for row in rows)
     assert set(rows[0]) == {"ts", "user", "groups", "query", "returned_docs",
                             "denied_count", "fail_closed"}
     timestamp = dt.datetime.fromisoformat(rows[0]["ts"])
     assert timestamp.date() == dt.datetime.now(dt.timezone.utc).date()
     assert rows[0] | {"ts": "timestamp"} == {
         "ts": "timestamp", "user": "auditor@example.test", "groups": ["security", "hr"],
-        "query": "query-51", "returned_docs": ["doc-51"], "denied_count": 51,
+        "query": "[redacted]", "returned_docs": ["doc-51"], "denied_count": 51,
         "fail_closed": True,
     }
     assert audit.recent(1) == rows[:1]
@@ -95,7 +96,7 @@ def test_generation_provider_receives_complete_context_and_request_contract(monk
     assert sent["json"] == {
         "model": "fixture-model", "max_tokens": 400, "system": generation.SYSTEM,
         "messages": [{"role": "user", "content":
-                      "Context:\n[one] first permitted chunk\n\n[two] second permitted chunk\n\nQuestion: question"}],
+                      'Context:\n<document id="one">\nfirst permitted chunk\n</document>\n\n<document id="two">\nsecond permitted chunk\n</document>\n\nQuestion: question'}],
     }
 
 

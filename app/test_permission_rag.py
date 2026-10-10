@@ -141,7 +141,7 @@ def test():
         r2.retrieve("vacation", ALICE)
         assert PermissionRAG.verify_audit_chain(path)
         lines = path.read_text().splitlines()
-        lines[0] = lines[0].replace("vacation", "salaries")  # tamper first entry
+        lines[0] = lines[0].replace("elapsed_ms", "elapsed_mx")  # tamper first entry
         path.write_text("\n".join(lines) + "\n")
         assert not PermissionRAG.verify_audit_chain(path)
 

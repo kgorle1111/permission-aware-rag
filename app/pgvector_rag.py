@@ -191,7 +191,7 @@ class PgVectorRAG:
             {
                 "ts": time.time(),
                 "user": user["id"],
-                "query": query,
+                "query": "[redacted]",
                 "returned": [r["id"] for r in results],
                 "denied_chunks": total - visible,
                 "elapsed_ms": round((time.perf_counter() - t0) * 1000, 2),

@@ -42,6 +42,7 @@ equivalent in `mutation_equivalents.json`. CI runs all three on every push
 - Permission sync updates access for already indexed content; it does not fetch or restore document contents. Reingest after changing the permission source/backend or moving to a different physical SQL/vector store. After a document is deleted from the index, restoring its access requires reingesting its content.
 - The API polls the configured feed every `SYNC_INTERVAL_S` seconds (default `10`; set `0` to disable). `POST /sync`, restricted to the `security` group, runs a pass. Do not run the standalone sync script concurrently with a live API: it does not share the API's in-process vector-store lifecycle. Use `POST /sync` for a live process.
 - Cache entries are bounded and keyed by permission revision, principal scope, exact query, and `k`. They are local to a process; the SQL revision is used to make stale entries miss after reconciliation.
+- Audit records retain identities, returned IDs and counts; new query fields contain only `[redacted]`. `/audit` masks legacy query columns too, without rewriting history.
 - `denied_count` is a count sampled from the unfiltered top-k vector results for that query. It is not a count of every forbidden chunk in the corpus and is not a comprehensive exposure metric.
 - `config/postgres_rls.sql` is an example policy and is not active end-user authorization in the runtime. Runtime authorization comes from the application's verified principal and ACL checks.
 
@@ -78,3 +79,5 @@ This checks engine hierarchy filtering, bulk revocation, payload indexes and
 storage configuration; it does not measure quantization savings or ANN recall.
 The 2026-10-07 check used Qdrant server/client 1.18.0. Production uses a configured
 `QDRANT_URL`; the public AWS demo runs the small stdlib reference app instead.
+
+Platform SQL audit records rely on trusted database storage. They are appended by the application but do not have the reference backend’s hash chain or protection against a privileged database writer rewriting history.

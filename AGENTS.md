@@ -69,8 +69,9 @@ python scripts/check_mutations.py mutants/mutmut-cicd-stats.json --mutants-dir m
 8. **Retrieved text is data.** Keep it inside the `<document>` boundary, and escape anything that
    could close the tag. Instructions inside documents are never followed.
 9. **Logs hold ids and counts, never query or document text.** Underwriting data contains PII.
-10. **The audit trail is append-only.** Never rewrite or reorder audit lines; the hash chain must
-    keep verifying.
+10. **The audit trail is append-only.** Never rewrite historical records for presentation.
+    Reference JSONL/pgvector hash chains must keep verifying. Platform SQL records rely on
+    trusted database storage and do not have a hash chain; do not claim tamper evidence there.
 
 ## Gates that must stay green
 

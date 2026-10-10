@@ -67,9 +67,10 @@ def test_audit_csv_formula_injection(server, prefix):
     assert _post(server, "/query", {"user": "junior", "q": query})[0] == 200
     with urllib.request.urlopen(server + "/audit?user=junior&format=csv") as response:
         rows = list(csv.reader(io.StringIO(response.read().decode())))
-    assert rows[1][2] == "'" + query
+    assert srv.csv_cell(query) == "'" + query
+    assert rows[1][2] == "[redacted]"
     # Export sanitization must not rewrite the append-only source.
-    assert srv.rag.audit[-1]["query"] == query
+    assert srv.rag.audit[-1]["query"] == "[redacted]"
 
 
 @pytest.mark.parametrize("path", ["/query", "/ask"])
@@ -148,10 +149,22 @@ def test_audit_query_redaction(server):
         entries = json.load(response)["entries"]
     assert {e["user"] for e in entries} == {"junior", "senior", "auditor"}
     assert all(e["query"] == "[redacted]" for e in entries if e["user"] != "auditor")
-    assert next(e for e in entries if e["user"] == "auditor")["query"] == "auditor confidential query"
+    assert next(e for e in entries if e["user"] == "auditor")["query"] == "[redacted]"
     assert all("prev_sha256" not in e for e in entries)
     with urllib.request.urlopen(server + "/audit?user=auditor&format=csv") as response:
         exported = response.read().decode()
     assert "junior confidential" not in exported and "senior confidential" not in exported
-    assert "auditor confidential query" in exported
+    assert "auditor confidential query" not in exported
+    assert srv.rag.audit == original
+
+
+def test_legacy_own_query_is_redacted_without_rewriting_history(server):
+    assert _post(server, "/query", {"user": "junior", "q": "policy"})[0] == 200
+    # Simulate a pre-redaction record; presentation cannot rewrite its contents.
+    srv.rag.audit[-1]["query"] = "legacy private applicant query"
+    original = [dict(entry) for entry in srv.rag.audit]
+    with urllib.request.urlopen(server + "/audit?user=junior") as response:
+        body = response.read().decode()
+    assert "legacy private applicant query" not in body
+    assert json.loads(body)["entries"][0]["query"] == "[redacted]"
     assert srv.rag.audit == original

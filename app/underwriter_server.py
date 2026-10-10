@@ -181,11 +181,7 @@ def audit_for(user):
     # Export a view; never mutate the append-only source or expose hashes of
     # another user's potentially low-entropy query for offline guessing.
     return [
-        {
-            k: ("[redacted]" if k == "query" and e["user"] != user["id"] else v)
-            for k, v in e.items()
-            if k != "prev_sha256"
-        }
+        {k: ("[redacted]" if k == "query" else v) for k, v in e.items() if k != "prev_sha256"}
         for e in entries[-50:]
     ]
 
