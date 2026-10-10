@@ -36,6 +36,8 @@ RETRYABLE = {429, 500, 502, 503, 504, 529}
 MAX_ATTEMPTS = 4
 BACKOFF_BASE_S = 1.0
 BACKOFF_CAP_S = 30.0
+# One deadline for all attempts: retries never make a request slower than the old 30 s cap.
+TOTAL_BUDGET_S = 30.0
 
 
 def _delay(attempt: int, retry_after: str | None, rng) -> float:
@@ -48,7 +50,7 @@ def _delay(attempt: int, retry_after: str | None, rng) -> float:
     return rng.uniform(0, min(BACKOFF_CAP_S, BACKOFF_BASE_S * 2 ** (attempt - 1)))
 
 
-def _send(payload: dict, sleep, rng) -> httpx.Response:
+def _send(payload: dict, sleep, rng, clock, deadline: float) -> httpx.Response:
     """POST with retry; returns a 2xx response or raises (HTTPStatusError / TransportError)."""
     for attempt in range(1, MAX_ATTEMPTS + 1):
         retry_after = None
@@ -57,7 +59,7 @@ def _send(payload: dict, sleep, rng) -> httpx.Response:
                 config.ANTHROPIC_BASE_URL + "/v1/messages",
                 headers={"x-api-key": config.ANTHROPIC_API_KEY,
                          "anthropic-version": "2023-06-01"},
-                json=payload, timeout=30)
+                json=payload, timeout=round(deadline - clock(), 3))
             r.raise_for_status()
             return r
         except httpx.HTTPStatusError as e:
@@ -67,13 +69,17 @@ def _send(payload: dict, sleep, rng) -> httpx.Response:
         except httpx.TransportError:
             if attempt == MAX_ATTEMPTS:
                 raise
-        sleep(_delay(attempt, retry_after, rng))
+        wait = _delay(attempt, retry_after, rng)
+        if clock() + wait >= deadline:
+            raise TimeoutError("generation retry budget exhausted")
+        sleep(wait)
     raise AssertionError("unreachable")  # pragma: no cover
 
 
-def _call(payload: dict, sleep, rng) -> httpx.Response:
+def _call(payload: dict, sleep, rng, clock) -> httpx.Response:
+    deadline = clock() + TOTAL_BUDGET_S
     try:
-        return _send(payload, sleep, rng)
+        return _send(payload, sleep, rng, clock, deadline)
     except httpx.HTTPStatusError as e:
         fallback = config.GENERATION_FALLBACK_MODEL
         # only a retired/unknown model id justifies swapping models; any other 4xx is our bug
@@ -81,10 +87,10 @@ def _call(payload: dict, sleep, rng) -> httpx.Response:
                 or payload["model"] == fallback):
             raise
         log.warning("model %s not found; retrying with %s", payload["model"], fallback)
-        return _send({**payload, "model": fallback}, sleep, rng)
+        return _send({**payload, "model": fallback}, sleep, rng, clock, deadline)
 
 
-def answer(query: str, results: list[dict], *, sleep=None, rng=None) -> str:
+def answer(query: str, results: list[dict], *, sleep=None, rng=None, clock=None) -> str:
     if not results:
         return "No results found."
     if not config.ANTHROPIC_API_KEY:
@@ -100,7 +106,7 @@ def answer(query: str, results: list[dict], *, sleep=None, rng=None) -> str:
              "system": SYSTEM,
              "messages": [{"role": "user",
                            "content": f"Context:\n{context}\n\n{REMINDER}\n\nQuestion: {query}"}]},
-            sleep or time.sleep, rng or random)
+            sleep or time.sleep, rng or random, clock or time.monotonic)
         return "".join(b.get("text", "") for b in r.json().get("content", []))
     except Exception:
         log.exception("generation failed — falling back to extractive answer")

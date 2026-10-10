@@ -81,7 +81,7 @@ def _delay(attempt: int, retry_after: str | None, rng) -> float:
     return rng.uniform(0, min(BACKOFF_CAP_S, BACKOFF_BASE_S * 2 ** (attempt - 1)))
 
 
-def _send(body: dict, key: str, timeout: float, sleep, rng) -> dict:
+def _send(body: dict, key: str, deadline: float, sleep, rng, clock) -> dict:
     req = urllib.request.Request(
         API_URL,
         json.dumps(body).encode(),
@@ -90,30 +90,36 @@ def _send(body: dict, key: str, timeout: float, sleep, rng) -> dict:
     for attempt in range(1, MAX_ATTEMPTS + 1):
         retry_after = None
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as r:
+            with urllib.request.urlopen(req, timeout=round(deadline - clock(), 3)) as r:
                 return json.load(r)
         except urllib.error.HTTPError as e:
             detail = e.read().decode(errors="replace")[:500]
+            err: Exception = ApiError(e.code, detail)
             if e.code not in RETRYABLE or attempt == MAX_ATTEMPTS:
-                raise ApiError(e.code, detail) from None
+                raise err from None
             retry_after = e.headers.get("Retry-After") if e.headers else None
         except (urllib.error.URLError, OSError) as e:
+            err = RuntimeError(f"API connection error: {type(e).__name__}")
             if attempt == MAX_ATTEMPTS:
-                raise RuntimeError(f"API connection error: {type(e).__name__}") from None
-        sleep(_delay(attempt, retry_after, rng))
+                raise err from None
+        wait = _delay(attempt, retry_after, rng)
+        if clock() + wait >= deadline:  # every attempt shares the caller's timeout
+            raise err from None
+        sleep(wait)
     raise AssertionError("unreachable")  # pragma: no cover
 
 
-def _post(body: dict, key: str, timeout: float, sleep=None, rng=None) -> dict:
-    sleep, rng = sleep or time.sleep, rng or random
+def _post(body: dict, key: str, timeout: float, sleep=None, rng=None, *, clock=None) -> dict:
+    sleep, rng, clock = sleep or time.sleep, rng or random, clock or time.monotonic
+    deadline = clock() + timeout
     try:
-        return _send(body, key, timeout, sleep, rng)
+        return _send(body, key, deadline, sleep, rng, clock)
     except ApiError as e:
         # only a retired/unknown model id justifies swapping models; any other 4xx is our bug
         if e.code != 404 or "not_found_error" not in e.detail or body["model"] == FALLBACK_MODEL:
             raise
         log.warning("model %s not found; retrying with %s", body["model"], FALLBACK_MODEL)
-        return _send({**body, "model": FALLBACK_MODEL}, key, timeout, sleep, rng)
+        return _send({**body, "model": FALLBACK_MODEL}, key, deadline, sleep, rng, clock)
 
 
 def ask(question: str, chunks: list[dict], timeout: float = 60) -> dict | None:

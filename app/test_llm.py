@@ -146,7 +146,7 @@ def test_backoff_sequence_is_full_jitter_exponential_and_capped_at_4_attempts():
     with mock.patch("urllib.request.urlopen") as u:
         u.side_effect = [_herr(c) for c in (429, 500, 503, 529)]
         try:
-            llm._post({"model": "m"}, "k", 1, sleeps.append, random.Random(7))
+            llm._post({"model": "m"}, "k", 1000, sleeps.append, random.Random(7), clock=lambda: 0.0)
             raise AssertionError("expected RuntimeError")
         except RuntimeError as e:
             assert str(e).startswith("API 529: ")
@@ -169,7 +169,7 @@ def test_retry_after_numeric_honoured_and_capped():
         sleeps: list[float] = []
         with mock.patch("urllib.request.urlopen") as u:
             u.side_effect = [_herr(429, {"Retry-After": header}), _ok()]
-            llm._post({"model": "m"}, "k", 1, sleeps.append, random.Random(1))
+            llm._post({"model": "m"}, "k", 1000, sleeps.append, random.Random(1), clock=lambda: 0.0)
         assert sleeps == [want]
 
 
@@ -177,7 +177,7 @@ def test_retry_after_http_date_falls_back_to_jitter():
     sleeps: list[float] = []
     with mock.patch("urllib.request.urlopen") as u:
         u.side_effect = [_herr(429, {"Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT"}), _ok()]
-        llm._post({"model": "m"}, "k", 1, sleeps.append, random.Random(1))
+        llm._post({"model": "m"}, "k", 1000, sleeps.append, random.Random(1), clock=lambda: 0.0)
     assert sleeps == [random.Random(1).uniform(0, 1)]
 
 
@@ -185,12 +185,14 @@ def test_connection_errors_retry_then_succeed_or_exhaust():
     sleeps: list[float] = []
     with mock.patch("urllib.request.urlopen") as u:
         u.side_effect = [urllib.error.URLError("boom"), TimeoutError(), _ok()]
-        assert llm._post({"model": "m"}, "k", 1, sleeps.append, random.Random(1))["content"]
+        assert llm._post({"model": "m"}, "k", 1000, sleeps.append, random.Random(1), clock=lambda: 0.0)[
+            "content"
+        ]
     assert len(sleeps) == 2
     with mock.patch("urllib.request.urlopen") as u:
         u.side_effect = urllib.error.URLError("secret-host")
         try:
-            llm._post({"model": "m"}, "k", 1, lambda s: None, random.Random(1))
+            llm._post({"model": "m"}, "k", 1000, lambda s: None, random.Random(1), clock=lambda: 0.0)
             raise AssertionError("expected RuntimeError")
         except RuntimeError as e:
             assert str(e) == "API connection error: URLError"
@@ -202,7 +204,7 @@ def test_non_retryable_status_returns_immediately_without_sleep():
     with mock.patch("urllib.request.urlopen") as u:
         u.side_effect = [_herr(401)]
         try:
-            llm._post({"model": "m"}, "k", 1, sleeps.append, random.Random(1))
+            llm._post({"model": "m"}, "k", 1000, sleeps.append, random.Random(1), clock=lambda: 0.0)
             raise AssertionError("expected RuntimeError")
         except RuntimeError as e:
             assert str(e).startswith("API 401: ")
@@ -211,3 +213,28 @@ def test_non_retryable_status_returns_immediately_without_sleep():
 
 if __name__ == "__main__":
     test()
+
+
+def test_total_budget_caps_retries_and_shrinks_request_timeout():
+    """Retries share one deadline: no attempt starts or sleeps past the caller's timeout."""
+    now = [0.0]
+    timeouts, sleeps = [], []
+
+    def urlopen(req, timeout):
+        timeouts.append(timeout)
+        now[0] += 5  # each failing request burns 5 s
+        raise _herr(429, {"Retry-After": "20"})
+
+    def sleep(s):
+        sleeps.append(s)
+        now[0] += s
+
+    with mock.patch("urllib.request.urlopen", side_effect=urlopen):
+        try:
+            llm._post({"model": "m"}, "k", 60, sleep, random.Random(1), clock=lambda: now[0])
+            raise AssertionError("expected RuntimeError")
+        except RuntimeError as e:
+            assert str(e).startswith("API 429: ")
+    # t=0 req(60s left) → t=5 sleep 20 → t=25 req(35 left) → t=30 sleep 20 → t=50 req(10 left)
+    # → t=55: a 20 s sleep would pass the 60 s deadline, so give up instead of sleeping
+    assert timeouts == [60, 35, 10] and sleeps == [20, 20]

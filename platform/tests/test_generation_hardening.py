@@ -91,7 +91,7 @@ def test_backoff_is_full_jitter_exponential_and_capped_at_4_attempts(transport):
     calls, script = transport
     script += [_r(429), _r(500), _r(503), _r(529)]
     sleeps: list[float] = []
-    assert generation.answer("q", DOCS, sleep=sleeps.append, rng=random.Random(7)) == "permitted [d]"
+    assert generation.answer("q", DOCS, sleep=sleeps.append, rng=random.Random(7), clock=lambda: 0.0) == "permitted [d]"
     r = random.Random(7)
     assert sleeps == [r.uniform(0, 1), r.uniform(0, 2), r.uniform(0, 4)]
     assert len(calls) == 4
@@ -107,11 +107,12 @@ def test_delay_cap_is_30s():
 
 
 @pytest.mark.parametrize("header,want", [("7", 7.0), ("999", 30.0)])
-def test_retry_after_numeric_honoured_and_capped(transport, header, want):
+def test_retry_after_numeric_honoured_and_capped(transport, header, want, monkeypatch):
+    monkeypatch.setattr(generation, "TOTAL_BUDGET_S", 1000.0)  # budget is tested separately
     calls, script = transport
     script += [_r(429, headers={"Retry-After": header}), _r(200, OK)]
     sleeps: list[float] = []
-    assert generation.answer("q", DOCS, sleep=sleeps.append, rng=random.Random(1)) == "grounded [d]"
+    assert generation.answer("q", DOCS, sleep=sleeps.append, rng=random.Random(1), clock=lambda: 0.0) == "grounded [d]"
     assert sleeps == [want]
 
 
@@ -119,7 +120,7 @@ def test_retry_after_http_date_falls_back_to_jitter(transport):
     calls, script = transport
     script += [_r(429, headers={"Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT"}), _r(200, OK)]
     sleeps: list[float] = []
-    generation.answer("q", DOCS, sleep=sleeps.append, rng=random.Random(1))
+    generation.answer("q", DOCS, sleep=sleeps.append, rng=random.Random(1), clock=lambda: 0.0)
     assert sleeps == [random.Random(1).uniform(0, 1)]
 
 
@@ -127,11 +128,11 @@ def test_connection_errors_retry_then_exhaust_to_extractive(transport):
     calls, script = transport
     script += [httpx.ConnectError("x"), httpx.ReadTimeout("x"), _r(200, OK)]
     sleeps: list[float] = []
-    assert generation.answer("q", DOCS, sleep=sleeps.append, rng=random.Random(1)) == "grounded [d]"
+    assert generation.answer("q", DOCS, sleep=sleeps.append, rng=random.Random(1), clock=lambda: 0.0) == "grounded [d]"
     assert len(sleeps) == 2
     script += [httpx.ConnectError("x")] * 4
     sleeps.clear()
-    assert generation.answer("q", DOCS, sleep=sleeps.append, rng=random.Random(1)) == "permitted [d]"
+    assert generation.answer("q", DOCS, sleep=sleeps.append, rng=random.Random(1), clock=lambda: 0.0) == "permitted [d]"
     assert len(sleeps) == 3 and len(calls) == 7
 
 
@@ -139,5 +140,26 @@ def test_non_retryable_status_returns_immediately_without_sleep(transport):
     calls, script = transport
     script.append(_r(401))
     sleeps: list[float] = []
-    assert generation.answer("q", DOCS, sleep=sleeps.append, rng=random.Random(1)) == "permitted [d]"
+    assert generation.answer("q", DOCS, sleep=sleeps.append, rng=random.Random(1), clock=lambda: 0.0) == "permitted [d]"
     assert sleeps == [] and len(calls) == 1
+
+
+def test_total_budget_caps_retries_and_falls_back_to_extractive(transport, monkeypatch):
+    """All attempts share one 30 s deadline, the old single-request maximum."""
+    now, sleeps, timeouts = [0.0], [], []
+
+    def post(url, **kw):
+        timeouts.append(kw["timeout"])
+        now[0] += 5  # each failing request burns 5 s
+        return _r(429, {}, {"Retry-After": "20"})
+
+    monkeypatch.setattr(generation.httpx, "post", post)
+
+    def sleep(s):
+        sleeps.append(s)
+        now[0] += s
+
+    assert generation.answer("q", DOCS, sleep=sleep, rng=random.Random(1),
+                             clock=lambda: now[0]) == "permitted [d]"
+    # t=0 req(30 left) -> t=5 sleep 20 -> t=25 req(5 left) -> t=30: deadline reached, stop
+    assert timeouts == [30, 5] and sleeps == [20]
