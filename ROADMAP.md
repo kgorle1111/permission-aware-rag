@@ -24,6 +24,7 @@ PRs [#6](https://github.com/kgorle1111/permission-aware-rag/pull/6) through [#12
 | 2026-10-10 | Tier 3 agentic-retrieval mechanics (Stage 10): router, iterative (cap 3), read-only tool agent with server-bound identity and turn/token/time caps, guarded pipeline with receipt, approval-gated tool registry. **Tested with scripted fake models only; no answer-quality claim until a real model and a calibrated judge are run (needs approval).** | `app/agents.py`, `app/test_agents.py` |
 | 2026-10-10 | Tier 3 retrieval rungs, each measured and each passing every leak gate: scoped semantic cache (8.5), embedding cache (8.6), structure-aware chunking (9.2), router + rewrite/HyDE/step-back (9.3, deterministic fakes only), multi-query RRF (9.4), abstain threshold (9.7). The unscoped-cache mutant is caught (9/9). No rung beat the baseline on recall; the lexical corpus cannot show it either way | [ladder table](evals/results/2026-10-10-tier3-ladder/table.md), `app/rungs.py`, `app/test_rungs.py` |
 | 2026-10-10 | Observability and cost guards in both apps: one JSON log line per request (ids, counts, timings; never text), p50/p95 latency, cost per day and failure rate by outcome in `/audit`, a `DAILY_BUDGET_USD` cap that falls back to retrieval-only, an LLM-outage path the circuit breaker can see (platform), claim-level citation coverage (T15 mitigation, reference app), and an 89-attack red-team data file (85 run against the reference app, 84 against the platform) driving the real HTTP surfaces with a mocked model | `app/test_obs.py`, `platform/tests/test_observability.py`, `app/test_claims.py`, `app/test_redteam.py`, `platform/tests/test_redteam.py` |
+| 2026-10-10 | Text-to-SQL under Postgres RLS (11.3, T25): a fake model writes SQL over a `doc_meta` table; the statement runs as a read-only `rag_sql` role under the same signed-principal RLS, audited by the database. 40 hostile statements x 5 users (pre-check off) with 0 leaks, a metamorphic hidden-rows test, 60/60 exact-match on honest questions. **No real model was called, so no SQL-quality claim.** | [results](evals/results/2026-10-10-text-to-sql/table.md), `app/text_to_sql.py`, `app/test_text_to_sql.py` |
 
 ### Evidence batch — 2026-10-08
 
@@ -129,8 +130,7 @@ retriever that leaks is a regression. The comparison table gets published, inclu
    identity bound server-side, turn/token/time caps, guarded pipeline, approval-gated registry),
    tested with scripted fakes only. Still open: run against a real model, measure it on the golden
    set with a calibrated judge, and keep the pipeline only if a single agent measurably falls short.
-6. **Beyond text:** PDF tables and OCR, selective chart descriptions, and text-to-SQL under
-   row-level security for policy-system data, now unblocked: ingest role (T13) and signed principals (T18) are done.
+6. **Beyond text:** PDF tables and OCR, selective chart descriptions. (Text-to-SQL under row-level security (11.3): shipped in the pgvector reference backend over a document-metadata table, see the 2026-10-10 row above; running it on policy-system data in `platform/` remains open.)
 
 ## Open shortcuts (test-enforced)
 
@@ -152,6 +152,9 @@ its upgrade trigger. `app/test_ledgers.py` fails if a shortcut comment has no ro
 | B11 | open | Agent `get_chunk` (audited via `read_chunk`) works on the in-memory backend only; collection routing filters a top-100 pool | PgVectorRAG support, or a collection with >100 matching chunks per query | `app/agents.py` "kn: in-memory backend only" and `app/agents.py` "kn: collection filter runs on a top-100 pool" |
 | B12 | open | Ops stats and daily spend live in process memory (both apps); the platform audit table has no outcome, latency or cost columns | More than one server process, or `/audit` must survive a restart | `app/obs.py` "per-process memory, resets on restart" |
 | B13 | open | Spend-cap check and spend recording are not atomic, so concurrent calls can overshoot the cap by one call each | Many concurrent `/ask` calls, or a hard cap is required | `app/underwriter_server.py` "check-then-call is not atomic" |
+| B14 | open | `doc_meta` rows are gated by the document-level ACL only, so a document whose sections are all restricted still lists its title/department for a caller who can read none of its chunks | A corpus where section-level ACLs hide a document's existence | `app/pgvector_rag.py` "doc-level ACL only" |
+| B15 | open | Table row estimates (`pg_class.reltuples`, `pg_stat_user_tables`) are readable by every role, so a hostile statement learns how many `doc_meta` rows exist in total | Hidden-document counts become sensitive (T11 is off) | `app/test_text_to_sql.py` "def test_catalog_row_estimates_are_a_documented_residual_count_leak" |
+| B16 | open | Text-to-SQL is measured with a fake model only; real-model SQL accuracy and prompt-injected questions are unmeasured | A real model is approved for evals (cost estimate first) | `app/text_to_sql.py` "def anthropic_llm" |
 
 ## Deliberately not building
 

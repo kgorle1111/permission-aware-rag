@@ -37,7 +37,7 @@ def _fresh() -> PgVectorRAG:
             "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
             "WHERE usename IN ('rag_app', 'rag_ingest') AND pid <> pg_backend_pid()"
         )
-        c.execute("DROP TABLE IF EXISTS chunks, corpus_stats, audit CASCADE")
+        c.execute("DROP TABLE IF EXISTS chunks, corpus_stats, audit, doc_meta CASCADE")
     global KEY
     KEY = setup_schema(ADMIN)
     app_dsn = psycopg.conninfo.make_conninfo(ADMIN, user="rag_app", password="rag_app")

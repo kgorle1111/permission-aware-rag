@@ -23,10 +23,16 @@ only on chunks and no membership in the ingest role, so no setting it can change
 write access or the ingest policy (T13). Without an ingest DSN the instance is read-only.
 Audit rows are hash-chained exactly like the JSONL backend.
 
+Structured questions (11.3, T25) go through rag_sql_run: an LLM-written SELECT runs as the
+rag_sql role, which can read only the non-ACL columns of doc_meta, under the same signed-token
+RLS. The database, not a SQL parser, decides what rows come back; the audit row is written
+server-side like rag_search's.
+
 Same public surface as PermissionRAG: add_document / remove_document / retrieve /
 audit / verify_audit_chain. Requires `psycopg` (the project's only optional dep).
 """
 
+import datetime
 import hashlib
 import hmac
 import json
@@ -35,7 +41,7 @@ import time
 
 import psycopg
 from embedding import DIMS, embed, to_pgvector
-from permission_rag import PermissionRAG
+from permission_rag import PermissionRAG, normalize_acl
 from psycopg import sql
 
 SCHEMA = f"""
@@ -144,6 +150,101 @@ BEGIN
 END
 $fn$;
 REVOKE ALL ON FUNCTION rag_search(text, vector, integer) FROM PUBLIC;
+
+-- T25: document metadata for text-to-SQL. Same principal channel as chunks; rag_sql sees only the
+-- non-ACL columns, so the rows an LLM-written SELECT can reach are exactly the ones RLS admits.
+CREATE TABLE IF NOT EXISTS doc_meta (
+    doc_id     text PRIMARY KEY,
+    title      text NOT NULL,
+    department text,
+    data_class text,
+    created_at date,
+    n_chunks   integer NOT NULL,
+    acl_doc    text[] NOT NULL CHECK (cardinality(acl_doc) > 0)
+);
+INSERT INTO doc_meta (doc_id, title, n_chunks, acl_doc)
+    SELECT DISTINCT ON (doc_id) doc_id, doc_id, count(*) OVER (PARTITION BY doc_id), acl_doc FROM chunks
+    ON CONFLICT (doc_id) DO NOTHING;
+ALTER TABLE doc_meta ENABLE ROW LEVEL SECURITY;
+ALTER TABLE doc_meta FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS doc_meta_read ON doc_meta;
+CREATE POLICY doc_meta_read ON doc_meta FOR SELECT USING (acl_doc && (SELECT rag_principals()));
+DROP POLICY IF EXISTS doc_meta_ingest ON doc_meta;
+-- Runs the one statement an LLM wrote. Owned by rag_sql (SECURITY DEFINER), so it executes as that
+-- role with no SET ROLE for anything to undo. A cursor accepts exactly one query and rejects
+-- utility statements; STABLE makes SPI refuse data-modifying commands. Rows are capped by FETCH.
+CREATE OR REPLACE FUNCTION rag_sql_exec(stmt text, max_rows integer) RETURNS jsonb
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog, public AS $fn$
+DECLARE
+    cur refcursor;
+    rec record;
+    out jsonb := '[]'::jsonb;
+    n integer := 0;
+BEGIN
+    OPEN cur FOR EXECUTE stmt;
+    LOOP
+        FETCH cur INTO rec;
+        EXIT WHEN NOT FOUND;
+        IF n >= max_rows THEN
+            RETURN jsonb_build_object('status', 'ok', 'rows', out, 'truncated', true);
+        END IF;
+        out := out || jsonb_build_array(to_jsonb(rec));
+        n := n + 1;
+    END LOOP;
+    RETURN jsonb_build_object('status', 'ok', 'rows', out, 'truncated', false);
+END
+$fn$;
+REVOKE ALL ON FUNCTION rag_sql_exec(text, integer) FROM PUBLIC;
+-- Verifies the token, runs rag_sql_exec, and writes the hash-chained audit row itself with exactly
+-- what ran (hashes, never text: invariant 9) and how it ended. A timeout or error is caught, so
+-- the failed attempt is still recorded and the caller gets a status, never a partial result.
+CREATE OR REPLACE FUNCTION rag_sql_run(
+    token text, question text, stmt text, max_rows integer, rejected boolean DEFAULT false)
+RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public AS $fn$
+DECLARE
+    t0 timestamptz := clock_timestamp();
+    uid text;
+    res jsonb;
+    prev text;
+    entry text;
+BEGIN
+    PERFORM set_config('rag.token', coalesce(token, ''), true);
+    SELECT substr(x, 6) INTO uid FROM unnest(rag_principals()) AS x WHERE x LIKE 'user:%' LIMIT 1;
+    IF rejected THEN  -- the app's pre-check refused it: audit the attempt, run nothing
+        res := jsonb_build_object('status', 'rejected');
+    ELSE
+    BEGIN
+        -- Read-only for the user statement only: the audit insert below needs read-write, and a
+        -- read-only flag can't be switched off again, so the block always ends in an exception
+        -- that rolls the flag (and any side effect of a volatile function) back. res survives.
+        SET LOCAL transaction_read_only = on;
+        res := rag_sql_exec(stmt, greatest(least(max_rows, 1000), 1));
+        RAISE EXCEPTION 'rollback' USING ERRCODE = 'RS000';
+    EXCEPTION
+        WHEN SQLSTATE 'RS000' THEN NULL;
+        WHEN OTHERS OR query_canceled THEN  -- OTHERS excludes query_canceled
+            res := jsonb_build_object('status', 'error', 'sqlstate', SQLSTATE);
+    END;
+    END IF;
+    PERFORM pg_advisory_unlock_all();  -- a session advisory lock taken by the statement would stall the audit chain
+    PERFORM pg_advisory_xact_lock(hashtext('rag_audit'));
+    SELECT a.line_sha256 INTO prev FROM audit a ORDER BY a.id DESC LIMIT 1;
+    entry := json_build_object(
+        'ts', extract(epoch FROM clock_timestamp()), 'user', uid, 'kind', 'sql',
+        'query', '[redacted]', 'returned', '[]'::json, 'denied_chunks', 0,  -- keys the audit views expect
+        'question_sha256', encode(sha256(convert_to(coalesce(question, ''), 'UTF8')), 'hex'),
+        'sql_sha256', encode(sha256(convert_to(coalesce(stmt, ''), 'UTF8')), 'hex'),
+        'status', res->>'status', 'sqlstate', res->>'sqlstate',
+        'returned_rows', jsonb_array_length(coalesce(res->'rows', '[]'::jsonb)),
+        'truncated', coalesce((res->>'truncated')::boolean, false),
+        'elapsed_ms', round((extract(epoch FROM clock_timestamp() - t0) * 1000)::numeric, 2),
+        'prev_sha256', coalesce(prev, ''))::text;
+    INSERT INTO audit (line, line_sha256) VALUES (entry, encode(sha256(convert_to(entry, 'UTF8')), 'hex'));
+    RETURN res;
+END
+$fn$;
+REVOKE ALL ON FUNCTION rag_sql_run(text, text, text, integer, boolean) FROM PUBLIC;
 """
 
 # REVOKEs migrate databases created when the app role still wrote chunks (T13).
@@ -164,7 +265,21 @@ ALTER FUNCTION rag_search(text, vector, integer) OWNER TO {definer};
 GRANT EXECUTE ON FUNCTION rag_search(text, vector, integer) TO {app};
 GRANT SELECT, INSERT, DELETE ON chunks TO {ingest};
 GRANT SELECT, UPDATE ON corpus_stats TO {ingest};
-CREATE POLICY chunks_ingest ON chunks FOR ALL TO {ingest} USING (true) WITH CHECK (true)
+CREATE POLICY chunks_ingest ON chunks FOR ALL TO {ingest} USING (true) WITH CHECK (true);
+ALTER ROLE {sql} NOLOGIN NOSUPERUSER NOBYPASSRLS;
+REVOKE ALL ON doc_meta FROM {app}, {sql};
+GRANT SELECT, INSERT, DELETE ON doc_meta TO {ingest};
+CREATE POLICY doc_meta_ingest ON doc_meta FOR ALL TO {ingest} USING (true) WITH CHECK (true);
+GRANT USAGE ON SCHEMA public TO {sql};
+GRANT SELECT (doc_id, title, department, data_class, created_at, n_chunks) ON doc_meta TO {sql};
+GRANT EXECUTE ON FUNCTION rag_principals() TO {sql};
+GRANT CREATE ON SCHEMA public TO {sql};
+ALTER FUNCTION rag_sql_exec(text, integer) OWNER TO {sql};
+REVOKE CREATE ON SCHEMA public FROM {sql};
+ALTER FUNCTION rag_sql_run(text, text, text, integer, boolean) OWNER TO {definer};
+GRANT EXECUTE ON FUNCTION rag_sql_exec(text, integer) TO {definer};
+GRANT SELECT, INSERT ON audit TO {definer};
+GRANT EXECUTE ON FUNCTION rag_sql_run(text, text, text, integer, boolean) TO {app}
 """
 
 
@@ -176,6 +291,7 @@ def setup_schema(
     ingest_password: str = "rag_ingest",
     principal_key: bytes | None = None,
     definer_role: str = "rag_definer",
+    sql_role: str = "rag_sql",
 ) -> bytes:
     """Run once as a privileged role: extension, tables, RLS policies, both roles.
 
@@ -198,12 +314,16 @@ def setup_schema(
         if not conn.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (definer_role,)).fetchone():
             # no LOGIN: reachable only as the owner of rag_search; no BYPASSRLS, so RLS applies
             conn.execute(sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier(definer_role)))
+        if not conn.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (sql_role,)).fetchone():
+            # no LOGIN, no BYPASSRLS, owns nothing but rag_sql_exec; the app role is NOT a member
+            conn.execute(sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier(sql_role)))
         for stmt in ROLE_GRANTS.strip().split(";"):
             conn.execute(
                 sql.SQL(stmt).format(
                     app=sql.Identifier(app_role),
                     ingest=sql.Identifier(ingest_role),
                     definer=sql.Identifier(definer_role),
+                    sql=sql.Identifier(sql_role),
                 )
             )
         if principal_key is None:
@@ -250,10 +370,34 @@ class PgVectorRAG:
             raise PermissionError("read-only PgVectorRAG: pass ingest_dsn (the ingest role) to ingest")
         return self.ingest_conn
 
+    @staticmethod
+    def _doc_meta(doc_id: str, meta: dict | None) -> tuple:
+        meta = meta or {}
+        if set(meta) - {"title", "department", "data_class", "created_at"}:
+            raise ValueError("meta keys must be title, department, data_class, created_at")
+        title, dept, cls = meta.get("title", doc_id), meta.get("department"), meta.get("data_class")
+        created = meta.get("created_at")
+        if isinstance(created, str):
+            created = datetime.date.fromisoformat(created)
+        if created is not None and not isinstance(created, datetime.date):
+            raise TypeError("created_at must be a date or an ISO date string")
+        for v in (title, dept, cls):
+            if v is not None and (not isinstance(v, str) or len(v) > 200):
+                raise ValueError("meta text fields must be strings of at most 200 characters")
+        return title, dept, cls, created
+
     def add_document(
-        self, doc_id: str, text: str, acl, chunk_words: int = 80, *, sections: list[dict] | None = None
+        self,
+        doc_id: str,
+        text: str,
+        acl,
+        chunk_words: int = 80,
+        *,
+        sections: list[dict] | None = None,
+        meta: dict | None = None,
     ) -> None:
         chunks = PermissionRAG.document_chunks(text, acl, chunk_words, sections=sections)
+        title, dept, cls, created = self._doc_meta(doc_id, meta)
         w = self._writer()
         with w.transaction():
             dup = w.execute("SELECT 1 FROM chunks WHERE doc_id = %s LIMIT 1", (doc_id,)).fetchone()
@@ -276,11 +420,19 @@ class PgVectorRAG:
                     ),
                 )
             w.execute("UPDATE corpus_stats SET chunk_count = (SELECT count(*) FROM chunks)")
+            # kn: doc-level ACL only; a document whose section/paragraph ACLs hide every chunk from a
+            # caller still lists in doc_meta for that caller. Derive a visible-chunk flag if that matters.
+            w.execute(
+                "INSERT INTO doc_meta (doc_id, title, department, data_class, created_at, n_chunks, acl_doc) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                (doc_id, title, dept, cls, created, len(chunks), sorted(normalize_acl(acl))),
+            )
 
     def remove_document(self, doc_id: str) -> int:
         w = self._writer()
         with w.transaction():
             cur = w.execute("DELETE FROM chunks WHERE doc_id = %s", (doc_id,))
+            w.execute("DELETE FROM doc_meta WHERE doc_id = %s", (doc_id,))
             w.execute("UPDATE corpus_stats SET chunk_count = (SELECT count(*) FROM chunks)")
             return cur.rowcount
 
@@ -304,6 +456,26 @@ class PgVectorRAG:
             "SELECT id, doc_id, text, score FROM rag_search(%s, %s::vector, %s)", (token, qvec, k)
         ).fetchall()
         return [{"id": r[0], "doc_id": r[1], "text": r[2], "score": round(float(r[3]), 4)} for r in rows]
+
+    # ── structured questions (T25): one LLM-written SELECT over doc_meta, RLS-filtered ──────────
+    SQL_TIMEOUT_MS = 2000
+    SQL_MAX_ROWS = 100
+
+    def run_sql(self, question: str, stmt: str, user: dict, *, rejected: bool = False) -> dict:
+        """Run `stmt` as the rag_sql role under this user's signed principals; no SQL checking here.
+        rejected=True records the attempt (status "rejected") and runs nothing.
+
+        Returns {"status": "ok", "rows": [...], "truncated": bool} or {"status": "error",
+        "sqlstate": ...}. Every call is audited by the database (hashes, status, row count).
+        """
+        token = self.sign_principals(self.principals(user))
+        with self.conn.transaction():
+            # the timer arms when the rag_sql_run statement starts, so it must be set before it
+            self.conn.execute(f"SET LOCAL statement_timeout = {int(self.SQL_TIMEOUT_MS)}")
+            row = self.conn.execute(
+                "SELECT rag_sql_run(%s, %s, %s, %s, %s)", (token, question, stmt, self.SQL_MAX_ROWS, rejected)
+            ).fetchone()
+        return row[0]
 
     # ── audit (hash-chained, same scheme as the JSONL backend) ───────────────
     @property
