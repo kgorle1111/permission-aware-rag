@@ -1,0 +1,24 @@
+{
+  "description": "faulty-retriever",
+  "prompts": [
+    "Run fixed permission fixture"
+  ],
+  "providers": [
+    {
+      "id": "file://../../kit/promptfoo-provider.cjs",
+      "config": {
+        "adapter": "evals/results/2026-10-08-promptfoo/fault-adapter.py"
+      }
+    }
+  ],
+  "tests": [
+    {
+      "assert": [
+        {
+          "type": "javascript",
+          "value": "output.passed === true"
+        }
+      ]
+    }
+  ]
+}

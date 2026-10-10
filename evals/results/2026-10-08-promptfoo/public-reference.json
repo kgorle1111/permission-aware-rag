@@ -1,0 +1,255 @@
+{
+  "evalId": "eval-9xc-2026-10-08T19:41:46",
+  "results": {
+    "version": 3,
+    "timestamp": "2026-10-08T19:41:46.068Z",
+    "prompts": [
+      {
+        "id": "a4f97f3c5663518759b9629816ca7ece93fc3fdc27112d4bb180f7bd57708c08",
+        "raw": "Run fixed permission fixture",
+        "label": "Run fixed permission fixture",
+        "provider": "deterministic-retriever-leak-kit",
+        "metrics": {
+          "score": 1,
+          "testPassCount": 1,
+          "testFailCount": 0,
+          "testErrorCount": 0,
+          "assertPassCount": 1,
+          "assertFailCount": 0,
+          "totalLatencyMs": 861,
+          "tokenUsage": {
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "total": 0,
+            "numRequests": 1,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            },
+            "assertions": {
+              "total": 0,
+              "prompt": 0,
+              "completion": 0,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0,
+                "cacheReadInputTokens": 0,
+                "cacheCreationInputTokens": 0
+              }
+            }
+          },
+          "namedScores": {},
+          "namedScoresCount": {},
+          "namedScoreWeights": {},
+          "cost": 0
+        }
+      }
+    ],
+    "results": [
+      {
+        "cost": 0,
+        "gradingResult": {
+          "pass": true,
+          "score": 1,
+          "reason": "All assertions passed",
+          "namedScores": {},
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Assertion passed",
+              "assertion": {
+                "type": "javascript",
+                "value": "output.passed === true"
+              }
+            }
+          ]
+        },
+        "id": "5df4675e-87cb-4b67-8a00-3306457fd307",
+        "latencyMs": 861,
+        "namedScores": {},
+        "prompt": {
+          "raw": "Run fixed permission fixture",
+          "label": "Run fixed permission fixture",
+          "config": {}
+        },
+        "promptId": "a4f97f3c5663518759b9629816ca7ece93fc3fdc27112d4bb180f7bd57708c08",
+        "promptIdx": 0,
+        "provider": {
+          "id": "deterministic-retriever-leak-kit",
+          "label": ""
+        },
+        "response": {
+          "output": {
+            "probes": 2088,
+            "visibility_failures": 0,
+            "isolation_failures": 0,
+            "positive_controls": 197,
+            "recall_misses": 0,
+            "errors": 0,
+            "invalid_acl_controls": 0,
+            "invalid_acl_failures": 0,
+            "revocation_controls": 1,
+            "revocation_failures": 0,
+            "examples": [],
+            "passed": true,
+            "fixture": "national-archives-constitution-fictional-acls-v1",
+            "fixture_sha256": "e4f60a85e8239471d82bb3212e503ac817a175f137f3a2ed9ddebc6e62f3cec6",
+            "chunks": 87,
+            "principal_scopes": 8,
+            "python": "3.14.8",
+            "adapter": "ReferenceAdapter",
+            "implementation_sha256": "78644d7b52b47645d836bce11e1d83994c2c179c90c2556115f55ff496e33dd7",
+            "source_commit": "495d85489751eedd9aec65ccc50bdcba2177a309"
+          }
+        },
+        "score": 1,
+        "success": true,
+        "testCase": {
+          "assert": [
+            {
+              "type": "javascript",
+              "value": "output.passed === true"
+            }
+          ],
+          "vars": {},
+          "options": {},
+          "metadata": {}
+        },
+        "testIdx": 0,
+        "tokenUsage": {
+          "prompt": 0,
+          "completion": 0,
+          "cached": 0,
+          "total": 0,
+          "numRequests": 1,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "assertions": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            }
+          }
+        },
+        "vars": {},
+        "metadata": {
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      }
+    ],
+    "stats": {
+      "successes": 1,
+      "failures": 0,
+      "errors": 0,
+      "tokenUsage": {
+        "prompt": 0,
+        "completion": 0,
+        "cached": 0,
+        "total": 0,
+        "numRequests": 1,
+        "completionDetails": {
+          "reasoning": 0,
+          "acceptedPrediction": 0,
+          "rejectedPrediction": 0,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "assertions": {
+          "total": 0,
+          "prompt": 0,
+          "completion": 0,
+          "cached": 0,
+          "numRequests": 0,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          }
+        }
+      },
+      "durationMs": 869,
+      "evaluationDurationMs": 869
+    }
+  },
+  "config": {
+    "tags": {},
+    "description": "public-reference",
+    "prompts": [
+      "Run fixed permission fixture"
+    ],
+    "providers": [
+      {
+        "id": "file://<REPO_ROOT>/evals/kit/promptfoo-provider.cjs",
+        "config": {
+          "fixture": "evals/kit/public_constitution.json"
+        }
+      }
+    ],
+    "tests": [
+      {
+        "assert": [
+          {
+            "type": "javascript",
+            "value": "output.passed === true"
+          }
+        ]
+      }
+    ],
+    "env": {},
+    "sharing": false,
+    "outputPath": [
+      "<TOOLING_DIR>/public-reference.json"
+    ],
+    "extensions": [],
+    "metadata": {},
+    "evaluateOptions": {},
+    "basePath": "<TOOLING_DIR>"
+  },
+  "shareableUrl": null,
+  "metadata": {
+    "promptfooVersion": "0.124.1",
+    "nodeVersion": "v26.3.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "exportedAt": "2026-10-08T19:41:46.949Z",
+    "evaluationCreatedAt": "2026-10-08T19:41:46.068Z"
+  },
+  "runtimeOptions": {
+    "eventSource": "cli",
+    "showProgressBar": false,
+    "repeat": 1,
+    "maxConcurrency": 4,
+    "cache": false
+  }
+}

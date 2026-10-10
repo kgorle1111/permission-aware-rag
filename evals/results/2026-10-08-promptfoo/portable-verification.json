@@ -1,0 +1,47 @@
+[
+  {
+    "case": "supplied-controls",
+    "exit_code": 0,
+    "expected_exit": 0,
+    "expectation_met": true,
+    "successes": 1,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "case": "public-reference",
+    "exit_code": 0,
+    "expected_exit": 0,
+    "expectation_met": true,
+    "successes": 1,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "case": "public-example",
+    "exit_code": 0,
+    "expected_exit": 0,
+    "expectation_met": true,
+    "successes": 1,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "case": "faulty-retriever",
+    "exit_code": 100,
+    "expected_exit": 100,
+    "expectation_met": true,
+    "successes": 0,
+    "failures": 1,
+    "errors": 0
+  },
+  {
+    "case": "subprocess-failure",
+    "exit_code": 100,
+    "expected_exit": 100,
+    "expectation_met": true,
+    "successes": 0,
+    "failures": 0,
+    "errors": 1
+  }
+]

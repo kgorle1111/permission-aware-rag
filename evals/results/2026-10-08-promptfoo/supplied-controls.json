@@ -1,0 +1,252 @@
+{
+  "evalId": "eval-VtQ-2026-10-08T19:41:43",
+  "results": {
+    "version": 3,
+    "timestamp": "2026-10-08T19:41:43.132Z",
+    "prompts": [
+      {
+        "id": "d2ead397ae571e7de0168a5b47694ad349b5b1cdf706fdd23de598b58c831684",
+        "raw": "Run the fixed permission-isolation fixture",
+        "label": "Run the fixed permission-isolation fixture",
+        "provider": "deterministic-retriever-leak-kit",
+        "metrics": {
+          "score": 1,
+          "testPassCount": 1,
+          "testFailCount": 0,
+          "testErrorCount": 0,
+          "assertPassCount": 1,
+          "assertFailCount": 0,
+          "totalLatencyMs": 2108,
+          "tokenUsage": {
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "total": 0,
+            "numRequests": 1,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            },
+            "assertions": {
+              "total": 0,
+              "prompt": 0,
+              "completion": 0,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0,
+                "cacheReadInputTokens": 0,
+                "cacheCreationInputTokens": 0
+              }
+            }
+          },
+          "namedScores": {},
+          "namedScoresCount": {},
+          "namedScoreWeights": {},
+          "cost": 0
+        }
+      }
+    ],
+    "results": [
+      {
+        "cost": 0,
+        "gradingResult": {
+          "pass": true,
+          "score": 1,
+          "reason": "All assertions passed",
+          "namedScores": {},
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Assertion passed",
+              "assertion": {
+                "type": "javascript",
+                "value": "output.passed === true"
+              }
+            }
+          ]
+        },
+        "id": "d8fd54d5-1655-489e-bb31-7cf387534f61",
+        "latencyMs": 2108,
+        "namedScores": {},
+        "prompt": {
+          "raw": "Run the fixed permission-isolation fixture",
+          "label": "Run the fixed permission-isolation fixture",
+          "config": {}
+        },
+        "promptId": "d2ead397ae571e7de0168a5b47694ad349b5b1cdf706fdd23de598b58c831684",
+        "promptIdx": 0,
+        "provider": {
+          "id": "deterministic-retriever-leak-kit",
+          "label": ""
+        },
+        "response": {
+          "output": {
+            "probes": 192,
+            "visibility_failures": 0,
+            "isolation_failures": 0,
+            "positive_controls": 18,
+            "recall_misses": 0,
+            "errors": 0,
+            "invalid_acl_controls": 12,
+            "invalid_acl_failures": 0,
+            "revocation_controls": 1,
+            "revocation_failures": 0,
+            "examples": [],
+            "passed": true,
+            "fixture": "deterministic-acl-controls-v1",
+            "fixture_sha256": "78f6aab5e1053595f7471dad372878f7ce8e39af93d7c443728998c97d01436e",
+            "chunks": 8,
+            "principal_scopes": 8,
+            "python": "3.14.8",
+            "adapter": "ReferenceAdapter",
+            "implementation_sha256": "78644d7b52b47645d836bce11e1d83994c2c179c90c2556115f55ff496e33dd7",
+            "source_commit": "495d85489751eedd9aec65ccc50bdcba2177a309"
+          }
+        },
+        "score": 1,
+        "success": true,
+        "testCase": {
+          "assert": [
+            {
+              "type": "javascript",
+              "value": "output.passed === true"
+            }
+          ],
+          "vars": {},
+          "options": {},
+          "metadata": {}
+        },
+        "testIdx": 0,
+        "tokenUsage": {
+          "prompt": 0,
+          "completion": 0,
+          "cached": 0,
+          "total": 0,
+          "numRequests": 1,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "assertions": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            }
+          }
+        },
+        "vars": {},
+        "metadata": {
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      }
+    ],
+    "stats": {
+      "successes": 1,
+      "failures": 0,
+      "errors": 0,
+      "tokenUsage": {
+        "prompt": 0,
+        "completion": 0,
+        "cached": 0,
+        "total": 0,
+        "numRequests": 1,
+        "completionDetails": {
+          "reasoning": 0,
+          "acceptedPrediction": 0,
+          "rejectedPrediction": 0,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "assertions": {
+          "total": 0,
+          "prompt": 0,
+          "completion": 0,
+          "cached": 0,
+          "numRequests": 0,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          }
+        }
+      },
+      "durationMs": 2116,
+      "evaluationDurationMs": 2116
+    }
+  },
+  "config": {
+    "tags": {},
+    "description": "Deterministic retriever ACL regression gate",
+    "prompts": [
+      "Run the fixed permission-isolation fixture"
+    ],
+    "providers": [
+      {
+        "id": "file://promptfoo-provider.cjs"
+      }
+    ],
+    "tests": [
+      {
+        "assert": [
+          {
+            "type": "javascript",
+            "value": "output.passed === true"
+          }
+        ]
+      }
+    ],
+    "env": {},
+    "sharing": false,
+    "outputPath": [
+      "<TOOLING_DIR>/supplied-controls.json"
+    ],
+    "extensions": [],
+    "metadata": {},
+    "evaluateOptions": {},
+    "basePath": "<REPO_ROOT>/evals/kit"
+  },
+  "shareableUrl": null,
+  "metadata": {
+    "promptfooVersion": "0.124.1",
+    "nodeVersion": "v26.3.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "exportedAt": "2026-10-08T19:41:45.263Z",
+    "evaluationCreatedAt": "2026-10-08T19:41:43.132Z"
+  },
+  "runtimeOptions": {
+    "eventSource": "cli",
+    "showProgressBar": false,
+    "repeat": 1,
+    "maxConcurrency": 4,
+    "cache": false
+  }
+}

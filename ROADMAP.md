@@ -27,7 +27,7 @@ The reports, kit and narrative drafts are in [draft PR #7](https://github.com/kg
 
 - [100k-document / 1.5M-chunk local measurement](evals/results/2026-10-08-scale/table.md): filtered engine retrieval met the local p95 target; actual folder reconciliation took **104.92 s**, missing the <60 s target. Production full-materialization ingest and end-to-end API timing remain unmeasured.
 - [Public-input fixture and adapter evidence](evals/results/2026-10-08-public-kit/table.md): 87 National Archives paragraphs with fictional permissions; zero failures in 2,088 visibility/isolation probes, 197/197 required hits, and eight planted faults caught. The missing historical corpus remains unrecovered.
-- [Portable leak-test kit](evals/kit/README.md) with an independent ACL oracle, positive controls, reference/standalone adapters and an optional promptfoo shim. An external unassisted integration remains unproven.
+- [Portable leak-test kit](evals/kit/README.md) with an independent ACL oracle, positive controls, reference/standalone adapters and an optional promptfoo provider. [Actual CLI integration](evals/results/2026-10-08-promptfoo/table.md) passed three local positive cases and rejected two deliberate negative cases. An external unassisted integration remains unproven.
 - Article draft kept privately in gitignored marketing materials at the maintainer’s request. The [five-minute walkthrough](docs/WALKTHROUGH.md) is drafted; publication and rehearsal are not claimed.
 
 ### First adversarial security review (2026-07-20)

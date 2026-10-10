@@ -1,0 +1,25 @@
+{
+  "description": "public-example",
+  "prompts": [
+    "Run fixed permission fixture"
+  ],
+  "providers": [
+    {
+      "id": "file://../../kit/promptfoo-provider.cjs",
+      "config": {
+        "fixture": "evals/kit/public_constitution.json",
+        "adapter": "evals/kit/example_adapter.py"
+      }
+    }
+  ],
+  "tests": [
+    {
+      "assert": [
+        {
+          "type": "javascript",
+          "value": "output.passed === true"
+        }
+      ]
+    }
+  ]
+}
