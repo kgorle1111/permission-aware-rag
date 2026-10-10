@@ -32,12 +32,13 @@ def _fresh() -> PgVectorRAG:
     with psycopg.connect(ADMIN, autocommit=True) as c:
         c.execute(
             "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
-            "WHERE usename = 'rag_app' AND pid <> pg_backend_pid()"
+            "WHERE usename IN ('rag_app', 'rag_ingest') AND pid <> pg_backend_pid()"
         )
         c.execute("DROP TABLE IF EXISTS chunks, corpus_stats, audit CASCADE")
     setup_schema(ADMIN)
     app_dsn = psycopg.conninfo.make_conninfo(ADMIN, user="rag_app", password="rag_app")
-    rag = PgVectorRAG(app_dsn)
+    ingest_dsn = psycopg.conninfo.make_conninfo(ADMIN, user="rag_ingest", password="rag_ingest")
+    rag = PgVectorRAG(app_dsn, ingest_dsn)
     _open.append(rag)
     return rag
 
@@ -211,3 +212,32 @@ def test_new_audit_omits_query_text_from_persisted_lines():
         line = conn.execute("SELECT line FROM audit").fetchone()[0]
     assert "private-applicant-8675309" not in line
     assert rag.verify_audit_chain()
+
+
+def test_app_role_cannot_ingest_or_widen_visibility():
+    """T13: ingest is a separate DB role. Session settings the app role can forge must not
+    grant write access or the ingest policy's read-everything visibility."""
+    rag = _fresh()
+    _seed(rag)
+    with psycopg.connect(ADMIN, autocommit=True) as c:  # a database set up before T13
+        c.execute("GRANT INSERT, UPDATE, DELETE ON chunks TO rag_app")
+    setup_schema(ADMIN)  # re-running setup must migrate the legacy write grants away
+    with rag.conn.transaction():
+        rag.conn.execute("SELECT set_config('rag.mode', 'ingest', true)")  # forged by the app role
+        rag.conn.execute("SELECT set_config('rag.principals', '*,user:guest', true)")
+        assert {r[0] for r in rag.conn.execute("SELECT doc_id FROM chunks")} == {"handbook"}
+    for stmt in (
+        "INSERT INTO chunks (id, doc_id, text, acl, acl_doc, acl_section, acl_para, embedding) "
+        "SELECT 'x#0', 'x', 'x', ARRAY['*'], ARRAY['*'], ARRAY['*'], ARRAY['*'], embedding FROM chunks LIMIT 1",
+        "DELETE FROM chunks",
+        "SET ROLE rag_ingest",
+    ):
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            with rag.conn.transaction():
+                rag.conn.execute(stmt)
+    reader = PgVectorRAG(psycopg.conninfo.make_conninfo(ADMIN, user="rag_app", password="rag_app"))
+    _open.append(reader)
+    with pytest.raises(PermissionError):
+        reader.add_document("new", "text", {"*"})
+    with pytest.raises(PermissionError):
+        reader.remove_document("handbook")

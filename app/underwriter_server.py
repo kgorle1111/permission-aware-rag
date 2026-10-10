@@ -13,6 +13,7 @@ import io
 import json
 import os
 import pathlib
+import re
 import sys
 import threading
 import time
@@ -75,7 +76,8 @@ CORPUS = [
 if os.environ.get("RAG_BACKEND") == "pgvector":
     from pgvector_rag import PgVectorRAG
 
-    rag = PgVectorRAG(os.environ["DATABASE_URL"])
+    # INGEST_DATABASE_URL (the ingest role) is optional: without it the server is read-only (T13)
+    rag = PgVectorRAG(os.environ["DATABASE_URL"], os.environ.get("INGEST_DATABASE_URL"))
 else:
     rag = PermissionRAG(audit_path=pathlib.Path(__file__).with_name("audit_log.jsonl"))
 for _doc_id, _text, _acl in CORPUS:
@@ -83,6 +85,8 @@ for _doc_id, _text, _acl in CORPUS:
         rag.add_document(_doc_id, _text, _acl)
     except ValueError:
         pass  # already ingested (persistent backend restart)
+    except PermissionError:
+        break  # read-only pgvector deployment: the corpus is ingested out of band
 
 UI = pathlib.Path(__file__).with_name("ui.html")
 PRESETS = pathlib.Path(__file__).with_name("presets.json")
@@ -113,9 +117,17 @@ def user_from_jwt(auth_header):
         claims = json.loads(_b64url(p))
         if claims.get("exp", 0) < time.time():
             return None
-        return {"id": claims["sub"], "groups": list(claims.get("groups", []))}
+        sub, groups = claims.get("sub"), claims.get("groups", [])
+        # T14: signed != well-formed; a comma would forge an RLS principal, a str would iterate
+        if not _principal_name(sub) or not isinstance(groups, list) or not all(map(_principal_name, groups)):
+            return None
+        return {"id": sub, "groups": list(groups)}
     except Exception:
         return None
+
+
+def _principal_name(name) -> bool:
+    return isinstance(name, str) and re.fullmatch(r"[^,\s]+", name) is not None
 
 
 def resolve_user(handler, qs, body):
