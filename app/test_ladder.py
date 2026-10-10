@@ -20,7 +20,17 @@ def test_baseline_is_accepted_with_clean_gates():
     assert 0 < base["p50_ms"] <= base["p95_ms"]
 
 
-@pytest.mark.parametrize("rung", RUNGS[1:], ids=lambda r: r.name)
+CONTROLS = [r for r in RUNGS if r.control]
+CANDIDATES = [r for r in RUNGS[1:] if not r.control]
+
+
+@pytest.mark.parametrize("rung", CANDIDATES, ids=lambda r: r.name)
+def test_every_tier3_rung_passes_every_gate(rung):
+    result = RESULTS[rung.name]
+    assert not result["rejected"] and (result["leaks"], result["isolation_diffs"]) == (0, 0)
+
+
+@pytest.mark.parametrize("rung", CONTROLS, ids=lambda r: r.name)
 def test_every_mutant_is_rejected(rung):
     result = RESULTS[rung.name]
     assert rung.control and result["rejected"] and result["reasons"]
@@ -43,5 +53,5 @@ def test_check_flags_accepted_control_and_rejected_baseline():
 
 def test_table_marks_verdicts():
     text = ladder.table(list(RESULTS.values()))
-    assert text.count("| REJECTED |") == len(RUNGS) - 1
-    assert text.count("| accepted |") == 1
+    assert text.count("| REJECTED |") == len(CONTROLS)
+    assert text.count("| accepted |") == 1 + len(CANDIDATES)
