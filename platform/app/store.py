@@ -26,6 +26,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from .config import DATABASE_URL
+from .embeddings import fingerprint
 
 Base = declarative_base()
 
@@ -102,6 +103,37 @@ class PermissionState(Base):
     revision = Column(Integer, nullable=False, default=0)
     pending = Column(Boolean, nullable=False, default=True)
     rebuild_required = Column(Boolean, nullable=False, default=True)
+
+
+class ChunkText(Base):
+    """Redacted chunk text mirrored for the keyword fallback (ACLs live in ChunkPolicy)."""
+    __tablename__ = "chunk_text"
+    chunk_id = Column(Integer, primary_key=True)
+    text = Column(Text, nullable=False)
+
+
+class IndexFingerprint(Base):
+    """Embedding space the current index was built with."""
+    __tablename__ = "index_fingerprint"
+    id = Column(Integer, primary_key=True)
+    backend = Column(String, nullable=False)
+    model = Column(String, nullable=False)
+    dim = Column(Integer, nullable=False)
+
+
+def fingerprint_problem(session) -> str | None:
+    """None when the index matches the configured embedder; else a prescriptive reason.
+
+    A missing row means a legacy index: it fails closed until reingested.
+    """
+    row = session.get(IndexFingerprint, 1)
+    if row is None:
+        return "index has no embedding fingerprint; reingest"
+    built, configured = (row.backend, row.model, row.dim), fingerprint()
+    if built != configured:
+        return (f"index built with {'/'.join(map(str, built))}; configured "
+                f"{'/'.join(map(str, configured))}; reingest or restore config")
+    return None
 
 
 def init_db():
