@@ -105,7 +105,7 @@ Designed and scoped on purpose, but not scheduled. Each waits for a reason to bu
 - **Spend cap** per day, plus a red-team suite of 50+ injection and exfiltration attacks in CI.
 - **Request logs for latency, cost and retrieval failures:** one structured line per request (request id, outcome, per-stage latency, tokens, estimated cost, failure reason) in both apps, with p50/p95 latency, daily cost and failure rate in `/audit`. Logs hold ids and counts only, never query or document text.
 - **Model SDK contract test** against the real API in CI.
-- **Bind principals server-side** ([T18](docs/THREAT_MODEL.md)), so SQL on the app connection can't forge `rag.principals`.
+- **Server-side audit writes** ([T19](docs/THREAT_MODEL.md)), so SQL on the app connection can't read audit metadata or append forged entries. (Principal binding, T18, is done.)
 
 ### The full RAG build-out, one measured rung at a time
 
@@ -130,7 +130,7 @@ retriever that leaks is a regression. The comparison table gets published, inclu
    server-side so a model can't widen its own access, plus turn, token and time caps. A guarded
    multi-agent pipeline only if a single agent measurably falls short.
 6. **Beyond text:** PDF tables and OCR, selective chart descriptions, and text-to-SQL under
-   row-level security for policy-system data, after principal binding ([T18](docs/THREAT_MODEL.md)); the ingest-role fix (T13) is done.
+   row-level security for policy-system data, now unblocked: ingest role (T13) and signed principals (T18) are done.
 
 ## Open shortcuts (test-enforced)
 
@@ -144,7 +144,7 @@ its upgrade trigger. `app/test_ledgers.py` fails if a shortcut comment has no ro
 | B03 | open | Rate limiter is in-memory, per process | More than one server process or host | `app/underwriter_server.py` "in-memory per-process" |
 | B04 | open | Smallest model tier (Haiku) for grounded answers | An answer-quality eval shows Haiku below bar | `app/llm.py` "smallest tier" |
 | B05 | done (T13, 2026-10-10) | RLS ingest gated by a forgeable GUC, not a DB role | — | `app/pgvector_rag.py` "Ingest runs as a separate database role" |
-| B06 | done (T14, 2026-10-10) | JWT group with a comma → 500 on pgvector | First real IdP integration (THREAT_MODEL T14) | `app/pgvector_rag.py` "contain no comma" |
+| B06 | done (T14, 2026-10-10) | JWT group with a comma → 500 on pgvector | First real IdP integration (THREAT_MODEL T14) | `app/pgvector_rag.py` "contain no ',' or '|'" |
 | B08 | open | Semantic cache is per process, in memory | More than one server process or host | `app/rungs.py` "per-process cache" |
 | B09 | open | Semantic cache scans a scope's entries linearly | Cache holds more than ~10k entries | `app/rungs.py` "linear scan over entries" |
 | B10 | open | Chunk size counts words, not model tokens | A real embedder with a hard token limit replaces the feature-hash one | `app/rungs.py` "words approximate tokens" |
