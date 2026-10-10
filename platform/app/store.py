@@ -106,6 +106,21 @@ class PermissionState(Base):
 
 def init_db():
     existing = inspect(engine)
+    prejournal = (existing.has_table(PermissionState.__tablename__) and
+                  (not existing.has_table(PermissionMutation.__tablename__) or
+                   not existing.has_table(PendingSourceCheckpoint.__tablename__)))
+    if prejournal:
+        # A prior release may have changed Qdrant before its SQL transaction
+        # failed. Without document intents we cannot safely bound the replay.
+        # Commit this barrier BEFORE creating tables: a crash during bootstrap
+        # must not erase the fact that the pending mutation predates journals.
+        with engine.begin() as conn:
+            conn.execute(update(PermissionState)
+                         .where(PermissionState.id == 1,
+                                PermissionState.pending.is_(True),
+                                PermissionState.rebuild_required.is_(False))
+                         .values(pending=True, rebuild_required=True,
+                                 revision=PermissionState.revision + 1))
     migrate = (existing.has_table("chunk_policy") and
                "paragraph_acl" not in {c["name"] for c in existing.get_columns("chunk_policy")})
     Base.metadata.create_all(engine)

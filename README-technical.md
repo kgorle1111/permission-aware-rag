@@ -142,11 +142,11 @@ deployable service:
 | Vectors | BM25 / pgvector + RLS | Qdrant + SQL store |
 | Identity | demo roles / HS256 seam | RS256 JWT, verified per request |
 | Source sync | static corpus | Google Drive delta + webhook, permission revocation |
-| Tests | leak evals, mutants, isolation oracle | 358 tests, 98.97% branch coverage (≥96% gate), blocking mutation gate |
+| Tests | leak evals, mutants, isolation oracle | 366 tests, 98.97% branch coverage (≥96% gate), blocking mutation gate |
 | Shipping | Render one-click | Docker image (non-root), container smoke CI |
 
 The platform has its own CI in [`.github/workflows/platform.yml`](.github/workflows/platform.yml).
-Its mutation gate is blocking: of 1,661 mutants, every survivor was either killed by a test
+Its mutation gate is blocking: of 1,693 mutants, every survivor was either killed by a test
 or recorded as a reviewed equivalent in [`platform/mutation_equivalents.json`](platform/mutation_equivalents.json),
 pinned by source and mutant hash, so any new survivor fails the build.
 

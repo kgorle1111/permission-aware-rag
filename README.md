@@ -100,7 +100,7 @@ flowchart LR
 |---|---|
 | 🔒 **Permission first, not filter after** | Forbidden text never enters ranking, so it can't shape the answer, the order or the citations. |
 | 🐘 **The database enforces it too** | In the Postgres backend, row-level security returns only permitted rows, even if a query forgets its filter. |
-| 🧪 **Tests that are proven to fail** | Planted leak bugs, a 1,661-mutant mutation gate, and docs that break the build when they drift from the code. |
+| 🧪 **Tests that are proven to fail** | Planted leak bugs, a 1,693-mutant mutation gate, and docs that break the build when they drift from the code. |
 | 🧾 **Receipts on every answer** | Latency and estimated cost per answer (about $0.002 on Claude Haiku 4.5), plus an audit log that detects edits. |
 
 ## 🧑‍💼 What this shows, if you're hiring
@@ -114,8 +114,8 @@ flowchart LR
 
 - **Two layers.** A reference core in Python stdlib only (~600 readable lines, no dependencies), plus [`platform/`](platform/README.md), the same design as a deployable service on FastAPI, Qdrant, SQLAlchemy and PyJWT.
 - **Two search backends.** BM25 in memory, or pgvector on Postgres with row-level security. Both run the leak gates in CI.
-- **358 platform tests at 98.97% branch coverage**, with a 96% floor enforced in CI.
-- **A blocking mutation gate.** 1,661 mutants: every survivor is either killed by a test or pinned as a reviewed equivalent with a written reason.
+- **366 platform tests at 98.97% branch coverage**, with a 96% floor enforced in CI.
+- **A blocking mutation gate.** 1,693 mutants: every survivor is either killed by a test or pinned as a reviewed equivalent with a written reason.
 - **Docs that can't drift.** Tests fail if a [decision](docs/DECISIONS.md), threat row or roadmap entry cites a test that no longer exists, or if this README's numbers stop matching a fresh eval run.
 - **LLM hygiene:** one structured, grounded call; prompt caching on the static system prompt; graceful fallback to retrieval-only when the model is unavailable.
 
