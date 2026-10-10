@@ -296,12 +296,16 @@ class PermissionRAG:
         detects tail edits/truncation, but an attacker who rewrites BOTH files
         requires an independently retained expected_head to be detected.
         """
-        target = self.audit_head_path(self.audit_path)
+        self.atomic_write(self.audit_head_path(self.audit_path), head)
+
+    @staticmethod
+    def atomic_write(target: pathlib.Path, text: str) -> None:
+        """Write temp + fsync + os.replace so a reader never sees a torn checkpoint."""
         temporary = None
         try:
             with tempfile.NamedTemporaryFile(mode="w", dir=target.parent, delete=False) as f:
                 temporary = pathlib.Path(f.name)
-                f.write(head)
+                f.write(text)
                 f.flush()
                 os.fsync(f.fileno())
             os.replace(temporary, target)

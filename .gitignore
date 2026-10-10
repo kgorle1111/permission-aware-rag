@@ -5,6 +5,7 @@ __pycache__/
 logs/
 app/audit_log.jsonl
 app/audit_log.jsonl.head
+app/pgvector_audit.head
 .pytest_cache/
 uv.lock
 SETUP.md

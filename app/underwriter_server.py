@@ -84,6 +84,10 @@ if os.environ.get("RAG_BACKEND") == "pgvector":
         os.environ["DATABASE_URL"],
         os.environ.get("INGEST_DATABASE_URL"),
         principal_key=bytes.fromhex(os.environ["RAG_PRINCIPAL_KEY"]),
+        # T12: head checkpoint kept outside Postgres; keep it somewhere the DB admin cannot write
+        audit_checkpoint_path=os.environ.get(
+            "AUDIT_CHECKPOINT_PATH", str(pathlib.Path(__file__).with_name("pgvector_audit.head"))
+        ),
     )
 else:
     rag = PermissionRAG(audit_path=pathlib.Path(__file__).with_name("audit_log.jsonl"))
