@@ -138,7 +138,8 @@ def test_audit_checkpoint_failure_denies_results(tmp_path):
 def test_retrieval_error_is_503(server):
     with mock.patch.object(srv.rag, "retrieve", side_effect=OSError("disk unavailable")):
         code, response = _post(server, "/ask", {"user": "junior", "q": "policy"})
-    assert code == 503 and response == {"error": "retrieval unavailable"}
+    assert code == 503
+    assert {k: v for k, v in response.items() if k != "request_id"} == {"error": "retrieval unavailable"}
 
 
 def test_audit_query_redaction(server):

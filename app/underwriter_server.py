@@ -11,6 +11,7 @@ import hashlib
 import hmac
 import io
 import json
+import logging
 import os
 import pathlib
 import re
@@ -22,6 +23,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 import llm
+import obs
 from permission_rag import PermissionRAG
 
 # Roles: junior underwriters see policy/claims; banking group sees financials;
@@ -164,6 +166,17 @@ TOTALS = {
 _totals_lock = threading.Lock()
 
 
+# Daily spend cap (UTC day). kn: check-then-call is not atomic, so concurrent in-flight calls can
+# overshoot by one call each; reserve spend before the call if the cap must be hard.
+OPS = obs.Ops(float(os.environ.get("DAILY_BUDGET_USD", "5.0")))
+
+
+def projected_cost(question, chunks):
+    """Worst case for one call: every input char at ~4 chars/token, plus the full output allowance."""
+    chars = len(llm.SYSTEM_PROMPT) + len(question) + sum(len(c["text"]) for c in chunks)
+    return (chars / 4 * PRICE["input_tokens"] + llm.MAX_TOKENS * PRICE["output_tokens"]) / 1e6
+
+
 def est_cost(usage):
     return round(sum(usage.get(k, 0) * p for k, p in PRICE.items()) / 1e6, 6)
 
@@ -208,88 +221,124 @@ def csv_cell(value):
 
 
 class Handler(BaseHTTPRequestHandler):
-    def _json(self, code, obj):
+    def _json(self, code, obj, headers=None):
         body = json.dumps(obj).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("X-Content-Type-Options", "nosniff")
+        for k, v in (headers or {}).items():
+            self.send_header(k, v)
         self.end_headers()
         self.wfile.write(body)
 
+    def _begin(self, route):
+        self._rec, self._t0 = obs.new_record(route), time.perf_counter()
+
+    def _reply(self, code, obj, outcome):
+        """The single exit for /query and /ask: one log line, one stats record, then the response."""
+        rec = self._rec
+        rec["status"], rec["outcome"] = code, outcome
+        rec["total_ms"] = round((time.perf_counter() - self._t0) * 1000, 1)
+        OPS.record(rec)
+        obs.emit(rec)
+        self._json(code, {**obj, "request_id": rec["request_id"]}, {"X-Request-ID": rec["request_id"]})
+
+    def _bad(self, code, message):
+        self._reply(code, {"error": message}, "bad_request")
+
     def _qa(self, path, user, query):
         """Shared /query and /ask logic; caller has already resolved identity."""
+        rec = self._rec
         if not user:
-            self._json(
-                401 if JWT_SECRET else 400,
-                {"error": "valid bearer token required" if JWT_SECRET else "need user and q"},
+            self._bad(
+                401 if JWT_SECRET else 400, "valid bearer token required" if JWT_SECRET else "need user and q"
             )
             return
         if not isinstance(query, str) or not query:
-            self._json(400, {"error": "need user and q"})
+            self._bad(400, "need user and q")
             return
         if len(query) > MAX_Q_LEN:
-            self._json(400, {"error": f"q too long (max {MAX_Q_LEN} chars)"})
+            self._bad(400, f"q too long (max {MAX_Q_LEN} chars)")
             return
         if path == "/ask" and rate_limited(self.client_address[0]):
-            self._json(429, {"error": "rate limited; retry in a minute"})
+            self._reply(429, {"error": "rate limited; retry in a minute"}, "rate_limited")
             return
+        t0 = time.perf_counter()
         try:
             results = rag.retrieve(query, user, k=4)
-        except Exception:
-            self._json(503, {"error": "retrieval unavailable"})
+        except Exception as e:
+            rec["error"] = type(e).__name__
+            self._reply(503, {"error": "retrieval unavailable"}, "failed_closed")
             return
+        rec["retrieve_ms"] = round((time.perf_counter() - t0) * 1000, 1)
+        rec["returned"], rec["denied"] = len(results), rag.audit[-1]["denied_chunks"]
         out = {"results": results}
         if SHOW_DENIED:
-            out["denied_chunks"] = rag.audit[-1]["denied_chunks"]
+            out["denied_chunks"] = rec["denied"]
+        outcome = "ok" if results else "no_results"
         if path == "/ask":
             llm_out = None
             if not results:
                 out["note"] = "No accessible documents matched; skipped the LLM call."
+            elif OPS.would_exceed(projected_cost(query, results)):
+                out["note"] = "Daily LLM budget reached; showing retrieval only."
             else:
                 t0 = time.perf_counter()
                 try:
                     llm_out = llm.ask(query, results)
                 except Exception as e:  # LLM failure must not take down retrieval
-                    print(f"llm error: {e}", file=sys.stderr)  # detail stays server-side
+                    rec["error"] = type(e).__name__  # the message can echo prompt text; keep it out of logs
                     out["note"] = "LLM call failed; showing retrieval only."
+                rec["llm_ms"] = round((time.perf_counter() - t0) * 1000, 1)
             if llm_out:
-                llm_ms = round((time.perf_counter() - t0) * 1000, 1)
-                record_ask(llm_out["usage"], llm_ms)
+                usage = llm_out["usage"]
+                record_ask(usage, rec["llm_ms"])
                 out["answer"] = llm_out["answer"]
-                out["usage"] = llm_out["usage"]
-                out["llm_ms"] = llm_ms
-                out["est_cost_usd"] = est_cost(llm_out["usage"])
+                out["usage"] = usage
+                out["llm_ms"] = rec["llm_ms"]
+                out["est_cost_usd"] = rec["est_cost_usd"] = est_cost(usage)
                 out["unverified_citations"] = llm_out["unverified_citations"]
-            elif "note" not in out:
-                out["note"] = "Set ANTHROPIC_API_KEY to enable drafted answers; showing retrieval only."
-        self._json(200, out)
+                out["uncited_claims"] = llm_out["uncited_claims"]
+                rec["tokens_in"] = usage.get("input_tokens", 0)
+                rec["tokens_out"] = usage.get("output_tokens", 0)
+                rec["tokens_cached"] = usage.get("cache_read_input_tokens", 0)
+                rec["unverified_citations"] = len(llm_out["unverified_citations"])
+                rec["uncited_claims"] = len(llm_out["uncited_claims"])
+            elif results:
+                outcome = "llm_fallback"
+                out.setdefault(
+                    "note", "Set ANTHROPIC_API_KEY to enable drafted answers; showing retrieval only."
+                )
+        self._reply(200, out, outcome)
 
     def do_POST(self):
         url = urlparse(self.path)
         if url.path not in ("/query", "/ask"):
             self._json(404, {"error": "not found"})
             return
+        self._begin(url.path)
         try:
             length = int(self.headers.get("Content-Length") or 0)
         except ValueError:
-            self._json(400, {"error": "invalid Content-Length"})
+            self._bad(400, "invalid Content-Length")
             return
         if not 0 < length <= MAX_BODY:
-            self._json(400, {"error": "need a JSON body"})
+            self._bad(400, "need a JSON body")
             return
         try:
             body = json.loads(self.rfile.read(length))
         except ValueError:
-            self._json(400, {"error": "malformed JSON body"})
+            self._bad(400, "malformed JSON body")
             return
         if not isinstance(body, dict):
-            self._json(400, {"error": "JSON body must be an object"})
+            self._bad(400, "JSON body must be an object")
             return
         self._qa(url.path, resolve_user(self, {}, body), body.get("q", ""))
 
     def do_GET(self):
         url = urlparse(self.path)
         if url.path in ("/query", "/ask"):
+            self._begin(url.path)
             qs = parse_qs(url.query)
             self._qa(url.path, resolve_user(self, qs, None), qs.get("q", [""])[0])
         elif url.path == "/presets":
@@ -329,7 +378,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             with _totals_lock:
                 summary = dict(TOTALS)
-            self._json(200, {"entries": entries, "llm_summary": summary})
+            self._json(200, {"entries": entries, "llm_summary": summary, "ops": OPS.summary()})
         else:
             self.send_response(200)
             self.send_header("Content-Type", "text/html")
@@ -350,5 +399,6 @@ if __name__ == "__main__":
     # local default stays loopback-only; hosts (Render, Docker) set HOST=0.0.0.0 + PORT
     port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", 8421))
     host = os.environ.get("HOST", "127.0.0.1")
+    logging.basicConfig(level=logging.INFO, format="%(message)s")  # request lines are JSON already
     print(f"http://{host}:{port}")
     ThreadingHTTPServer((host, port), Handler).serve_forever()
