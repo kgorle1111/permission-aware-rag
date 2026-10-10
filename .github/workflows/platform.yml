@@ -23,8 +23,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
           cache-dependency-path: platform/requirements-dev.txt
+      - name: Install OCR engine (pdf_ingest tests rasterize and OCR real PDF pages)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends tesseract-ocr
       - name: Install test dependencies
-        run: python -m pip install -r requirements-dev.txt
+        run: python -m pip install -r requirements-dev.txt -r requirements-pdf.txt
       - name: Run tests and enforce branch coverage
         run: >-
           python -m pytest tests/ -q --cov=app --cov=scripts --cov-branch
@@ -45,7 +47,7 @@ jobs:
       - name: Run mutations in Linux container
         run: |
           docker run --rm --volume "$PWD:/src" --workdir /src python:3.12-slim \
-            sh -eu -c 'apt-get update; apt-get install -y --no-install-recommends git; python -m pip install -r requirements-dev.txt; mutmut run --max-children 1; mutmut export-cicd-stats' 2>&1 | tee mutation-run.log
+            sh -eu -c 'apt-get update; apt-get install -y --no-install-recommends git tesseract-ocr; python -m pip install -r requirements-dev.txt -r requirements-pdf.txt; mutmut run --max-children 1; mutmut export-cicd-stats' 2>&1 | tee mutation-run.log
       - name: Validate the complete mutation report
         # every survivor must be a reviewed, hash-pinned equivalent; any new survivor fails the build
         run: >-

@@ -24,6 +24,7 @@ PRs [#6](https://github.com/kgorle1111/permission-aware-rag/pull/6) through [#12
 | 2026-10-10 | Tier 3 agentic-retrieval mechanics (Stage 10): router, iterative (cap 3), read-only tool agent with server-bound identity and turn/token/time caps, guarded pipeline with receipt, approval-gated tool registry. **Tested with scripted fake models only; no answer-quality claim until a real model and a calibrated judge are run (needs approval).** | `app/agents.py`, `app/test_agents.py` |
 | 2026-10-10 | Tier 3 retrieval rungs, each measured and each passing every leak gate: scoped semantic cache (8.5), embedding cache (8.6), structure-aware chunking (9.2), router + rewrite/HyDE/step-back (9.3, deterministic fakes only), multi-query RRF (9.4), abstain threshold (9.7). The unscoped-cache mutant is caught (9/9). No rung beat the baseline on recall; the lexical corpus cannot show it either way | [ladder table](evals/results/2026-10-10-tier3-ladder/table.md), `app/rungs.py`, `app/test_rungs.py` |
 | 2026-10-10 | Text-to-SQL under Postgres RLS (11.3, T25): a fake model writes SQL over a `doc_meta` table; the statement runs as a read-only `rag_sql` role under the same signed-principal RLS, audited by the database. 40 hostile statements x 5 users (pre-check off) with 0 leaks, a metamorphic hidden-rows test, 60/60 exact-match on honest questions. **No real model was called, so no SQL-quality claim.** | [results](evals/results/2026-10-10-text-to-sql/table.md), `app/text_to_sql.py`, `app/test_text_to_sql.py` |
+| 2026-10-10 | PDF ingestion on real public-domain PDFs: pdfplumber text with column-aware order, running-head removal, section breadcrumbs, table to markdown and sentences, Tesseract OCR fallback; every chunk inherits the document ACL. OCR accuracy, table coverage and a real-text leak check are measured | [results](evals/results/2026-10-10-pdf-real-corpus/table.md), `platform/app/pdf_ingest.py`, `platform/tests/test_pdf_ingest.py` |
 
 ### Evidence batch — 2026-10-08
 
@@ -131,7 +132,7 @@ retriever that leaks is a regression. The comparison table gets published, inclu
    identity bound server-side, turn/token/time caps, guarded pipeline, approval-gated registry),
    tested with scripted fakes only. Still open: run against a real model, measure it on the golden
    set with a calibrated judge, and keep the pipeline only if a single agent measurably falls short.
-6. **Beyond text:** PDF tables and OCR, selective chart descriptions. (Text-to-SQL under row-level security (11.3): shipped in the pgvector reference backend over a document-metadata table, see the 2026-10-10 row above; running it on policy-system data in `platform/` remains open.)
+6. **Beyond text:** (PDF tables and OCR shipped 2026-10-10, see above) selective chart descriptions. (Text-to-SQL under row-level security (11.3): shipped in the pgvector reference backend over a document-metadata table, see the 2026-10-10 row above; running it on policy-system data in `platform/` remains open.)
 
 ## Open shortcuts (test-enforced)
 
