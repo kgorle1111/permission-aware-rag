@@ -387,3 +387,19 @@ def test_deleted_document_text_is_removed_from_sql_mirror(client):
             assert not [t for t in s.query(store.ChunkText).all() if "vacation" in t.text.lower()]
     finally:
         reingest()
+
+
+def test_luhn_doubling_of_five_redacts_valid_mastercard():
+    # 5555555555554444 is a published Luhn-valid test number; its doubled digits include 5s
+    assert redact("card 5555555555554444 on file") == "card [REDACTED:CARD] on file"
+    assert redact("id 5555555555554445 on file") == "id 5555555555554445 on file"
+
+
+def test_keyword_scores_are_matched_fraction_of_query_terms(client):
+    with store.SessionLocal() as s:
+        hits = resilience.keyword_search(s, "vacation policy days zzzunmatched", _principal("guest").principals, 5)
+    assert hits
+    terms = resilience._terms("vacation policy days zzzunmatched")
+    for h in hits:
+        assert h["score"] == len(terms & resilience._terms(h["text"])) / len(terms)
+        assert 0 < h["score"] < 1
