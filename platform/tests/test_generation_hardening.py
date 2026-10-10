@@ -163,3 +163,55 @@ def test_total_budget_caps_retries_and_falls_back_to_extractive(transport, monke
                              clock=lambda: now[0]) == "permitted [d]"
     # t=0 req(30 left) -> t=5 sleep 20 -> t=25 req(5 left) -> t=30: deadline reached, stop
     assert timeouts == [30, 5] and sleeps == [20]
+
+
+def test_fallback_model_retries_with_the_same_backoff(transport):
+    """The fallback model gets the same retry policy (sleep and rng are threaded through)."""
+    calls, script = transport
+    script += [_r(404, NOT_FOUND), _r(429), _r(200, OK)]
+    sleeps = []
+    assert generation.answer("q", DOCS, sleep=sleeps.append, rng=random.Random(3),
+                             clock=lambda: 0.0) == "grounded [d]"
+    assert [c["model"] for c in calls] == [config.GENERATION_MODEL, config.GENERATION_FALLBACK_MODEL,
+                                           config.GENERATION_FALLBACK_MODEL]
+    assert sleeps == [random.Random(3).uniform(0, 1)]
+
+
+@pytest.mark.parametrize("header,want", [("0", 0.0), ("-5", 0.0)])
+def test_retry_after_zero_or_negative_means_no_wait(transport, header, want):
+    calls, script = transport
+    script += [_r(429, headers={"Retry-After": header}), _r(200, OK)]
+    sleeps = []
+    assert generation.answer("q", DOCS, sleep=sleeps.append, rng=random.Random(1),
+                             clock=lambda: 0.0) == "grounded [d]"
+    assert sleeps == [want]
+
+
+def test_request_timeout_is_remaining_budget_to_the_millisecond(transport, monkeypatch):
+    now, timeouts = [0.0], []
+
+    def post(url, **kw):
+        timeouts.append(kw["timeout"])
+        now[0] += 2.5004  # fractional elapsed time per failing request
+        return _r(503)
+
+    monkeypatch.setattr(generation.httpx, "post", post)
+    generation.answer("q", DOCS, sleep=lambda s: None, rng=random.Random(0), clock=lambda: now[0])
+    assert timeouts[:2] == [30.0, 27.5]  # 30 - 2.5004 rounds to 27.5 at 3 decimals
+    assert all(isinstance(t, float) for t in timeouts)
+
+
+def test_wait_that_lands_exactly_on_the_deadline_is_not_taken(transport, monkeypatch, caplog):
+    now, timeouts, sleeps = [0.0], [], []
+
+    def post(url, **kw):
+        timeouts.append(kw["timeout"])
+        now[0] += 5
+        return _r(429, {}, {"Retry-After": "25"})  # 5 + 25 == the 30 s budget exactly
+
+    monkeypatch.setattr(generation.httpx, "post", post)
+    with caplog.at_level(logging.ERROR, logger="permrag"):
+        assert generation.answer("q", DOCS, sleep=sleeps.append, rng=random.Random(0),
+                                 clock=lambda: now[0]) == "permitted [d]"
+    assert timeouts == [30.0] and sleeps == []
+    assert "TimeoutError: generation retry budget exhausted" in caplog.text
