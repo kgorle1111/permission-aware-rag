@@ -142,7 +142,7 @@ its upgrade trigger. `app/test_ledgers.py` fails if a shortcut comment has no ro
 | B03 | open | Rate limiter is in-memory, per process | More than one server process or host | `app/underwriter_server.py` "in-memory per-process" |
 | B04 | open | Smallest model tier (Haiku) for grounded answers | An answer-quality eval shows Haiku below bar | `app/llm.py` "smallest tier" |
 | B05 | open | RLS ingest gated by a forgeable GUC, not a DB role | Before any deployment that runs untrusted SQL paths (THREAT_MODEL T13) | `app/pgvector_rag.py` "rag.mode" |
-| B06 | open | JWT group with a comma → 500 on pgvector | First real IdP integration (THREAT_MODEL T14) | `app/pgvector_rag.py` "contain no comma" |
+| B06 | done (T14, 2026-10-10) | JWT group with a comma → 500 on pgvector | First real IdP integration (THREAT_MODEL T14) | `app/pgvector_rag.py` "contain no comma" |
 | B07 | open | Held-out real-corpus leak eval | Real corpus available | `evals/results/2026-10-03-v2/table.md` "real-corpus held-out run" |
 
 ## Deliberately not building
