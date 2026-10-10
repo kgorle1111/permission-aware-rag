@@ -1,5 +1,6 @@
 """Tier 3 agentic retrieval: mechanics only, with scripted fake models (no API, no network)."""
 
+import hashlib
 import json
 
 import agents
@@ -327,3 +328,26 @@ def test_pipeline_principal_comes_from_caller_not_model():
     )
     out = agents.run_pipeline(model, make_rag(), JUNIOR, "Delgado balance")
     assert "310000" not in json.dumps(out) + json.dumps(model.calls)
+
+
+def test_get_chunk_is_audited_allowed_and_denied_alike():
+    """Direct chunk reads land on the same hash-chained audit trail as searches."""
+    rag = make_rag()
+    before = len(rag.audit)
+    agents.make_tools(rag, SENIOR).call("get_chunk", {"chunk_id": "bank-delgado#0"})
+    agents.make_tools(rag, JUNIOR).call("get_chunk", {"chunk_id": "bank-delgado#0"})
+    allowed, denied = rag.audit[before:]
+    assert (allowed["op"], allowed["user"], allowed["returned"]) == (
+        "get_chunk",
+        "senior",
+        ["bank-delgado#0"],
+    )
+    assert (denied["op"], denied["user"], denied["returned"]) == ("get_chunk", "junior", [])
+    assert denied["prev_sha256"] == hashlib.sha256(json.dumps(allowed).encode()).hexdigest()
+
+
+def test_get_chunk_returns_nothing_when_audit_cannot_be_written(tmp_path):
+    rag = make_rag()
+    rag._audit_failed = True  # persistence already failed: fail closed, never return content
+    out = agents.make_tools(rag, SENIOR).call("get_chunk", {"chunk_id": "bank-delgado#0"})
+    assert "310000" not in out

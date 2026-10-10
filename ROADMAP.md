@@ -147,7 +147,7 @@ its upgrade trigger. `app/test_ledgers.py` fails if a shortcut comment has no ro
 | B05 | open | RLS ingest gated by a forgeable GUC, not a DB role | Before any deployment that runs untrusted SQL paths (THREAT_MODEL T13) | `app/pgvector_rag.py` "rag.mode" |
 | B06 | open | JWT group with a comma → 500 on pgvector | First real IdP integration (THREAT_MODEL T14) | `app/pgvector_rag.py` "contain no comma" |
 | B07 | open | Held-out real-corpus leak eval | Real corpus available | `evals/results/2026-10-03-v2/table.md` "real-corpus held-out run" |
-| B08 | open | Agent `get_chunk` scans the in-memory backend and is unaudited; collection routing filters a top-100 pool | PgVectorRAG support, or a collection with >100 matching chunks per query | `app/agents.py` "kn: scans the in-memory backend" and `app/agents.py` "kn: collection filter runs on a top-100 pool" |
+| B08 | open | Agent `get_chunk` (audited via `read_chunk`) works on the in-memory backend only; collection routing filters a top-100 pool | PgVectorRAG support, or a collection with >100 matching chunks per query | `app/agents.py` "kn: in-memory backend only" and `app/agents.py` "kn: collection filter runs on a top-100 pool" |
 
 ## Deliberately not building
 

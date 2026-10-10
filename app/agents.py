@@ -211,9 +211,12 @@ def make_tools(rag, principal: dict) -> ToolRegistry:
         cid = args.get("chunk_id")
         if not isinstance(cid, str) or not cid or len(cid) > 200:
             return "error: chunk_id is required (string from a search_docs result); retry with chunk_id=<id>"
-        # kn: scans the in-memory backend and is not written to the audit log; PgVectorRAG needs a get-by-id under RLS
-        chunk = next((c for c in rag.chunks if c["id"] == cid), None)
-        if chunk is None or not rag.can_read_chunk(principal, chunk):
+        # kn: in-memory backend only (PermissionRAG.read_chunk); PgVectorRAG needs a get-by-id under RLS
+        try:
+            chunk = rag.read_chunk(cid, principal)
+        except RuntimeError:
+            return "error: audit unavailable, so no content can be returned; retry later"
+        if chunk is None:
             return f"error: chunk {cid!r} not found; use search_docs to discover chunk ids"
         return _doc(chunk["id"], chunk["text"])
 
