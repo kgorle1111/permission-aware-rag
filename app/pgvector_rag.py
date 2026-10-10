@@ -36,7 +36,9 @@ import datetime
 import hashlib
 import hmac
 import json
+import pathlib
 import secrets
+import threading
 import time
 
 import psycopg
@@ -349,10 +351,21 @@ class PgVectorRAG:
 
     audit_path = None  # interface compat with the JSONL backend
 
-    def __init__(self, dsn: str, ingest_dsn: str | None = None, *, principal_key: bytes):
+    def __init__(
+        self, dsn: str, ingest_dsn: str | None = None, *, principal_key: bytes, audit_checkpoint_path=None
+    ):
         """dsn connects as the app role (retrieval); ingest_dsn as the ingest role.
-        principal_key signs principals for RLS (T18); it must match setup_schema's key."""
+        principal_key signs principals for RLS (T18); it must match setup_schema's key.
+        audit_checkpoint_path (T12): a file OUTSIDE the database holding "<id> <sha256>" of the newest
+        audit row, rewritten after every audited call. verify_audit_chain() then fails if the tail was
+        deleted or the file is missing. None = unanchored (tail deletion goes undetected).
+        Per-process anchor: several app processes each need one shared anchor (see ROADMAP B17),
+        else the chain head moves past a stale checkpoint and verify fails."""
         self._principal_key = principal_key
+        self._checkpoint = pathlib.Path(audit_checkpoint_path) if audit_checkpoint_path else None
+        # kn: per-process audit anchor; add a shared anchor store when running more than one app process
+        # serialises call + read head + write file, so threads can't regress the file
+        self._anchor_lock = threading.Lock()
         # autocommit: single reads commit immediately (no idle-in-transaction locks);
         # multi-statement work still uses explicit conn.transaction() blocks, which
         # is also what scopes each set_config(..., is_local=true) GUC.
@@ -448,13 +461,22 @@ class PgVectorRAG:
     def sign_principals(self, principals: list[str], now: float | None = None) -> str:
         return sign_principals(self._principal_key, principals, now)
 
+    def _anchor(self) -> None:
+        """Record the newest audit row in the external checkpoint (no-op if none configured)."""
+        if self._checkpoint:
+            row = self.conn.execute("SELECT id, line_sha256 FROM audit ORDER BY id DESC LIMIT 1").fetchone()
+            if row:
+                PermissionRAG.atomic_write(self._checkpoint, f"{row[0]} {row[1]}")
+
     def retrieve(self, query: str, user: dict, k: int = 3) -> list[dict]:
         qvec = to_pgvector(embed(query))
         token = self.sign_principals(self.principals(user))
         # rag_search verifies the token, applies RLS and writes the audit row server-side (T19)
-        rows = self.conn.execute(
-            "SELECT id, doc_id, text, score FROM rag_search(%s, %s::vector, %s)", (token, qvec, k)
-        ).fetchall()
+        with self._anchor_lock:
+            rows = self.conn.execute(
+                "SELECT id, doc_id, text, score FROM rag_search(%s, %s::vector, %s)", (token, qvec, k)
+            ).fetchall()
+            self._anchor()
         return [{"id": r[0], "doc_id": r[1], "text": r[2], "score": round(float(r[3]), 4)} for r in rows]
 
     # ── structured questions (T25): one LLM-written SELECT over doc_meta, RLS-filtered ──────────
@@ -469,12 +491,15 @@ class PgVectorRAG:
         "sqlstate": ...}. Every call is audited by the database (hashes, status, row count).
         """
         token = self.sign_principals(self.principals(user))
-        with self.conn.transaction():
-            # the timer arms when the rag_sql_run statement starts, so it must be set before it
-            self.conn.execute(f"SET LOCAL statement_timeout = {int(self.SQL_TIMEOUT_MS)}")
-            row = self.conn.execute(
-                "SELECT rag_sql_run(%s, %s, %s, %s, %s)", (token, question, stmt, self.SQL_MAX_ROWS, rejected)
-            ).fetchone()
+        with self._anchor_lock:
+            with self.conn.transaction():
+                # the timer arms when the rag_sql_run statement starts, so it must be set before it
+                self.conn.execute(f"SET LOCAL statement_timeout = {int(self.SQL_TIMEOUT_MS)}")
+                row = self.conn.execute(
+                    "SELECT rag_sql_run(%s, %s, %s, %s, %s)",
+                    (token, question, stmt, self.SQL_MAX_ROWS, rejected),
+                ).fetchone()
+            self._anchor()  # after commit: the audit row is visible
         return row[0]
 
     # ── audit (hash-chained, same scheme as the JSONL backend) ───────────────
@@ -484,8 +509,11 @@ class PgVectorRAG:
         return [json.loads(r[0]) for r in reversed(rows)]
 
     def verify_audit_chain(self) -> bool:
-        prev = ""
-        for line, recorded_hash in self.conn.execute("SELECT line, line_sha256 FROM audit ORDER BY id ASC"):
+        prev, last_id = "", None
+        for row_id, line, recorded_hash in self.conn.execute(
+            "SELECT id, line, line_sha256 FROM audit ORDER BY id ASC"
+        ):
+            last_id = row_id
             try:
                 entry = json.loads(line)
                 if not isinstance(entry, dict) or entry.get("prev_sha256") != prev:
@@ -495,4 +523,14 @@ class PgVectorRAG:
             prev = hashlib.sha256(line.encode()).hexdigest()
             if prev != recorded_hash:
                 return False
-        return True
+        return self._head_matches_checkpoint(last_id, prev)
+
+    def _head_matches_checkpoint(self, last_id: int | None, head: str) -> bool:
+        if not self._checkpoint:
+            return True
+        if last_id is None:  # empty audit table: fine only if nothing was ever anchored
+            return not self._checkpoint.exists()
+        try:
+            return self._checkpoint.read_text() == f"{last_id} {head}"
+        except (OSError, UnicodeError):
+            return False

@@ -131,7 +131,7 @@ Embeddings default to a deterministic stdlib feature-hash
 network; swap `embed()` for Voyage AI or sentence-transformers for semantic recall — the
 RLS logic doesn't change. Run against the server with
 `RAG_BACKEND=pgvector DATABASE_URL=postgres://<app-role>... RAG_PRINCIPAL_KEY=<hex key returned by setup_schema> python3 underwriter_server.py`
-(add `INGEST_DATABASE_URL=postgres://<ingest-role>...` to let it ingest; without it the server is read-only).
+(add `INGEST_DATABASE_URL=postgres://<ingest-role>...` to let it ingest; without it the server is read-only). `AUDIT_CHECKPOINT_PATH=<file>` (default `app/pgvector_audit.head`, gitignored) is the audit head checkpoint (T12); store it where the database admin cannot write, or tail deletion in the audit table goes undetected.
 
 ## The production platform ([`platform/`](platform/))
 
