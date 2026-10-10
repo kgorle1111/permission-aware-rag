@@ -20,6 +20,7 @@ PRs [#6](https://github.com/kgorle1111/permission-aware-rag/pull/6) through [#12
 | 2026-10-07 | Independent document/section/paragraph ACL levels in memory, PostgreSQL RLS and Qdrant; isolation oracle catches both hierarchy mutants (8/8 total) | `app/test_hierarchy.py`, `app/test_pgvector.py`, `platform/tests/test_hierarchy.py` |
 | 2026-10-07 | Qdrant keyword indexes, document-filtered batched ACL updates, on-disk payload/vectors and int8 configuration; durable retry barriers | `platform/tests/test_scale_acl.py`, `platform/tests/test_hardening.py`, `evals/verify_qdrant_storage.py` |
 | 2026-10-07 | AWS Lightsail HTTPS portfolio demo, with synthetic documents and retrieval-only roles | [deployment guide](deploy/aws/README.md) |
+| 2026-10-10 | Measurement foundation: answer metrics (7.2, offline judge only), ladder harness that rejects any leaking rung and rejects all 8 mutants (7.4), and `run_evals.py --mutants` plus `ladder.py --check` in CI (1.4) | `evals/metrics.py`, `evals/ladder.py`, `app/test_answer_metrics.py`, `app/test_ladder.py` |
 
 ### Evidence batch — 2026-10-08
 
@@ -111,7 +112,7 @@ after, and kept only if it moves the metric it targets. **Every rung must also p
 gates as today** (the isolation check and the 1,350-probe eval), because a faster or smarter
 retriever that leaks is a regression. The comparison table gets published, including the rungs that lose.
 
-1. **Measurement first:** a ≥100-question golden set per role, with unanswerable and cross-role
+1. **Measurement first** (metrics and ladder harness shipped; still open: golden set, judge calibration, CI regression gate on answer metrics, tracing): a ≥100-question golden set per role, with unanswerable and cross-role
    trap questions; faithfulness, relevancy and context precision/recall; an LLM judge calibrated
    against human labels; a CI gate on regressions; per-stage tracing.
 2. **Production patterns:** pinned models with fallback; backoff with jitter; a 4-level
