@@ -193,13 +193,8 @@ class PermissionRAG:
             score += idf * f * (self.K1 + 1) / (f + self.K1 * (1 - self.B + self.B * length / avglen))
         return score
 
-    def retrieve(self, query: str, user: dict, k: int = 3) -> list[dict]:
-        """Return top-k chunks the user is allowed to read, ranked by relevance.
-
-        Pre-filter, then rank: denied chunks are never scored, so their content
-        cannot leak through relative scores or result ordering.
-        """
-        t0 = time.perf_counter()
+    def _search(self, query: str, user: dict) -> tuple[list[tuple[float, dict]], int]:
+        """Pre-filter, then rank: returns ([(score, chunk)] best-first, denied count). No audit."""
         if self._audit_failed:
             raise RuntimeError("audit persistence failed; recovery required")
         visible = [c for c in self.chunks if self.can_read_chunk(user, c)]
@@ -214,11 +209,31 @@ class PermissionRAG:
         scored = sorted(
             ((self._score(qtokens, c, df, n, avglen), c) for c in visible), key=lambda sc: sc[0], reverse=True
         )
-        results = [
-            {"id": c["id"], "doc_id": c["doc_id"], "text": c["text"], "score": round(s, 4)}
+        return scored, denied
+
+    def retrieve(self, query: str, user: dict, k: int = 3) -> list[dict]:
+        """Return top-k chunks the user is allowed to read, ranked by relevance.
+
+        Pre-filter, then rank: denied chunks are never scored, so their content
+        cannot leak through relative scores or result ordering.
+        """
+        t0 = time.perf_counter()
+        scored, denied = self._search(query, user)
+        results = self._results(scored, k)
+        self._record(user, results, denied, t0)
+        return results
+
+    SCORE_DIGITS = 4
+
+    def _results(self, scored: list[tuple[float, dict]], k: int) -> list[dict]:
+        return [
+            {"id": c["id"], "doc_id": c["doc_id"], "text": c["text"], "score": round(s, self.SCORE_DIGITS)}
             for s, c in scored[:k]
             if s > 0
         ]
+
+    def _record(self, user: dict, results: list[dict], denied: int, t0: float) -> None:
+        """Append one hash-chained audit entry (ids and counts only, never query text)."""
         entry = {
             "ts": time.time(),
             "user": user["id"],
@@ -227,6 +242,28 @@ class PermissionRAG:
             "denied_chunks": denied,
             "elapsed_ms": round((time.perf_counter() - t0) * 1000, 2),
         }
+        self._append_audit(entry)
+
+    def read_chunk(self, chunk_id: str, user: dict) -> dict | None:
+        """One chunk by id if `user` passes every ACL level, else None (same for missing ids).
+
+        Audited like a search, and the audit write happens before any text is returned.
+        """
+        if self._audit_failed:
+            raise RuntimeError("audit persistence failed; recovery required")
+        chunk = next((c for c in self.chunks if c["id"] == chunk_id), None)
+        readable = chunk is not None and self.can_read_chunk(user, chunk)
+        self._append_audit(
+            {
+                "ts": time.time(),
+                "user": user["id"],
+                "op": "get_chunk",
+                "returned": [chunk_id] if readable else [],
+            }
+        )
+        return chunk if readable else None
+
+    def _append_audit(self, entry: dict) -> None:
         with self._audit_lock:
             if self._audit_failed:
                 raise RuntimeError("audit persistence failed; recovery required")
@@ -247,7 +284,6 @@ class PermissionRAG:
             self.audit.append(entry)
             if len(self.audit) > self.AUDIT_MAX:
                 del self.audit[: -self.AUDIT_MAX]
-        return results
 
     @staticmethod
     def audit_head_path(path: str | pathlib.Path) -> pathlib.Path:

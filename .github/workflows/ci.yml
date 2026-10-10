@@ -14,6 +14,10 @@ jobs:
         working-directory: app
       - run: python run_evals.py   # leak gate: exits 1 on any ACL leak or recall miss
         working-directory: app
+      - run: python run_evals.py --mutants   # the gate must catch every known-leaky retriever
+        working-directory: app
+      - run: python ../evals/ladder.py --check   # baseline accepted, every negative-control rung rejected
+        working-directory: app
 
   pgvector:
     runs-on: ubuntu-latest

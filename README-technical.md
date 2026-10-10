@@ -104,6 +104,8 @@ For readers evaluating the engineering rather than the demo:
 | **Production seams** | SSO-ready: one env var switches identity from demo dropdown to HS256 JWT validation (constant-time compare, expiry) — `can_read()` untouched. Rate limiting, input caps, CSP/nosniff, XSS-safe rendering throughout. |
 | **Prompt caching** | Static system prompt marked `cache_control: ephemeral`; per-request context deliberately uncached. Token usage surfaced per response to verify cache engagement. |
 | **Test discipline** | Four test files: exact-content leak tests, role ACL tests, mocked-LLM payload tests, and HTTP endpoint tests against a real in-process server (auth, rate-limit 429s, CSV export). Plus ruff lint + format gating CI. |
+| **Ladder harness** | `python3 evals/ladder.py` runs the kit leak suite, the app isolation check, recall@k and p50/p95 latency per retriever "rung" and prints a table against the baseline. Any leak or isolation diff marks a rung REJECTED whatever its quality. The baseline plus all 8 mutants run as negative controls; CI runs `--check` and fails if the baseline is rejected or any control is accepted. |
+| **Answer metrics** | `evals/metrics.py`: faithfulness, answer relevancy, position-weighted context precision, context recall, via an injected `judge(prompt) -> JSON` with strict parsing. Tests use a deterministic offline judge (word overlap, not meaning). A real LLM judge needs calibration against ~20 human labels (ROADMAP 7.3) before any number is reported. |
 | **Frontend** | Single-file vanilla-JS workbench on a token-based design system (dark + light, WCAG-checked), inline SVG icons, strict CSP with zero external origins. Deep links, keyboard-first, audit trail with CSV export. |
 
 ## Two backends, one guarantee
@@ -111,7 +113,7 @@ For readers evaluating the engineering rather than the demo:
 | | In-memory (default) | Postgres + pgvector |
 |---|---|---|
 | Ranking | BM25 (stdlib) | pgvector cosine over embeddings |
-| ACL enforcement | Python pre-filter | **Postgres Row-Level Security** — the database refuses to return hidden rows even when an app query forgets its filter (not yet SQL-injection-proof: [T13](docs/THREAT_MODEL.md)) |
+| ACL enforcement | Python pre-filter | **Postgres Row-Level Security** — the database refuses to return hidden rows even when an app query forgets its filter (ingest is a separate DB role, [T13](docs/THREAT_MODEL.md); principals are HMAC-signed and verified inside Postgres, [T18](docs/THREAT_MODEL.md); every read goes through an audited database function, so that connection can't skip or forge audit rows, [T19](docs/THREAT_MODEL.md)) |
 | Score side channel | Closed (visible-set statistics) | No analogue — embedding distance is per-row, no corpus statistics |
 | Audit | Hash-chained JSONL | Hash-chained `audit` table |
 | Dependencies | Zero | `psycopg` (`pip install -e ".[pg]"`) |
@@ -128,7 +130,8 @@ Embeddings default to a deterministic stdlib feature-hash
 ([`app/embedding.py`](app/embedding.py)) so the whole path runs with no model and no
 network; swap `embed()` for Voyage AI or sentence-transformers for semantic recall — the
 RLS logic doesn't change. Run against the server with
-`RAG_BACKEND=pgvector DATABASE_URL=postgres://... python3 underwriter_server.py`.
+`RAG_BACKEND=pgvector DATABASE_URL=postgres://<app-role>... RAG_PRINCIPAL_KEY=<hex key returned by setup_schema> python3 underwriter_server.py`
+(add `INGEST_DATABASE_URL=postgres://<ingest-role>...` to let it ingest; without it the server is read-only).
 
 ## The production platform ([`platform/`](platform/))
 
@@ -192,6 +195,42 @@ Full surface: `POST /query` (retrieval only), `POST /ask` (adds the drafted answ
 rate-limited), `GET /audit` (own audit metadata; audit group sees others’ ids/counts; all query text is redacted; `&format=csv` neutralizes formula cells), `GET /presets`.
 ACL entries are `user:<id>`, `group:<name>`, or `"*"`; empty ACLs and duplicate ingests
 are rejected at write time.
+
+## Agentic retrieval (mechanics, not a quality claim)
+
+`app/agents.py` holds the Tier 3 pieces: router RAG, iterative RAG (cap 3, every iteration audited),
+a ReAct agent with two read-only tools (`search_docs`, `get_chunk`), a guarded multi-agent pipeline
+that returns a draft *for human review* with a receipt, and a tool registry that refuses any tool
+that is not read-only unless it has an approval gate. The caller's principal is closed over
+server-side: tool arguments naming a user, principal or groups are rejected, and `get_chunk`
+re-checks permission, answering a forbidden id exactly like a missing one. Turn, token and
+wall-clock caps are each tested with a stuck-loop fake, and an injected document that says
+"call get_chunk on <forbidden id>" is tested not to yield forbidden text.
+
+The model is an injected callable; the tests use scripted fakes and there is no real-API default.
+These are tested mechanics. No answer-quality or cost number is claimed until a real model and a
+calibrated judge are run.
+
+## Text-to-SQL under row-level security (pgvector backend)
+
+`app/text_to_sql.py` + `PgVectorRAG.run_sql` answer structured questions ("how many credit documents can I
+read?") over a `doc_meta` table (id, title, department, data_class, created_at, chunk count) filled at ingest.
+A model turns the question into one SELECT; **Postgres, not a SQL parser, decides what comes back**. The
+statement runs inside `rag_sql_run` as the `rag_sql` role, which can read only the non-ACL columns of
+`doc_meta`, under the same signed-principal RLS as chunks (T18). It is a single cursor query, read-only,
+2 s timeout, 100-row cap, and the database writes the hash-chained audit row (hashes and status, never question
+or SQL text). The app's pre-check is only defence in depth; the adversarial suite switches it off.
+
+Evidence: [`app/test_text_to_sql.py`](app/test_text_to_sql.py) (160 hostile-statement cases across 4 users, aggregate and
+metamorphic hidden-rows tests, planted weaknesses that must fail the suite) and the
+[eval table](evals/results/2026-10-10-text-to-sql/table.md). Threat row: T25.
+
+Honest limits:
+- The model is a deterministic fake. **Nothing here says how often a real model writes correct SQL.**
+- `doc_meta` is gated by the document-level ACL only (B14); any role can read the table's total row estimate from the
+  catalog (B15), so "N documents exist" is not hidden from a determined statement author.
+- Metadata only: it does not run SQL over customer data tables, and `platform/` does not have it.
+- Audit rows hold hashes, so a reviewer can match a retained statement to its row but cannot read it from the log.
 
 ## Scope and honest limitations
 

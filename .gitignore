@@ -16,6 +16,7 @@ docs/COMPETITOR_SCAN-*.md
 
 # Private marketing drafts and article previews; never publish automatically.
 /marketing/
+AGENTS.local.md
 
 # Real public-domain PDF corpus (fetched by evals/pdf_corpus/fetch.py)
 evals/pdf_corpus/data/

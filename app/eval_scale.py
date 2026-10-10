@@ -116,12 +116,14 @@ def make_backend(pgvector):
     from pgvector_rag import PgVectorRAG, setup_schema
 
     admin = os.environ["DATABASE_URL"]
-    setup_schema(admin)
+    key = setup_schema(admin)
     with psycopg.connect(admin) as c:  # superuser DSN: bypasses RLS to see the true count
         if c.execute("SELECT count(*) FROM chunks").fetchone()[0]:
             sys.exit("chunks table not empty — point DATABASE_URL at a throwaway database")
     return PgVectorRAG(
-        psycopg.conninfo.make_conninfo(admin, user="rag_app", password="rag_app")
+        psycopg.conninfo.make_conninfo(admin, user="rag_app", password="rag_app"),
+        psycopg.conninfo.make_conninfo(admin, user="rag_ingest", password="rag_ingest"),
+        principal_key=key,
     ), "pgvector + RLS"
 
 

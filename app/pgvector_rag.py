@@ -10,26 +10,38 @@ same guarantee down into Postgres Row-Level Security:
 - The app role is a non-superuser and not the table owner, so RLS applies to every
   query it runs. With no principals set, the table is EMPTY. A query that forgets
   its filter cannot see a forbidden row — the pre-filter guarantee becomes a
-  database property instead of an application promise. NOT a SQL-injection
-  defense yet: the app role can set the rag.* GUCs itself (docs/THREAT_MODEL.md T13).
+  database property instead of an application promise. Principals arrive only as an
+  HMAC-signed, 60-second token verified inside Postgres (T18), so SQL on the app connection
+  can't widen what it reads. The app role can't SELECT chunks or INSERT audit rows at all:
+  every read goes through rag_search, which writes the audit row server-side (T19).
 - Ranking is pgvector cosine (`<=>`) over the RLS-filtered rows. Embedding distance
   is per-row (no corpus statistics), so the BM25 side channel (S1) has no analogue
   here by construction.
 
-Ingest runs in a separate mode (`rag.mode = 'ingest'`) granted by its own policy;
-retrieval never sets it. Audit rows are hash-chained exactly like the JSONL backend.
+Ingest runs as a separate database role on its own connection. The app role has SELECT
+only on chunks and no membership in the ingest role, so no setting it can change grants
+write access or the ingest policy (T13). Without an ingest DSN the instance is read-only.
+Audit rows are hash-chained exactly like the JSONL backend.
+
+Structured questions (11.3, T25) go through rag_sql_run: an LLM-written SELECT runs as the
+rag_sql role, which can read only the non-ACL columns of doc_meta, under the same signed-token
+RLS. The database, not a SQL parser, decides what rows come back; the audit row is written
+server-side like rag_search's.
 
 Same public surface as PermissionRAG: add_document / remove_document / retrieve /
 audit / verify_audit_chain. Requires `psycopg` (the project's only optional dep).
 """
 
+import datetime
 import hashlib
+import hmac
 import json
+import secrets
 import time
 
 import psycopg
 from embedding import DIMS, embed, to_pgvector
-from permission_rag import PermissionRAG
+from permission_rag import PermissionRAG, normalize_acl
 from psycopg import sql
 
 SCHEMA = f"""
@@ -68,46 +80,268 @@ ALTER TABLE chunks ALTER COLUMN acl_section SET NOT NULL;
 ALTER TABLE chunks ALTER COLUMN acl_para SET NOT NULL;
 ALTER TABLE chunks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chunks FORCE ROW LEVEL SECURITY;
+-- T18: principals reach RLS only as an HMAC-signed, fresh token, verified with a key the
+-- app and ingest roles cannot read. A raw rag.principals setting is ignored.
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE TABLE IF NOT EXISTS rag_secret (id integer PRIMARY KEY CHECK (id = 1), key bytea NOT NULL);
+REVOKE ALL ON rag_secret FROM PUBLIC;
+CREATE OR REPLACE FUNCTION rag_principals() RETURNS text[]
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog, public AS $fn$
+DECLARE
+    parts text[] := string_to_array(coalesce(current_setting('rag.token', true), ''), '|');
+    k bytea;
+BEGIN
+    IF coalesce(array_length(parts, 1), 0) <> 3 OR parts[2] !~ '^[0-9]{{1,12}}$'
+       OR abs(extract(epoch FROM now()) - parts[2]::bigint) > 60 THEN
+        RETURN ARRAY[]::text[];
+    END IF;
+    SELECT key INTO k FROM rag_secret WHERE id = 1;
+    IF k IS NULL OR encode(hmac(convert_to(parts[1] || '|' || parts[2], 'UTF8'), k, 'sha256'), 'hex')
+                    IS DISTINCT FROM parts[3] THEN
+        RETURN ARRAY[]::text[];
+    END IF;
+    RETURN string_to_array(parts[1], ',');
+END
+$fn$;
+REVOKE ALL ON FUNCTION rag_principals() FROM PUBLIC;
 DROP POLICY IF EXISTS chunks_read ON chunks;
+-- (SELECT ...) makes Postgres verify the token once per query, not once per row
 CREATE POLICY chunks_read ON chunks FOR SELECT
-    USING (acl_doc && string_to_array(current_setting('rag.principals', true), ',')
-       AND acl_section && string_to_array(current_setting('rag.principals', true), ',')
-       AND acl_para && string_to_array(current_setting('rag.principals', true), ','));
+    USING (acl_doc && (SELECT rag_principals())
+       AND acl_section && (SELECT rag_principals())
+       AND acl_para && (SELECT rag_principals()));
 DROP POLICY IF EXISTS chunks_ingest ON chunks;
-CREATE POLICY chunks_ingest ON chunks FOR ALL
-    USING (current_setting('rag.mode', true) = 'ingest')
-    WITH CHECK (current_setting('rag.mode', true) = 'ingest');
+-- T19: the app role can't read chunks or write audit rows directly. rag_search (owned by a
+-- non-superuser, so RLS still applies inside it) verifies the token, searches, and writes the
+-- audit row itself, recording exactly the ids it returns.
+CREATE OR REPLACE FUNCTION rag_search(token text, qvec vector, k integer)
+RETURNS TABLE (id text, doc_id text, text text, score double precision)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public AS $fn$
+#variable_conflict use_column
+DECLARE
+    t0 timestamptz := clock_timestamp();
+    uid text;
+    ids text[];
+    visible bigint;
+    total integer;
+    prev text;
+    entry text;
+BEGIN
+    PERFORM set_config('rag.token', coalesce(token, ''), true);
+    SELECT substr(x, 6) INTO uid FROM unnest(rag_principals()) AS x WHERE x LIKE 'user:%' LIMIT 1;
+    -- top-k by distance, then drop non-positive scores (same semantics as the old client path)
+    SELECT coalesce(array_agg(t.cid ORDER BY t.d), ARRAY[]::text[]) INTO ids
+      FROM (SELECT c.id AS cid, c.embedding <=> qvec AS d FROM chunks c
+            ORDER BY c.embedding <=> qvec LIMIT greatest(least(k, 50), 1)) t
+     WHERE 1 - t.d > 0;
+    SELECT count(*) INTO visible FROM chunks;
+    SELECT s.chunk_count INTO total FROM corpus_stats s;
+    PERFORM pg_advisory_xact_lock(hashtext('rag_audit'));  -- serialise the chain
+    SELECT a.line_sha256 INTO prev FROM audit a ORDER BY a.id DESC LIMIT 1;
+    entry := json_build_object(
+        'ts', extract(epoch FROM clock_timestamp()), 'user', uid, 'query', '[redacted]',
+        'returned', to_json(ids), 'denied_chunks', total - visible,
+        'elapsed_ms', round((extract(epoch FROM clock_timestamp() - t0) * 1000)::numeric, 2),
+        'prev_sha256', coalesce(prev, ''))::text;
+    INSERT INTO audit (line, line_sha256) VALUES (entry, encode(sha256(convert_to(entry, 'UTF8')), 'hex'));
+    RETURN QUERY
+      SELECT c.id, c.doc_id, c.text, (1 - (c.embedding <=> qvec))::double precision
+        FROM chunks c WHERE c.id = ANY (ids) ORDER BY c.embedding <=> qvec;
+END
+$fn$;
+REVOKE ALL ON FUNCTION rag_search(text, vector, integer) FROM PUBLIC;
+
+-- T25: document metadata for text-to-SQL. Same principal channel as chunks; rag_sql sees only the
+-- non-ACL columns, so the rows an LLM-written SELECT can reach are exactly the ones RLS admits.
+CREATE TABLE IF NOT EXISTS doc_meta (
+    doc_id     text PRIMARY KEY,
+    title      text NOT NULL,
+    department text,
+    data_class text,
+    created_at date,
+    n_chunks   integer NOT NULL,
+    acl_doc    text[] NOT NULL CHECK (cardinality(acl_doc) > 0)
+);
+INSERT INTO doc_meta (doc_id, title, n_chunks, acl_doc)
+    SELECT DISTINCT ON (doc_id) doc_id, doc_id, count(*) OVER (PARTITION BY doc_id), acl_doc FROM chunks
+    ON CONFLICT (doc_id) DO NOTHING;
+ALTER TABLE doc_meta ENABLE ROW LEVEL SECURITY;
+ALTER TABLE doc_meta FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS doc_meta_read ON doc_meta;
+CREATE POLICY doc_meta_read ON doc_meta FOR SELECT USING (acl_doc && (SELECT rag_principals()));
+DROP POLICY IF EXISTS doc_meta_ingest ON doc_meta;
+-- Runs the one statement an LLM wrote. Owned by rag_sql (SECURITY DEFINER), so it executes as that
+-- role with no SET ROLE for anything to undo. A cursor accepts exactly one query and rejects
+-- utility statements; STABLE makes SPI refuse data-modifying commands. Rows are capped by FETCH.
+CREATE OR REPLACE FUNCTION rag_sql_exec(stmt text, max_rows integer) RETURNS jsonb
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog, public AS $fn$
+DECLARE
+    cur refcursor;
+    rec record;
+    out jsonb := '[]'::jsonb;
+    n integer := 0;
+BEGIN
+    OPEN cur FOR EXECUTE stmt;
+    LOOP
+        FETCH cur INTO rec;
+        EXIT WHEN NOT FOUND;
+        IF n >= max_rows THEN
+            RETURN jsonb_build_object('status', 'ok', 'rows', out, 'truncated', true);
+        END IF;
+        out := out || jsonb_build_array(to_jsonb(rec));
+        n := n + 1;
+    END LOOP;
+    RETURN jsonb_build_object('status', 'ok', 'rows', out, 'truncated', false);
+END
+$fn$;
+REVOKE ALL ON FUNCTION rag_sql_exec(text, integer) FROM PUBLIC;
+-- Verifies the token, runs rag_sql_exec, and writes the hash-chained audit row itself with exactly
+-- what ran (hashes, never text: invariant 9) and how it ended. A timeout or error is caught, so
+-- the failed attempt is still recorded and the caller gets a status, never a partial result.
+CREATE OR REPLACE FUNCTION rag_sql_run(
+    token text, question text, stmt text, max_rows integer, rejected boolean DEFAULT false)
+RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public AS $fn$
+DECLARE
+    t0 timestamptz := clock_timestamp();
+    uid text;
+    res jsonb;
+    prev text;
+    entry text;
+BEGIN
+    PERFORM set_config('rag.token', coalesce(token, ''), true);
+    SELECT substr(x, 6) INTO uid FROM unnest(rag_principals()) AS x WHERE x LIKE 'user:%' LIMIT 1;
+    IF rejected THEN  -- the app's pre-check refused it: audit the attempt, run nothing
+        res := jsonb_build_object('status', 'rejected');
+    ELSE
+    BEGIN
+        -- Read-only for the user statement only: the audit insert below needs read-write, and a
+        -- read-only flag can't be switched off again, so the block always ends in an exception
+        -- that rolls the flag (and any side effect of a volatile function) back. res survives.
+        SET LOCAL transaction_read_only = on;
+        res := rag_sql_exec(stmt, greatest(least(max_rows, 1000), 1));
+        RAISE EXCEPTION 'rollback' USING ERRCODE = 'RS000';
+    EXCEPTION
+        WHEN SQLSTATE 'RS000' THEN NULL;
+        WHEN OTHERS OR query_canceled THEN  -- OTHERS excludes query_canceled
+            res := jsonb_build_object('status', 'error', 'sqlstate', SQLSTATE);
+    END;
+    END IF;
+    PERFORM pg_advisory_unlock_all();  -- a session advisory lock taken by the statement would stall the audit chain
+    PERFORM pg_advisory_xact_lock(hashtext('rag_audit'));
+    SELECT a.line_sha256 INTO prev FROM audit a ORDER BY a.id DESC LIMIT 1;
+    entry := json_build_object(
+        'ts', extract(epoch FROM clock_timestamp()), 'user', uid, 'kind', 'sql',
+        'query', '[redacted]', 'returned', '[]'::json, 'denied_chunks', 0,  -- keys the audit views expect
+        'question_sha256', encode(sha256(convert_to(coalesce(question, ''), 'UTF8')), 'hex'),
+        'sql_sha256', encode(sha256(convert_to(coalesce(stmt, ''), 'UTF8')), 'hex'),
+        'status', res->>'status', 'sqlstate', res->>'sqlstate',
+        'returned_rows', jsonb_array_length(coalesce(res->'rows', '[]'::jsonb)),
+        'truncated', coalesce((res->>'truncated')::boolean, false),
+        'elapsed_ms', round((extract(epoch FROM clock_timestamp() - t0) * 1000)::numeric, 2),
+        'prev_sha256', coalesce(prev, ''))::text;
+    INSERT INTO audit (line, line_sha256) VALUES (entry, encode(sha256(convert_to(entry, 'UTF8')), 'hex'));
+    RETURN res;
+END
+$fn$;
+REVOKE ALL ON FUNCTION rag_sql_run(text, text, text, integer, boolean) FROM PUBLIC;
 """
 
-APP_ROLE_GRANTS = """
-GRANT USAGE ON SCHEMA public TO {role};
-GRANT SELECT, INSERT, DELETE ON chunks TO {role};
-GRANT SELECT ON corpus_stats TO {role};
-GRANT UPDATE ON corpus_stats TO {role};
-GRANT SELECT, INSERT ON audit TO {role};
-GRANT USAGE ON SEQUENCE audit_id_seq TO {role};
+# REVOKEs migrate databases created when the app role still wrote chunks (T13).
+ROLE_GRANTS = """
+GRANT USAGE ON SCHEMA public TO {app}, {ingest}, {definer};
+REVOKE INSERT, UPDATE, DELETE ON chunks FROM {app};
+REVOKE UPDATE ON corpus_stats FROM {app};
+REVOKE SELECT ON chunks, corpus_stats FROM {app};
+REVOKE INSERT ON audit FROM {app};
+REVOKE USAGE ON SEQUENCE audit_id_seq FROM {app};
+GRANT SELECT ON audit TO {app};
+GRANT SELECT ON chunks, corpus_stats TO {definer};
+GRANT SELECT, INSERT ON audit TO {definer};
+GRANT USAGE ON SEQUENCE audit_id_seq TO {definer};
+GRANT EXECUTE ON FUNCTION rag_principals() TO {ingest}, {definer};
+GRANT CREATE ON SCHEMA public TO {definer};
+ALTER FUNCTION rag_search(text, vector, integer) OWNER TO {definer};
+GRANT EXECUTE ON FUNCTION rag_search(text, vector, integer) TO {app};
+GRANT SELECT, INSERT, DELETE ON chunks TO {ingest};
+GRANT SELECT, UPDATE ON corpus_stats TO {ingest};
+CREATE POLICY chunks_ingest ON chunks FOR ALL TO {ingest} USING (true) WITH CHECK (true);
+ALTER ROLE {sql} NOLOGIN NOSUPERUSER NOBYPASSRLS;
+REVOKE ALL ON doc_meta FROM {app}, {sql};
+GRANT SELECT, INSERT, DELETE ON doc_meta TO {ingest};
+CREATE POLICY doc_meta_ingest ON doc_meta FOR ALL TO {ingest} USING (true) WITH CHECK (true);
+GRANT USAGE ON SCHEMA public TO {sql};
+GRANT SELECT (doc_id, title, department, data_class, created_at, n_chunks) ON doc_meta TO {sql};
+GRANT EXECUTE ON FUNCTION rag_principals() TO {sql};
+GRANT CREATE ON SCHEMA public TO {sql};
+ALTER FUNCTION rag_sql_exec(text, integer) OWNER TO {sql};
+REVOKE CREATE ON SCHEMA public FROM {sql};
+ALTER FUNCTION rag_sql_run(text, text, text, integer, boolean) OWNER TO {definer};
+GRANT EXECUTE ON FUNCTION rag_sql_exec(text, integer) TO {definer};
+GRANT SELECT, INSERT ON audit TO {definer};
+GRANT EXECUTE ON FUNCTION rag_sql_run(text, text, text, integer, boolean) TO {app}
 """
 
 
-def setup_schema(admin_dsn: str, app_role: str = "rag_app", app_password: str = "rag_app") -> None:
-    """Run once as a privileged role: extension, tables, RLS policies, app role.
+def setup_schema(
+    admin_dsn: str,
+    app_role: str = "rag_app",
+    app_password: str = "rag_app",
+    ingest_role: str = "rag_ingest",
+    ingest_password: str = "rag_ingest",
+    principal_key: bytes | None = None,
+    definer_role: str = "rag_definer",
+    sql_role: str = "rag_sql",
+) -> bytes:
+    """Run once as a privileged role: extension, tables, RLS policies, both roles.
 
-    The app role deliberately gets no BYPASSRLS and does not own the tables,
-    so every query it runs is subject to the policies above.
+    Neither role gets BYPASSRLS or owns the tables, so every query they run is subject
+    to the policies. Neither is a member of the other, so SET ROLE can't cross over.
+
+    Returns the principal-signing key (T18). Pass it to PgVectorRAG. With no key given, an
+    existing key is kept (re-running setup never rotates silently); otherwise a random one is made.
     """
     with psycopg.connect(admin_dsn) as conn:
         conn.execute(SCHEMA)
-        exists = conn.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (app_role,)).fetchone()
-        if not exists:
-            # role/password come from trusted config; composed via sql.Identifier/Literal
+        for role, password in ((app_role, app_password), (ingest_role, ingest_password)):
+            if not conn.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (role,)).fetchone():
+                # role/password come from trusted config; composed via sql.Identifier/Literal
+                conn.execute(
+                    sql.SQL("CREATE ROLE {} LOGIN PASSWORD {}").format(
+                        sql.Identifier(role), sql.Literal(password)
+                    )
+                )
+        if not conn.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (definer_role,)).fetchone():
+            # no LOGIN: reachable only as the owner of rag_search; no BYPASSRLS, so RLS applies
+            conn.execute(sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier(definer_role)))
+        if not conn.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (sql_role,)).fetchone():
+            # no LOGIN, no BYPASSRLS, owns nothing but rag_sql_exec; the app role is NOT a member
+            conn.execute(sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier(sql_role)))
+        for stmt in ROLE_GRANTS.strip().split(";"):
             conn.execute(
-                sql.SQL("CREATE ROLE {} LOGIN PASSWORD {}").format(
-                    sql.Identifier(app_role), sql.Literal(app_password)
+                sql.SQL(stmt).format(
+                    app=sql.Identifier(app_role),
+                    ingest=sql.Identifier(ingest_role),
+                    definer=sql.Identifier(definer_role),
+                    sql=sql.Identifier(sql_role),
                 )
             )
-        for stmt in APP_ROLE_GRANTS.strip().split(";"):
-            if stmt.strip():
-                conn.execute(sql.SQL(stmt).format(role=sql.Identifier(app_role)))
+        if principal_key is None:
+            row = conn.execute("SELECT key FROM rag_secret WHERE id = 1").fetchone()
+            principal_key = bytes(row[0]) if row else secrets.token_bytes(32)
+        if len(principal_key) < 32:
+            raise ValueError("principal_key must be at least 32 random bytes")
+        conn.execute(
+            "INSERT INTO rag_secret (id, key) VALUES (1, %s) ON CONFLICT (id) DO UPDATE SET key = EXCLUDED.key",
+            (principal_key,),
+        )
+        return principal_key
+
+
+def sign_principals(key: bytes, principals: list[str], now: float | None = None) -> str:
+    """'p1,p2|unix_ts|hmac_sha256_hex': the only principal channel RLS accepts (60 s window)."""
+    body = f"{','.join(principals)}|{int(time.time() if now is None else now)}"
+    return f"{body}|{hmac.new(key, body.encode(), hashlib.sha256).hexdigest()}"
 
 
 class PgVectorRAG:
@@ -115,28 +349,63 @@ class PgVectorRAG:
 
     audit_path = None  # interface compat with the JSONL backend
 
-    def __init__(self, dsn: str):
+    def __init__(self, dsn: str, ingest_dsn: str | None = None, *, principal_key: bytes):
+        """dsn connects as the app role (retrieval); ingest_dsn as the ingest role.
+        principal_key signs principals for RLS (T18); it must match setup_schema's key."""
+        self._principal_key = principal_key
         # autocommit: single reads commit immediately (no idle-in-transaction locks);
         # multi-statement work still uses explicit conn.transaction() blocks, which
         # is also what scopes each set_config(..., is_local=true) GUC.
         self.conn = psycopg.connect(dsn, autocommit=True)
+        self.ingest_conn = psycopg.connect(ingest_dsn, autocommit=True) if ingest_dsn else None
 
     def close(self) -> None:
         self.conn.close()
+        if self.ingest_conn:
+            self.ingest_conn.close()
 
-    # ── ingest (rag.mode = 'ingest') ─────────────────────────────────────────
+    # ── ingest (separate DB role, separate connection) ───────────────────────
+    def _writer(self) -> psycopg.Connection:
+        if self.ingest_conn is None:
+            raise PermissionError("read-only PgVectorRAG: pass ingest_dsn (the ingest role) to ingest")
+        return self.ingest_conn
+
+    @staticmethod
+    def _doc_meta(doc_id: str, meta: dict | None) -> tuple:
+        meta = meta or {}
+        if set(meta) - {"title", "department", "data_class", "created_at"}:
+            raise ValueError("meta keys must be title, department, data_class, created_at")
+        title, dept, cls = meta.get("title", doc_id), meta.get("department"), meta.get("data_class")
+        created = meta.get("created_at")
+        if isinstance(created, str):
+            created = datetime.date.fromisoformat(created)
+        if created is not None and not isinstance(created, datetime.date):
+            raise TypeError("created_at must be a date or an ISO date string")
+        for v in (title, dept, cls):
+            if v is not None and (not isinstance(v, str) or len(v) > 200):
+                raise ValueError("meta text fields must be strings of at most 200 characters")
+        return title, dept, cls, created
+
     def add_document(
-        self, doc_id: str, text: str, acl, chunk_words: int = 80, *, sections: list[dict] | None = None
+        self,
+        doc_id: str,
+        text: str,
+        acl,
+        chunk_words: int = 80,
+        *,
+        sections: list[dict] | None = None,
+        meta: dict | None = None,
     ) -> None:
         chunks = PermissionRAG.document_chunks(text, acl, chunk_words, sections=sections)
-        with self.conn.transaction():
-            self.conn.execute("SELECT set_config('rag.mode', 'ingest', true)")
-            dup = self.conn.execute("SELECT 1 FROM chunks WHERE doc_id = %s LIMIT 1", (doc_id,)).fetchone()
+        title, dept, cls, created = self._doc_meta(doc_id, meta)
+        w = self._writer()
+        with w.transaction():
+            dup = w.execute("SELECT 1 FROM chunks WHERE doc_id = %s LIMIT 1", (doc_id,)).fetchone()
             if dup:
                 raise ValueError(f"doc_id {doc_id!r} already ingested — use remove_document() then re-add")
             for i, chunk in enumerate(chunks):
                 chunk_text = chunk["text"]
-                self.conn.execute(
+                w.execute(
                     "INSERT INTO chunks (id, doc_id, text, acl, acl_doc, acl_section, acl_para, embedding) "
                     "VALUES (%s,%s,%s,%s,%s,%s,%s,%s::vector)",
                     (
@@ -150,66 +419,65 @@ class PgVectorRAG:
                         to_pgvector(embed(chunk_text)),
                     ),
                 )
-            self.conn.execute("UPDATE corpus_stats SET chunk_count = (SELECT count(*) FROM chunks)")
+            w.execute("UPDATE corpus_stats SET chunk_count = (SELECT count(*) FROM chunks)")
+            # kn: doc-level ACL only; a document whose section/paragraph ACLs hide every chunk from a
+            # caller still lists in doc_meta for that caller. Derive a visible-chunk flag if that matters.
+            w.execute(
+                "INSERT INTO doc_meta (doc_id, title, department, data_class, created_at, n_chunks, acl_doc) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                (doc_id, title, dept, cls, created, len(chunks), sorted(normalize_acl(acl))),
+            )
 
     def remove_document(self, doc_id: str) -> int:
-        with self.conn.transaction():
-            self.conn.execute("SELECT set_config('rag.mode', 'ingest', true)")
-            cur = self.conn.execute("DELETE FROM chunks WHERE doc_id = %s", (doc_id,))
-            self.conn.execute("UPDATE corpus_stats SET chunk_count = (SELECT count(*) FROM chunks)")
+        w = self._writer()
+        with w.transaction():
+            cur = w.execute("DELETE FROM chunks WHERE doc_id = %s", (doc_id,))
+            w.execute("DELETE FROM doc_meta WHERE doc_id = %s", (doc_id,))
+            w.execute("UPDATE corpus_stats SET chunk_count = (SELECT count(*) FROM chunks)")
             return cur.rowcount
 
     # ── retrieval (rag.principals only — RLS does the filtering) ─────────────
     @staticmethod
     def principals(user: dict) -> list[str]:
         names = [user["id"], *user.get("groups", ())]
-        # ',' is the GUC delimiter; an embedded one would forge an extra principal
-        if any(not n or "," in n for n in names):
-            raise ValueError("user id and group names must be non-empty and contain no comma")
+        # ',' separates principals and '|' separates token fields; either would forge structure
+        if any(not n or "," in n or "|" in n for n in names):
+            raise ValueError("user id and group names must be non-empty and contain no ',' or '|'")
         return ["*", f"user:{user['id']}"] + [f"group:{g}" for g in user.get("groups", ())]
 
+    def sign_principals(self, principals: list[str], now: float | None = None) -> str:
+        return sign_principals(self._principal_key, principals, now)
+
     def retrieve(self, query: str, user: dict, k: int = 3) -> list[dict]:
-        t0 = time.perf_counter()
         qvec = to_pgvector(embed(query))
+        token = self.sign_principals(self.principals(user))
+        # rag_search verifies the token, applies RLS and writes the audit row server-side (T19)
+        rows = self.conn.execute(
+            "SELECT id, doc_id, text, score FROM rag_search(%s, %s::vector, %s)", (token, qvec, k)
+        ).fetchall()
+        return [{"id": r[0], "doc_id": r[1], "text": r[2], "score": round(float(r[3]), 4)} for r in rows]
+
+    # ── structured questions (T25): one LLM-written SELECT over doc_meta, RLS-filtered ──────────
+    SQL_TIMEOUT_MS = 2000
+    SQL_MAX_ROWS = 100
+
+    def run_sql(self, question: str, stmt: str, user: dict, *, rejected: bool = False) -> dict:
+        """Run `stmt` as the rag_sql role under this user's signed principals; no SQL checking here.
+        rejected=True records the attempt (status "rejected") and runs nothing.
+
+        Returns {"status": "ok", "rows": [...], "truncated": bool} or {"status": "error",
+        "sqlstate": ...}. Every call is audited by the database (hashes, status, row count).
+        """
+        token = self.sign_principals(self.principals(user))
         with self.conn.transaction():
-            self.conn.execute(
-                "SELECT set_config('rag.principals', %s, true)", (",".join(self.principals(user)),)
-            )
-            rows = self.conn.execute(
-                "SELECT id, doc_id, text, 1 - (embedding <=> %s::vector) AS score "
-                "FROM chunks ORDER BY embedding <=> %s::vector LIMIT %s",
-                (qvec, qvec, k),
-            ).fetchall()
-            visible = self.conn.execute("SELECT count(*) FROM chunks").fetchone()[0]
-            total = self.conn.execute("SELECT chunk_count FROM corpus_stats").fetchone()[0]
-        results = [
-            {"id": r[0], "doc_id": r[1], "text": r[2], "score": round(float(r[3]), 4)}
-            for r in rows
-            if r[3] > 0
-        ]
-        self._append_audit(
-            {
-                "ts": time.time(),
-                "user": user["id"],
-                "query": "[redacted]",
-                "returned": [r["id"] for r in results],
-                "denied_chunks": total - visible,
-                "elapsed_ms": round((time.perf_counter() - t0) * 1000, 2),
-            }
-        )
-        return results
+            # the timer arms when the rag_sql_run statement starts, so it must be set before it
+            self.conn.execute(f"SET LOCAL statement_timeout = {int(self.SQL_TIMEOUT_MS)}")
+            row = self.conn.execute(
+                "SELECT rag_sql_run(%s, %s, %s, %s, %s)", (token, question, stmt, self.SQL_MAX_ROWS, rejected)
+            ).fetchone()
+        return row[0]
 
     # ── audit (hash-chained, same scheme as the JSONL backend) ───────────────
-    def _append_audit(self, entry: dict) -> None:
-        with self.conn.transaction():
-            last = self.conn.execute("SELECT line_sha256 FROM audit ORDER BY id DESC LIMIT 1").fetchone()
-            entry["prev_sha256"] = last[0] if last else ""
-            line = json.dumps(entry)
-            self.conn.execute(
-                "INSERT INTO audit (line, line_sha256) VALUES (%s, %s)",
-                (line, hashlib.sha256(line.encode()).hexdigest()),
-            )
-
     @property
     def audit(self) -> list[dict]:
         rows = self.conn.execute("SELECT line FROM audit ORDER BY id DESC LIMIT 1000").fetchall()
