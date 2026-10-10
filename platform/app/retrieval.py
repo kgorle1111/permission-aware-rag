@@ -71,7 +71,7 @@ def _compute(session, query: str, principal: Principal, k: int):
             return ({"results": [], "answer": UNAVAILABLE_ANSWER,
                      "degraded": True, "source": "unavailable"}, [], [], 0)
         degraded, source = True, "keyword_fallback"
-    if source == "full_rag" and config.RERANKER != "none":
+    if source == "full_rag" and config.RERANKER != "none" and hits:
         # `hits` are already ACL-filtered by the engine; the reranker never sees anything else.
         try:
             hits = BREAKERS["reranker"].call(rerank, query, hits, k)

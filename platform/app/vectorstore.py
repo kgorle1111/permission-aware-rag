@@ -117,7 +117,11 @@ def search(query_vector: list[float], principals: list[str], top_k: int,
             prefetch=[
                 Prefetch(query=query_vector, using=DENSE, filter=acl, limit=2 * top_k,
                          score_threshold=config.MIN_SCORE),
-                Prefetch(query=SparseVector(indices=sparse[0], values=sparse[1]), using=SPARSE,
+                # Sparse re-scores only dense-qualified candidates (nested prefetch), so it can
+                # re-rank but never add a chunk below the MIN_SCORE floor.
+                Prefetch(prefetch=Prefetch(query=query_vector, using=DENSE, filter=acl,
+                                           limit=2 * top_k, score_threshold=config.MIN_SCORE),
+                         query=SparseVector(indices=sparse[0], values=sparse[1]), using=SPARSE,
                          filter=acl, limit=2 * top_k),
             ],
             query=FusionQuery(fusion=Fusion.RRF),

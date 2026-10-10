@@ -86,10 +86,11 @@ NOTES = """## How to read this
   nonsense" equality: they pass on the hash embedder because its noise floor returns nothing for off-topic
   text, and fail when a real embedder returns visible, semantically related chunks. The canary and
   forbidden-document assertions in those same tests pass; the leak and invariance columns are 0 on every rung.
-  Where the hybrid rungs fail more tests than `dense`, it is because the sparse leg has no abstain floor.
 - **Concurrency** latencies for the threaded and async modes are measured from the start of a 20-request
   burst (queueing included); `sequential` is per-request service time. Compare `threadpool_sync` with
   `asyncio`, which is the decision this table supports.
+- **Latency is noisy.** Identical runs on a shared laptop differed by up to 3x; treat cold p50/p95 and
+  concurrency numbers as orders of magnitude only.
 """
 
 
@@ -244,6 +245,11 @@ def _worker(rung: str, async_bench: bool) -> dict:
 
     # Hidden-document invariance (destructive: rebuilds the index, so it runs last).
     diffs = inv_checks = 0
+    # Pruning would drop vectors of the hidden documents; the next user's filtered corpus then re-embeds
+    # them in a different ONNX batch, whose float noise (~1e-7) shows up in 4-decimal scores. Keep the
+    # cache whole so every index in this phase is built from bit-identical vectors.
+    import app.ingest as ingest_module
+    ingest_module.prune_cache = lambda texts: None
     for user in INVARIANCE_USERS:
         corpus_path.write_text(json.dumps(_filtered_corpus(docs, principals[user].principals)))
         ingest_corpus(corpus_path)

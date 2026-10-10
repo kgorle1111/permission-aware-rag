@@ -2,27 +2,27 @@
 
 | rung | floors | paraphrase hit@1 | paraphrase hit@4 | paraphrase MRR | lexical hit@1 | lexical hit@4 | out-of-corpus answered | leaks | hidden-doc diffs | existing suites | cold p50 / p95 ms | ingest s |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| baseline | dense 0.1 | 0% | 0% | 0.00 | 100% | 100% | 50% | 0/535 | 0/321 | 13/13 | 1.63 / 1.88 | 0.04 |
-| dense_floor_0.1 | dense 0.1 | 77% | 94% | 0.84 | 100% | 100% | 100% | 0/535 | 0/321 | 8/13 | 4.77 / 5.4 | 0.26 |
-| dense | dense 0.55 | 74% | 91% | 0.81 | 100% | 100% | 0% | 0/535 | 0/321 | 10/13 | 4.87 / 5.78 | 0.27 |
-| hybrid | dense 0.55 | 74% | 94% | 0.81 | 100% | 100% | 98% | 0/535 | 0/321 | 8/13 | 23.79 / 27.02 | 1.48 |
-| hybrid_rerank_no_floor | dense 0.55, rerank -1000.0 | 77% | 91% | 0.84 | 100% | 100% | 98% | 0/535 | 0/321 | 8/13 | 55.86 / 69.63 | 1.38 |
-| hybrid_rerank | dense 0.55, rerank -10.0 | 63% | 69% | 0.66 | 100% | 100% | 0% | 0/535 | 0/321 | 13/13 | 66.06 / 85.41 | 1.96 |
+| baseline | dense 0.1 | 0% | 0% | 0.00 | 100% | 100% | 50% | 0/535 | 0/321 | 13/13 | 2.24 / 4.34 | 0.07 |
+| dense_floor_0.1 | dense 0.1 | 77% | 94% | 0.84 | 100% | 100% | 100% | 0/535 | 0/321 | 8/13 | 8.77 / 106.33 | 2.07 |
+| dense | dense 0.55 | 74% | 91% | 0.81 | 100% | 100% | 0% | 0/535 | 0/321 | 10/13 | 21.44 / 139.02 | 0.93 |
+| hybrid | dense 0.55 | 77% | 91% | 0.82 | 100% | 100% | 0% | 0/535 | 0/321 | 10/13 | 130.4 / 320.62 | 6.12 |
+| hybrid_rerank_no_floor | dense 0.55, rerank -1000.0 | 71% | 89% | 0.80 | 100% | 100% | 0% | 0/535 | 0/321 | 10/13 | 125.26 / 230.06 | 3.89 |
+| hybrid_rerank | dense 0.55, rerank -10.0 | 63% | 69% | 0.66 | 100% | 100% | 0% | 0/535 | 0/321 | 13/13 | 54.24 / 78.29 | 1.65 |
 
 Existing-suite failures:
 
 - `dense_floor_0.1`: `tests/test_revocation.py::test_doc_revocation_propagates_under_bound`, `tests/test_revocation.py::test_group_change_loses_all_group_content`, `tests/test_revocation.py::test_revocation_also_kills_cached_answers`, `tests/test_side_channels.py::test_denied_count_in_audit`, `tests/test_side_channels.py::test_forbidden_topic_indistinguishable_from_nonexistent`
 - `dense`: `tests/test_revocation.py::test_doc_revocation_propagates_under_bound`, `tests/test_revocation.py::test_group_change_loses_all_group_content`, `tests/test_side_channels.py::test_denied_count_in_audit`
-- `hybrid`: `tests/test_revocation.py::test_doc_revocation_propagates_under_bound`, `tests/test_revocation.py::test_group_change_loses_all_group_content`, `tests/test_revocation.py::test_revocation_also_kills_cached_answers`, `tests/test_side_channels.py::test_denied_count_in_audit`, `tests/test_side_channels.py::test_forbidden_topic_indistinguishable_from_nonexistent`
-- `hybrid_rerank_no_floor`: `tests/test_revocation.py::test_doc_revocation_propagates_under_bound`, `tests/test_revocation.py::test_group_change_loses_all_group_content`, `tests/test_revocation.py::test_revocation_also_kills_cached_answers`, `tests/test_side_channels.py::test_denied_count_in_audit`, `tests/test_side_channels.py::test_forbidden_topic_indistinguishable_from_nonexistent`
+- `hybrid`: `tests/test_revocation.py::test_doc_revocation_propagates_under_bound`, `tests/test_revocation.py::test_group_change_loses_all_group_content`, `tests/test_side_channels.py::test_denied_count_in_audit`
+- `hybrid_rerank_no_floor`: `tests/test_revocation.py::test_doc_revocation_propagates_under_bound`, `tests/test_revocation.py::test_group_change_loses_all_group_content`, `tests/test_side_channels.py::test_denied_count_in_audit`
 
 ## Concurrency (20 callers, 8 rounds, rung `hybrid_rerank`)
 
 | mode | p50 ms | p95 ms | round wall p50 ms | wrong/empty responses |
 |---|---|---|---|---|
-| sequential | 106.92 | 299.45 | 2105.7 | 0 |
-| threadpool_sync | 1149.21 | 2924.11 | 2074.6 | 0 |
-| asyncio | 1185.74 | 2768.02 | 2434.1 | 0 |
+| sequential | 124.86 | 237.29 | 2670.2 | 0 |
+| threadpool_sync | 900.35 | 2165.68 | 1835.6 | 0 |
+| asyncio | 974.81 | 2489.88 | 1911.4 | 0 |
 
 Environment: macOS-26.6.2-arm64-arm-64bit, Python 3.12.13, fastembed 0.9.0, qdrant-client 1.19.1. Corpus: 37 chunks (synthetic). Probes: 35 paraphrase, 15 lexical, 50 out-of-corpus (query x user). Timings are local CPU, single run.
 
@@ -45,8 +45,9 @@ Environment: macOS-26.6.2-arm64-arm-64bit, Python 3.12.13, fastembed 0.9.0, qdra
   nonsense" equality: they pass on the hash embedder because its noise floor returns nothing for off-topic
   text, and fail when a real embedder returns visible, semantically related chunks. The canary and
   forbidden-document assertions in those same tests pass; the leak and invariance columns are 0 on every rung.
-  Where the hybrid rungs fail more tests than `dense`, it is because the sparse leg has no abstain floor.
 - **Concurrency** latencies for the threaded and async modes are measured from the start of a 20-request
   burst (queueing included); `sequential` is per-request service time. Compare `threadpool_sync` with
   `asyncio`, which is the decision this table supports.
+- **Latency is noisy.** Identical runs on a shared laptop differed by up to 3x; treat cold p50/p95 and
+  concurrency numbers as orders of magnitude only.
 

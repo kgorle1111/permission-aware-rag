@@ -17,8 +17,10 @@ from __future__ import annotations
 
 from contextlib import closing
 import hashlib
+import importlib.metadata
 import json
 import math
+from pathlib import Path
 import re
 import sqlite3
 import threading
@@ -156,11 +158,31 @@ def _cached(kind: str, model_id: str, texts: list[str], compute, valid, decode):
     return [found[d] for d in digests]
 
 
+def _fastembed_version() -> str:
+    # A library upgrade can change tokenization/quantization, so it must not reuse old vectors.
+    try:
+        return importlib.metadata.version("fastembed")
+    except importlib.metadata.PackageNotFoundError:
+        return "none"
+
+
+def prune_cache(texts: list[str]) -> None:
+    """Drop cached vectors whose text is no longer in the corpus, so a deleted
+    document's embedding does not outlive its removal from the index."""
+    if not config.EMBED_CACHE_PATH or not Path(config.EMBED_CACHE_PATH).exists():
+        return
+    keep = {hashlib.sha256(t.encode()).hexdigest() for t in texts}
+    with closing(sqlite3.connect(config.EMBED_CACHE_PATH)) as db:
+        stale = [d for (d,) in db.execute("select distinct digest from embed_cache") if d not in keep]
+        db.executemany("delete from embed_cache where digest = ?", [(d,) for d in stale])
+        db.commit()
+
+
 def embed(texts: list[str]) -> list[list[float]]:
     """Document path (ingest); fastembed vectors are cached across reingests."""
     if config.EMBED_BACKEND != "fastembed" or not config.EMBED_CACHE_PATH:
         return _encode(texts)
-    return _cached("dense", f"fastembed/{model_name()}/{config.EMBED_DIM}", texts, _encode,
+    return _cached("dense", f"fastembed{_fastembed_version()}/{model_name()}/{config.EMBED_DIM}", texts, _encode,
                    lambda v: isinstance(v, list) and len(v) == config.EMBED_DIM, list)
 
 
@@ -173,7 +195,7 @@ def sparse_embed(texts: list[str]) -> list[tuple[list[int], list[float]]]:
     """Document path for learned-sparse vectors; cached like dense."""
     if not config.EMBED_CACHE_PATH or not sparse_enabled():
         return _sparse_encode(texts)
-    return _cached("sparse", f"splade/{sparse_model_name()}", texts, _sparse_encode,
+    return _cached("sparse", f"fastembed{_fastembed_version()}/splade/{sparse_model_name()}", texts, _sparse_encode,
                    lambda v: isinstance(v, list) and len(v) == 2 and len(v[0]) == len(v[1]),
                    lambda v: (list(v[0]), list(v[1])))
 

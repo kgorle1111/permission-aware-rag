@@ -37,7 +37,7 @@ TOP_K = int(os.getenv("TOP_K", "4"))
 # topic the user can't read looks exactly like a query about nothing
 # Default floors are per embedder: bge cosine similarity between unrelated texts sits around
 # 0.43-0.54 (measured, evals/results/2026-10-10-platform-rungs), so the hash embedder's 0.1 would pass everything.
-MIN_SCORE = float(os.getenv("MIN_SCORE", "0.55" if EMBED_BACKEND == "fastembed" else "0.1"))
+MIN_SCORE = float(os.getenv("MIN_SCORE", "0.55" if EMBED_BACKEND in {"st", "fastembed"} else "0.1"))
 
 # Optional LLM generation (extractive answers when unset — demo runs keyless)
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")

@@ -54,9 +54,9 @@ class FakeSparse:
         self.calls.append(list(texts))
         for t in texts:
             words = sorted({w for w in t.lower().replace(".", " ").replace(",", " ").split() if len(w) > 2})
-            yield SimpleNamespace(
-                indices=np.array([zlib.crc32(w.encode()) % 30000 for w in words], dtype=np.int64),
-                values=np.array([1.0] * len(words), dtype=np.float32))
+            idx = sorted({zlib.crc32(w.encode()) % 30000 for w in words})  # SPLADE token ids are unique
+            yield SimpleNamespace(indices=np.array(idx, dtype=np.int64),
+                                  values=np.array([1.0] * len(idx), dtype=np.float32))
 
 
 class FakeReranker:
@@ -174,10 +174,11 @@ def test_cache_serves_unchanged_text_and_embeds_only_new_text(monkeypatch, fake_
 def test_cache_key_is_sha256_of_text_plus_model_identity(monkeypatch, fake_models, cache_path):
     import hashlib
     monkeypatch.setattr(config, "EMBED_BACKEND", "fastembed")
+    monkeypatch.setattr(embeddings, "_fastembed_version", lambda: "9.9")
     embeddings.embed(["alpha beta"])
     with sqlite3.connect(cache_path) as db:
         rows = db.execute("select kind, model, digest from embed_cache").fetchall()
-    assert rows == [("dense", "fastembed/BAAI/bge-small-en-v1.5/384",
+    assert rows == [("dense", "fastembed9.9/BAAI/bge-small-en-v1.5/384",
                      hashlib.sha256(b"alpha beta").hexdigest())]
     monkeypatch.setattr(config, "EMBED_MODEL", "other/model")
     embeddings.embed(["alpha beta"])
