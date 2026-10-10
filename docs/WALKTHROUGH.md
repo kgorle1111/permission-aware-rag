@@ -8,16 +8,17 @@ below so network or environment setup does not consume the interview.
 ## Preparation
 
 - Open the [live workbench](https://permission-rag-demo.b9hphyfz7skjm.us-east-2.cs.amazonlightsail.com/).
-  It runs the stable pre-hierarchy image. Use only synthetic questions.
+  It runs verified deployment 2 from merged commit `b65e0c4`. Use only synthetic questions.
+  [Release checks and scope](../evals/results/2026-10-10-aws-release/table.md) distinguish the hosted reference from the platform.
 - Open [current evidence](../evals/results/2026-10-07-hierarchy/table.md),
   [`app/run_evals.py`](../app/run_evals.py), and
   [reviewed mutation equivalents](../platform/mutation_equivalents.json).
-- Check out `codex/tier1-hierarchy` for the demonstrated hierarchy commands.
+- Check out `main` for the demonstrated hierarchy commands.
   Prepare `python3 run_evals.py`, `python3 run_evals.py --mutants`, and
   `python3 eval_scale.py` from `app/`. Keep actual outputs, not retyped numbers.
 - Open [PR #6](https://github.com/kgorle1111/permission-aware-rag/pull/6).
-  At the documented revision `6ea35f04c32c2e802b2d3fbce497fee852f12514`, all
-  CI checks succeeded. Recheck before presenting; do not call an open PR merged.
+  PRs #6–#12 are merged. Both PR12 mutation campaigns and all regular checks
+  passed; recheck current CI before presenting.
 
 ## 0:00–0:40 — State the claim and its scope
 
@@ -26,8 +27,9 @@ below so network or environment setup does not consume the interview.
 **Say:** “This is an engineering portfolio about permission-aware retrieval.
 The underwriting documents and users are synthetic. The property I test is that
 forbidden content cannot alter the reference retriever's results or scores.
-The live demo shows role-based sources; it runs an older stable image. I'll use
-the tests to show the newer document, section and paragraph permissions.”
+The live demo shows role-based sources on the updated reference image. I'll use
+the tests to demonstrate document, section and paragraph permissions beyond the
+flat synthetic demo corpus.”
 
 Avoid calling demo role selection authentication or the demo a production
 insurance deployment.

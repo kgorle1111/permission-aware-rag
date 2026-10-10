@@ -86,3 +86,19 @@ were counted as detections. This does not cover every omitted decorated function
 Reproduce the four supplemental faults with the [portable manual runner](../evals/DECORATED_MUTATIONS.md). Their clean baseline and security assertion failures were rerun independently by the parent agent.
 
 The portable decorated-function checks are enforced in both platform Python 3.11/3.12 CI jobs after coverage; drift or an undetected selected fault blocks CI.
+
+## Merged release and Linux confirmation
+
+PRs #6–#12 are merged. Both complete PR12 Linux campaigns passed with the final
+test suite: [pull-request run](https://github.com/kgorle1111/permission-aware-rag/actions/runs/38036195914)
+and [push run](https://github.com/kgorle1111/permission-aware-rag/actions/runs/38036192853).
+Each reported 1,688/1,708 killed and 20 reviewed equivalents, with every other
+outcome zero. The parent downloaded both full artifacts and independently
+validated them under supported Python 3.12 against current source/waiver pins.
+These full Linux runs are separate from the earlier local complete-pass plus
+targeted follow-up described above. The generated-catalog scope limits remain.
+
+The [AWS release verification](../evals/results/2026-10-10-aws-release/table.md)
+records deployment 2 from the exact merged tree, reference role/privacy probes,
+independent CSV verification and the separate platform-upgrade test subset.
+It does not establish external-human L4 validation or production authentication.

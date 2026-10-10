@@ -5,7 +5,7 @@ links to a test, a committed result, or a ledger row:
 [decisions](docs/DECISIONS.md) · [threat model](docs/THREAT_MODEL.md) ·
 [eval results](evals/results/2026-10-03-v2/table.md).
 
-Current implementation work is in [PR #6](https://github.com/kgorle1111/permission-aware-rag/pull/6), open with passed CI and awaiting review. The 2026-10-07 rows below describe locally verified work on that branch; they are not merged yet. The AWS demo is already live on the prior stable reference image.
+PRs [#6](https://github.com/kgorle1111/permission-aware-rag/pull/6) through [#12](https://github.com/kgorle1111/permission-aware-rag/pull/12) are merged. The AWS reference demo now runs deployment 2 from merged commit `b65e0c4`; [release verification](evals/results/2026-10-10-aws-release/table.md) records the live permissions/privacy checks and scope.
 
 ## Shipped and implemented
 
@@ -23,7 +23,7 @@ Current implementation work is in [PR #6](https://github.com/kgorle1111/permissi
 
 ### Evidence batch — 2026-10-08
 
-The reports, kit and narrative drafts are in [draft PR #7](https://github.com/kgorle1111/permission-aware-rag/pull/7), stacked on PR #6. They are not merged.
+The public reports, kit and walkthrough were merged through [PR #7](https://github.com/kgorle1111/permission-aware-rag/pull/7) and subsequent evidence PRs. The article is kept privately at the maintainer’s request.
 
 - [100k-document / 1.5M-chunk local measurement](evals/results/2026-10-08-scale/table.md): filtered engine retrieval met the local p95 target; actual folder reconciliation took **104.92 s**, missing the <60 s target. Production full-materialization ingest and end-to-end API timing remain unmeasured.
 - [Public-input fixture and adapter evidence](evals/results/2026-10-08-public-kit/table.md): 87 National Archives paragraphs with fictional permissions; zero failures in 2,088 visibility/isolation probes, 197/197 required hits, and eight planted faults caught. The missing historical corpus remains unrecovered.
@@ -63,15 +63,20 @@ An inconsistent rebuild-state probe also led to defensive denial hardening.
 distinguish before-fix checks from after-fix regressions. Current local platform:
 387 tests, 98.97% coverage; container verification and the mutation gate passed
 (1,688/1,708 killed, 20 equivalents).
-[Draft PR #12](https://github.com/kgorle1111/permission-aware-rag/pull/12) awaits review and is not merged; the live AWS image remains unchanged.
+[PR #12](https://github.com/kgorle1111/permission-aware-rag/pull/12) is merged after both complete Linux mutation campaigns passed. The current reference image is live on AWS deployment 2; [release checks](evals/results/2026-10-10-aws-release/table.md) passed.
 
 ## Next
 
-1. **Review PR #6**, whose CI checks passed, and the subsequent evidence batch. The live demo still runs the prior stable image.
-2. **Review [PR #8](https://github.com/kgorle1111/permission-aware-rag/pull/8), the reconciliation improvement:** durable document intents reduce affected-row hydration and vector replay while preserving retry and deletion barriers. [Remeasurement](evals/results/2026-10-08-sync-optimized/table.md): single-document 0.63 s, folder 13.31 s; necessary global SQL integrity scans remain. Local gates after independent review: 387 tests, 98.97% branch coverage, 1,688/1,708 generated mutants killed and 20 reviewed equivalents. Pending pre-journal indexes require reingestion before retrieval resumes; clean upgrades retain readiness.
+1. **External integration:** have an engineer run the kit unassisted against a separate retriever (L4). [Run protocol and feedback form](docs/EXTERNAL_VALIDATION.md) are prepared; no external result is claimed.
+2. **Rehearse the interview walkthrough.** [Timed rubric](docs/PUBLICATION_CHECKLIST.md) is prepared; actual human rehearsal remains open. Article publication stays paused.
 3. **Broader real-world eval — paused:** resume only with industry-relevant input and documented non-fictional permissions. [Source research and requirements](docs/REAL_INPUT_REQUIREMENTS.md) record why public regulations plus invented roles do not qualify.
-4. **External integration:** have an engineer run the kit unassisted against a separate retriever (L4). [Run protocol and feedback form](docs/EXTERNAL_VALIDATION.md) are prepared; no external result is claimed.
-5. **Article publication paused; rehearse the interview walkthrough.** [Publication metadata and timed rubric](docs/PUBLICATION_CHECKLIST.md) are prepared; actual publication and human rehearsal remain open.
+
+Completed integration: PRs #6–#12 are merged and the updated AWS reference demo
+passed live release checks. Durable document intents reduced affected-row
+hydration/vector replay; [remeasurement](evals/results/2026-10-08-sync-optimized/table.md)
+remains single-document 0.63 s and folder 13.31 s at its pinned historical source.
+Global SQL integrity scans remain. Pending pre-journal platform indexes require
+full reingestion before retrieval resumes; clean upgrades retain readiness.
 
 ## Permissions that scale to 100,000 documents
 
