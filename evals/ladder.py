@@ -28,6 +28,7 @@ import run_evals  # noqa: E402
 import underwriter_server as srv  # noqa: E402
 from mutants import MUTANTS  # noqa: E402
 from permission_rag import PermissionRAG  # noqa: E402
+from rungs import RUNGS  # noqa: E402
 
 from evals.kit.harness import run_suite  # noqa: E402
 from evals.kit.reference_adapter import ReferenceAdapter  # noqa: E402
@@ -55,7 +56,9 @@ def rung_from_class(cls: type, control: bool = False) -> Rung:
 
 def default_rungs() -> list[Rung]:
     baseline = Rung("PermissionRAG (baseline)", rung_from_class(PermissionRAG).factory, PermissionRAG)
-    return [baseline] + [rung_from_class(m, control=True) for m in MUTANTS]
+    return (
+        [baseline] + [rung_from_class(r) for r in RUNGS] + [rung_from_class(m, control=True) for m in MUTANTS]
+    )
 
 
 def evaluate(rung: Rung, fixture: dict = FIXTURE) -> dict:

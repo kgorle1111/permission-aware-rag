@@ -168,3 +168,39 @@ def test_legacy_own_query_is_redacted_without_rewriting_history(server):
     assert "legacy private applicant query" not in body
     assert json.loads(body)["entries"][0]["query"] == "[redacted]"
     assert srv.rag.audit == original
+
+
+def test_jwt_claims_must_be_valid_principals():
+    """T14: a signed token is trusted for *who*, not for the shape of its claims."""
+    import time
+
+    import underwriter_server as uws
+    from test_http import _jwt
+
+    old = uws.JWT_SECRET
+    uws.JWT_SECRET = "test-secret"
+    try:
+
+        def resolve(claims):
+            tok = _jwt("test-secret", {"exp": time.time() + 60, **claims})
+            return uws.user_from_jwt(f"Bearer {tok}")
+
+        assert resolve({"sub": "sso-user", "groups": ["underwriting", "banking"]}) == {
+            "id": "sso-user",
+            "groups": ["underwriting", "banking"],
+        }
+        assert resolve({"sub": "sso-user"}) == {"id": "sso-user", "groups": []}
+        for bad in (
+            {"sub": "sso-user", "groups": "hr"},  # bare string would iterate into ['h', 'r']
+            {"sub": "sso-user", "groups": ["eng,group:hr"]},  # comma forges a principal in the RLS GUC
+            {"sub": "a,b", "groups": []},
+            {"sub": "", "groups": []},
+            {"sub": "two words", "groups": []},
+            {"sub": "sso-user", "groups": [""]},
+            {"sub": "sso-user", "groups": [7]},
+            {"sub": 7, "groups": []},
+            {"groups": ["underwriting"]},
+        ):
+            assert resolve(bad) is None, bad
+    finally:
+        uws.JWT_SECRET = old
