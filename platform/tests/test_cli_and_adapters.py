@@ -88,7 +88,7 @@ def test_generation_sends_only_supplied_context_and_falls_back_on_provider_error
     monkeypatch.setattr(generation.httpx, "post", post)
     assert generation.answer("question", results) == "grounded answer [public-doc]"
     sent = post.call_args.kwargs
-    assert sent["json"]["messages"][0]["content"] == "Context:\n[public-doc] permitted material\n\nQuestion: question"
+    assert sent["json"]["messages"][0]["content"] == 'Context:\n<document id="public-doc">\npermitted material\n</document>\n\nQuestion: question'
     assert sent["headers"]["x-api-key"] == "fake-test-key" and sent["timeout"] == 30
     post.side_effect = httpx.TimeoutException("unavailable")
     assert generation.answer("question", results) == "permitted material [public-doc]"

@@ -29,6 +29,10 @@ jobs:
         run: >-
           python -m pytest tests/ -q --cov=app --cov=scripts --cov-branch
           --cov-report=term-missing --cov-fail-under=96
+      - name: Verify selected faults in decorated security code
+        run: >-
+          python ../evals/verify_decorated_mutations.py
+          --output "$RUNNER_TEMP/decorated-security-${{ matrix.python-version }}"
 
   mutation-score:
     runs-on: ubuntu-latest

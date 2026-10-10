@@ -61,7 +61,7 @@ combined gate now catches eight of eight. The frozen document-ID leak evaluation
 caught four of the original six, so I kept both checks and published the misses.”
 
 Explain the distinction between planted retrieval faults and the service's
-separate mutation campaign: 1,677 of 1,693 mutants killed, with 16 reviewed equivalents.
+separate mutation campaign: 1,688 of 1,708 mutants killed, with 20 reviewed equivalents.
 
 ## 2:20–3:10 — Explain hierarchy with one example
 
@@ -84,11 +84,11 @@ are regression cases, not a population-wide confidence interval.
 
 **Say:** “The service keeps a durable permission barrier before updating SQL and
 Qdrant. Failure leaves queries blocked until reconciliation succeeds; interrupted
-deletion requires reingestion. The current local service suite has 366 passing
+deletion requires reingestion. The current local service suite has 387 passing
 tests at 98.97% branch-aware coverage. A pending index from a pre-journal release
 requires reingestion on upgrade; startup commits that barrier before creating the
 journal tables. Mutation testing adds evidence beyond coverage: the latest complete mutation report killed
-1,677 of 1,693 mutants, and 16 were reviewed as behaviorally equivalent and hash-pinned.
+1,688 of 1,708 mutants, and 20 were reviewed as behaviorally equivalent and hash-pinned.
 They remain survivors in that score; new unexplained survivors fail CI. The strict validator found no unexplained survivors or incomplete outcomes.”
 
 **Show the baseline scale gap:** “The streamed benchmark loaded 100,000 documents and
@@ -133,7 +133,7 @@ commands you can rerun.”
 ## Rehearsal checklist
 
 - Time one complete run; record actual duration and trim repetition to five minutes.
-- Explain **one of six**, **eight of eight**, and **1,677 of 1,693** without mixing
+- Explain **one of six**, **eight of eight**, and **1,688 of 1,708** without mixing
   their different denominators or purposes.
 - Keep the pre-hierarchy live-demo distinction and synthetic-data caveat audible.
 - Keep benchmark HTTP-search timings separate from full application reconciliation.
@@ -141,3 +141,5 @@ commands you can rerun.”
   Leave limits beside every performance or safety number.
 - Do not describe the rehearsal, article publication, external-user run, PR merge,
   or deployment of the new hierarchy as complete until each actually occurs.
+
+The current independent review and mutation scope are recorded in [INDEPENDENT_VERIFICATION.md](INDEPENDENT_VERIFICATION.md). Mutmut skips decorated functions; four selected manual faults supplement the generated catalog. Neither score is a universal security proof.

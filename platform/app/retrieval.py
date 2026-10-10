@@ -32,7 +32,7 @@ def retrieve(query: str, principal: Principal, k: int = None) -> dict:
         if not 1 <= k <= 20:
             raise ValueError("k must be between 1 and 20")
         with permission_transaction() as (session, state):
-            if state.pending:
+            if state.pending or state.rebuild_required:
                 raise RuntimeError("permission reconciliation required")
             key = (state.revision, principal.scope_key, query, k)
             with _cache_lock:

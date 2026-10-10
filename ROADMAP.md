@@ -54,10 +54,21 @@ These were written before the scaled eval ran. Negative results get published th
 ### Completed security regressions
 
 **Security regressions:** document text/id breakout, CSV formulas, newest-entry edits, citation ids and malformed field types are pinned by `app/test_security.py`. List bodies already returned 400 on both endpoints; explicit validation also works with Python assertions disabled. Auditors receive other users' query text redacted. Local JSONL tail checkpoints and their storage-attacker limits are documented in [T12](docs/THREAT_MODEL.md).
+### Independent verification — 2026-10-10
+
+A fresh contract author and reviewer found and repaired audit query persistence,
+platform cross-user audit exposure and missing platform document prompt boundaries.
+An inconsistent rebuild-state probe also led to defensive denial hardening.
+[Authorship, preserved failures and current verification](docs/INDEPENDENT_VERIFICATION.md)
+distinguish before-fix checks from after-fix regressions. Current local platform:
+387 tests, 98.97% coverage; container verification and the mutation gate passed
+(1,688/1,708 killed, 20 equivalents).
+[Draft PR #12](https://github.com/kgorle1111/permission-aware-rag/pull/12) awaits review and is not merged; the live AWS image remains unchanged.
+
 ## Next
 
 1. **Review PR #6**, whose CI checks passed, and the subsequent evidence batch. The live demo still runs the prior stable image.
-2. **Review [PR #8](https://github.com/kgorle1111/permission-aware-rag/pull/8), the reconciliation improvement:** durable document intents reduce affected-row hydration and vector replay while preserving retry and deletion barriers. [Remeasurement](evals/results/2026-10-08-sync-optimized/table.md): single-document 0.63 s, folder 13.31 s; necessary global SQL integrity scans remain. Local gates after the upgrade guard: 366 tests, 98.97% branch coverage, 1,677/1,693 mutants killed and 16 reviewed equivalents. Pending pre-journal indexes require reingestion before retrieval resumes; clean upgrades retain readiness.
+2. **Review [PR #8](https://github.com/kgorle1111/permission-aware-rag/pull/8), the reconciliation improvement:** durable document intents reduce affected-row hydration and vector replay while preserving retry and deletion barriers. [Remeasurement](evals/results/2026-10-08-sync-optimized/table.md): single-document 0.63 s, folder 13.31 s; necessary global SQL integrity scans remain. Local gates after independent review: 387 tests, 98.97% branch coverage, 1,688/1,708 generated mutants killed and 20 reviewed equivalents. Pending pre-journal indexes require reingestion before retrieval resumes; clean upgrades retain readiness.
 3. **Broader real-world eval — paused:** resume only with industry-relevant input and documented non-fictional permissions. [Source research and requirements](docs/REAL_INPUT_REQUIREMENTS.md) record why public regulations plus invented roles do not qualify.
 4. **External integration:** have an engineer run the kit unassisted against a separate retriever (L4). [Run protocol and feedback form](docs/EXTERNAL_VALIDATION.md) are prepared; no external result is claimed.
 5. **Article publication paused; rehearse the interview walkthrough.** [Publication metadata and timed rubric](docs/PUBLICATION_CHECKLIST.md) are prepared; actual publication and human rehearsal remain open.

@@ -26,17 +26,17 @@ def test_retrieval_preserves_query_vector_result_schema_and_success_audit(client
     with store.SessionLocal() as session:
         record = session.query(store.AuditLog).one()
         assert record.user_id == "reader" and record.groups == ["hr"]
-        assert record.query == "original question"
+        assert record.query == "[redacted]"
         assert record.returned_chunk_ids == ["7"] and record.returned_doc_ids == ["permitted"]
         assert record.denied_count == 2 and record.fail_closed is False
 
 
-def test_failed_retrieval_audits_original_query_without_fabricated_denials(client, monkeypatch):
+def test_failed_retrieval_redacts_query_without_fabricated_denials(client, monkeypatch):
     monkeypatch.setattr(retrieval, "embed_one", Mock(side_effect=RuntimeError("embedding unavailable")))
     assert retrieval.retrieve("original failed question", Principal("reader")) == retrieval.EMPTY_RESPONSE
     with store.SessionLocal() as session:
         record = session.query(store.AuditLog).one()
-        assert record.query == "original failed question"
+        assert record.query == "[redacted]"
         assert record.returned_chunk_ids == [] and record.returned_doc_ids == []
         assert record.denied_count == 0 and record.fail_closed is True
 

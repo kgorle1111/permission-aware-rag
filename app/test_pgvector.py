@@ -119,9 +119,7 @@ def test_audit_hash_chain_tamper_detection():
     rag.retrieve("salary bands", BOB)
     assert rag.verify_audit_chain()
     with psycopg.connect(ADMIN, autocommit=True) as c:  # attacker with raw DB access edits a row
-        c.execute(
-            "UPDATE audit SET line = replace(line, 'vacation', 'salaries') WHERE line LIKE '%vacation%'"
-        )
+        c.execute("UPDATE audit SET line = replace(line, 'elapsed_ms', 'elapsed_mx')")
     assert not rag.verify_audit_chain()
 
 
@@ -130,7 +128,7 @@ def test_newest_audit_entry_tamper():
     rag.retrieve("vacation", GUEST)
     assert rag.verify_audit_chain()
     with psycopg.connect(ADMIN, autocommit=True) as conn:
-        conn.execute("UPDATE audit SET line = replace(line, 'vacation', 'salaries')")
+        conn.execute("UPDATE audit SET line = replace(line, 'elapsed_ms', 'elapsed_mx')")
     assert not rag.verify_audit_chain()
 
 
@@ -201,3 +199,15 @@ def test_hierarchy_rls_checks_every_level_without_application_filter():
         rag.add_document("invalid", "lead", ["*"], sections=[{"text": "secret", "acl": []}])
     with psycopg.connect(ADMIN) as c:
         assert c.execute("SELECT count(*) FROM chunks WHERE doc_id='invalid'").fetchone()[0] == 0
+
+
+def test_new_audit_omits_query_text_from_persisted_lines():
+    rag = _fresh()
+    _seed(rag)
+    rag.retrieve("vacation private-applicant-8675309", GUEST)
+    assert rag.audit[0]["query"] == "[redacted]"
+    assert rag.audit[0]["returned"]
+    with psycopg.connect(ADMIN) as conn:
+        line = conn.execute("SELECT line FROM audit").fetchone()[0]
+    assert "private-applicant-8675309" not in line
+    assert rag.verify_audit_chain()

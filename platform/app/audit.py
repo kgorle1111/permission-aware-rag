@@ -1,7 +1,7 @@
-"""Audit trail: who asked, what they asked, what returned, what was hidden.
+"""Audit metadata records identities, returned IDs and denial counts.
 
-'denied_count: 3' on a query for "layoff plans" is exactly the insider-risk
-signal a security team wants and vanilla RAG never provides.
+Query text is never persisted in new records. Legacy query columns are masked
+at presentation without modifying historical rows.
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ def write_audit(principal: Principal, query: str, chunk_ids: list, doc_ids: list
                 denied_count: int, fail_closed: bool, session=None):
     def add(s):
         s.add(AuditLog(
-            user_id=principal.user_id, groups=list(principal.groups), query=query,
+            user_id=principal.user_id, groups=list(principal.groups), query="[redacted]",
             returned_chunk_ids=[str(c) for c in chunk_ids],
             returned_doc_ids=list(doc_ids),
             denied_count=denied_count, fail_closed=fail_closed,
@@ -36,7 +36,7 @@ def recent(limit: int = 50) -> list[dict]:
         rows = s.query(AuditLog).order_by(AuditLog.id.desc()).limit(limit).all()
     return [{
         "ts": r.ts.isoformat(), "user": r.user_id, "groups": r.groups,
-        "query": r.query, "returned_docs": r.returned_doc_ids,
+        "query": "[redacted]", "returned_docs": r.returned_doc_ids,
         "denied_count": r.denied_count, "fail_closed": r.fail_closed,
     } for r in rows]
 

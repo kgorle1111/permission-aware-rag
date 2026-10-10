@@ -222,7 +222,7 @@ class PermissionRAG:
         entry = {
             "ts": time.time(),
             "user": user["id"],
-            "query": query,
+            "query": "[redacted]",
             "returned": [r["id"] for r in results],
             "denied_chunks": denied,
             "elapsed_ms": round((time.perf_counter() - t0) * 1000, 2),

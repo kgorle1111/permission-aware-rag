@@ -142,13 +142,16 @@ deployable service:
 | Vectors | BM25 / pgvector + RLS | Qdrant + SQL store |
 | Identity | demo roles / HS256 seam | RS256 JWT, verified per request |
 | Source sync | static corpus | Google Drive delta + webhook, permission revocation |
-| Tests | leak evals, mutants, isolation oracle | 366 tests, 98.97% branch coverage (≥96% gate), blocking mutation gate |
+| Tests | leak evals, mutants, isolation oracle | 387 tests, 98.97% branch coverage (≥96% gate), blocking mutation gate |
 | Shipping | Render one-click | Docker image (non-root), container smoke CI |
 
 The platform has its own CI in [`.github/workflows/platform.yml`](.github/workflows/platform.yml).
-Its mutation gate is blocking: of 1,693 mutants, every survivor was either killed by a test
+Its mutation gate is blocking: of 1,708 mutants, every survivor was either killed by a test
 or recorded as a reviewed equivalent in [`platform/mutation_equivalents.json`](platform/mutation_equivalents.json),
 pinned by source and mutant hash, so any new survivor fails the build.
+Mutmut skips decorated functions; [four separate manual faults](evals/DECORATED_MUTATIONS.md)
+in principal properties and API routes are also caught. These are separate from
+its generated catalog, which is not exhaustive security coverage.
 
 ## Threat model (what's handled, what's not)
 
@@ -186,7 +189,7 @@ curl -s -X POST http://127.0.0.1:8421/ask -H 'content-type: application/json' \
 ```
 
 Full surface: `POST /query` (retrieval only), `POST /ask` (adds the drafted answer,
-rate-limited), `GET /audit` (own queries; audit group sees others’ ids/counts with queries redacted; `&format=csv` neutralizes formula cells), `GET /presets`.
+rate-limited), `GET /audit` (own audit metadata; audit group sees others’ ids/counts; all query text is redacted; `&format=csv` neutralizes formula cells), `GET /presets`.
 ACL entries are `user:<id>`, `group:<name>`, or `"*"`; empty ACLs and duplicate ingests
 are rejected at write time.
 
