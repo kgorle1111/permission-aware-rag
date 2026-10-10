@@ -96,7 +96,7 @@ def test_generation_provider_receives_complete_context_and_request_contract(monk
     assert sent["json"] == {
         "model": "fixture-model", "max_tokens": 400, "system": generation.SYSTEM,
         "messages": [{"role": "user", "content":
-                      'Context:\n<document id="one">\nfirst permitted chunk\n</document>\n\n<document id="two">\nsecond permitted chunk\n</document>\n\nQuestion: question'}],
+                      ('Context:\n<document id="one">\nfirst permitted chunk\n</document>\n\n<document id="two">\nsecond permitted chunk\n</document>\n\n' + generation.REMINDER + '\n\nQuestion: question')}],
     }
 
 
