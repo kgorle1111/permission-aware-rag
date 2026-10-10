@@ -124,6 +124,44 @@ def test_min_score_default_per_backend(backend, expected):
     assert out.stdout.strip() == expected
 
 
+# ---- 6. ingest vectors are a pure function of the text ---------------------------
+
+class _BatchDependentDense:
+    """Like ONNX padding: each vector shifts with the longest text in its batch."""
+    def embed(self, texts):
+        import numpy as np
+        pad = max(len(t) for t in texts)
+        for t in texts:
+            v = np.array(embeddings._hash_embed(t, 384), dtype=np.float32)
+            v[0] += 1e-3 * pad
+            yield v
+
+
+class _BatchDependentSparse:
+    def embed(self, texts):
+        import numpy as np
+        from types import SimpleNamespace
+        for t in texts:
+            yield SimpleNamespace(indices=np.array([1, 2]), values=np.array([1.0, 0.001 * len(texts)]))
+
+
+def test_dense_ingest_vectors_do_not_depend_on_batch_composition(monkeypatch):
+    monkeypatch.setattr(config, "EMBED_BACKEND", "fastembed")
+    monkeypatch.setattr(config, "EMBED_CACHE_PATH", "")
+    monkeypatch.setattr(embeddings, "_load_fastembed", lambda kind, name: _BatchDependentDense())
+    texts = ["short", "a much longer document paragraph about vacation policy", "mid length text"]
+    together = embeddings.embed(texts)
+    assert together == [embeddings.embed([t])[0] for t in texts]
+    assert together[:2] == embeddings.embed(texts[:2])  # a filtered corpus gives the same vectors
+
+
+def test_sparse_ingest_vectors_do_not_depend_on_batch_composition(monkeypatch):
+    monkeypatch.setattr(config, "SPARSE_BACKEND", "splade")
+    monkeypatch.setattr(config, "EMBED_CACHE_PATH", "")
+    monkeypatch.setattr(embeddings, "_load_fastembed", lambda kind, name: _BatchDependentSparse())
+    assert embeddings.sparse_embed(["a", "b", "c"]) == [embeddings.sparse_embed([t])[0] for t in "abc"]
+
+
 # ---- 5. no reranker call without candidates --------------------------------------
 
 def test_reranker_is_not_called_when_there_are_no_hits(reranked):

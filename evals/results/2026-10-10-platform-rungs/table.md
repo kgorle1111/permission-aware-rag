@@ -2,12 +2,12 @@
 
 | rung | floors | paraphrase hit@1 | paraphrase hit@4 | paraphrase MRR | lexical hit@1 | lexical hit@4 | out-of-corpus answered | leaks | hidden-doc diffs | existing suites | cold p50 / p95 ms | ingest s |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| baseline | dense 0.1 | 0% | 0% | 0.00 | 100% | 100% | 50% | 0/535 | 0/321 | 13/13 | 2.24 / 4.34 | 0.07 |
-| dense_floor_0.1 | dense 0.1 | 77% | 94% | 0.84 | 100% | 100% | 100% | 0/535 | 0/321 | 8/13 | 8.77 / 106.33 | 2.07 |
-| dense | dense 0.55 | 74% | 91% | 0.81 | 100% | 100% | 0% | 0/535 | 0/321 | 10/13 | 21.44 / 139.02 | 0.93 |
-| hybrid | dense 0.55 | 77% | 91% | 0.82 | 100% | 100% | 0% | 0/535 | 0/321 | 10/13 | 130.4 / 320.62 | 6.12 |
-| hybrid_rerank_no_floor | dense 0.55, rerank -1000.0 | 71% | 89% | 0.80 | 100% | 100% | 0% | 0/535 | 0/321 | 10/13 | 125.26 / 230.06 | 3.89 |
-| hybrid_rerank | dense 0.55, rerank -10.0 | 63% | 69% | 0.66 | 100% | 100% | 0% | 0/535 | 0/321 | 13/13 | 54.24 / 78.29 | 1.65 |
+| baseline | dense 0.1 | 0% | 0% | 0.00 | 100% | 100% | 50% | 0/535 | 0/321 | 13/13 | 2.45 / 6.42 | 0.05 |
+| dense_floor_0.1 | dense 0.1 | 77% | 94% | 0.84 | 100% | 100% | 100% | 0/535 | 0/321 | 8/13 | 5.69 / 12.4 | 0.31 |
+| dense | dense 0.55 | 74% | 91% | 0.81 | 100% | 100% | 0% | 0/535 | 0/321 | 10/13 | 5.45 / 6.96 | 0.28 |
+| hybrid | dense 0.55 | 77% | 91% | 0.82 | 100% | 100% | 0% | 0/535 | 0/321 | 10/13 | 42.69 / 56.36 | 1.65 |
+| hybrid_rerank_no_floor | dense 0.55, rerank -1000.0 | 71% | 89% | 0.80 | 100% | 100% | 0% | 0/535 | 0/321 | 10/13 | 83.06 / 227.67 | 2.99 |
+| hybrid_rerank | dense 0.55, rerank -10.0 | 63% | 69% | 0.66 | 100% | 100% | 0% | 0/535 | 0/321 | 13/13 | 124.4 / 294.48 | 3.0 |
 
 Existing-suite failures:
 
@@ -20,9 +20,9 @@ Existing-suite failures:
 
 | mode | p50 ms | p95 ms | round wall p50 ms | wrong/empty responses |
 |---|---|---|---|---|
-| sequential | 124.86 | 237.29 | 2670.2 | 0 |
-| threadpool_sync | 900.35 | 2165.68 | 1835.6 | 0 |
-| asyncio | 974.81 | 2489.88 | 1911.4 | 0 |
+| sequential | 97.24 | 401.29 | 2824.7 | 0 |
+| threadpool_sync | 884.94 | 2093.33 | 2021.9 | 0 |
+| asyncio | 970.72 | 2097.4 | 2024.7 | 0 |
 
 Environment: macOS-26.6.2-arm64-arm-64bit, Python 3.12.13, fastembed 0.9.0, qdrant-client 1.19.1. Corpus: 37 chunks (synthetic). Probes: 35 paraphrase, 15 lexical, 50 out-of-corpus (query x user). Timings are local CPU, single run.
 
@@ -48,6 +48,9 @@ Environment: macOS-26.6.2-arm64-arm-64bit, Python 3.12.13, fastembed 0.9.0, qdra
 - **Concurrency** latencies for the threaded and async modes are measured from the start of a 20-request
   burst (queueing included); `sequential` is per-request service time. Compare `threadpool_sync` with
   `asyncio`, which is the decision this table supports.
+- **Batch independence.** Batched ONNX embedding shifted vectors by up to 4.3e-4 (30 of 37 texts) and changed
+  12 of 37 four-decimal cosine scores versus embedding each text alone; a hidden document could perturb a
+  visible chunk that way. Ingest now embeds one text per call, and hidden-doc diffs are 0 with cache pruning on.
 - **Latency is noisy.** Identical runs on a shared laptop differed by up to 3x; treat cold p50/p95 and
   concurrency numbers as orders of magnitude only.
 

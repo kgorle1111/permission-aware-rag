@@ -163,12 +163,12 @@ def test_fastembed_index_fingerprint_is_persisted_and_mismatch_with_hash_fails_c
 def test_cache_serves_unchanged_text_and_embeds_only_new_text(monkeypatch, fake_models, cache_path):
     monkeypatch.setattr(config, "EMBED_BACKEND", "fastembed")
     first = embeddings.embed(["alpha beta", "gamma delta"])
-    assert fake_models["dense"].calls == [["alpha beta", "gamma delta"]]
+    assert fake_models["dense"].calls == [["alpha beta"], ["gamma delta"]]  # one text per call
     second = embeddings.embed(["gamma delta", "epsilon zeta", "alpha beta"])
-    assert fake_models["dense"].calls[1:] == [["epsilon zeta"]]
+    assert fake_models["dense"].calls[2:] == [["epsilon zeta"]]
     assert second[0] == first[1] and second[2] == first[0]
     embeddings.embed(["alpha beta"])
-    assert len(fake_models["dense"].calls) == 2  # fully cached batch makes no model call
+    assert len(fake_models["dense"].calls) == 3  # fully cached batch makes no model call
 
 
 def test_cache_key_is_sha256_of_text_plus_model_identity(monkeypatch, fake_models, cache_path):

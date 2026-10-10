@@ -117,7 +117,10 @@ def _encode(texts: list[str]) -> list[list[float]]:
             _st_model = SentenceTransformer(model_name())
         return _st_model.encode(texts, normalize_embeddings=True).tolist()
     if config.EMBED_BACKEND == "fastembed":
-        vectors = [[float(x) for x in v] for v in _load_fastembed("dense", model_name()).embed(texts)]
+        # One text per call: batched ONNX padding shifts vectors by up to ~4e-4 with batch makeup,
+        # which would let other (possibly hidden) documents perturb a chunk's vector and scores.
+        model = _load_fastembed("dense", model_name())
+        vectors = [[float(x) for x in next(iter(model.embed([t])))] for t in texts]
         if any(len(v) != config.EMBED_DIM for v in vectors):
             raise ValueError("embedding dimension mismatch")
         return vectors
@@ -127,8 +130,9 @@ def _encode(texts: list[str]) -> list[list[float]]:
 def _sparse_encode(texts: list[str]) -> list[tuple[list[int], list[float]]]:
     if not sparse_enabled():
         raise ValueError("invalid sparse backend")
+    model = _load_fastembed("sparse", sparse_model_name())  # one text per call, as for dense
     return [([int(i) for i in e.indices], [float(v) for v in e.values])
-            for e in _load_fastembed("sparse", sparse_model_name()).embed(texts)]
+            for e in (next(iter(model.embed([t]))) for t in texts)]
 
 
 def _cached(kind: str, model_id: str, texts: list[str], compute, valid, decode):

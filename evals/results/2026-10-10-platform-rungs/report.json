@@ -22,7 +22,7 @@
         "passed": 13
       },
       "fail_closed_events": 0,
-      "ingest_s": 0.07,
+      "ingest_s": 0.05,
       "invariance": {
         "checks": 321,
         "diffs": 0,
@@ -48,8 +48,8 @@
           "hit@4": 1.0,
           "latency_ms": {
             "n": 15,
-            "p50": 2.33,
-            "p95": 2.65
+            "p50": 3.35,
+            "p95": 11.79
           },
           "max_shared_stems": 8,
           "mrr": 1.0,
@@ -61,8 +61,8 @@
           "hit@4": 0.0,
           "latency_ms": {
             "n": 35,
-            "p50": 2.24,
-            "p95": 4.34
+            "p50": 2.45,
+            "p95": 6.42
           },
           "max_shared_stems": 0,
           "mrr": 0.0,
@@ -92,7 +92,7 @@
         "passed": 8
       },
       "fail_closed_events": 0,
-      "ingest_s": 2.07,
+      "ingest_s": 0.31,
       "invariance": {
         "checks": 321,
         "diffs": 0,
@@ -118,8 +118,8 @@
           "hit@4": 1.0,
           "latency_ms": {
             "n": 15,
-            "p50": 25.75,
-            "p95": 181.55
+            "p50": 5.87,
+            "p95": 9.51
           },
           "max_shared_stems": 8,
           "mrr": 1.0,
@@ -131,8 +131,8 @@
           "hit@4": 0.943,
           "latency_ms": {
             "n": 35,
-            "p50": 8.77,
-            "p95": 106.33
+            "p50": 5.69,
+            "p95": 12.4
           },
           "max_shared_stems": 0,
           "mrr": 0.84,
@@ -160,7 +160,7 @@
         "passed": 10
       },
       "fail_closed_events": 0,
-      "ingest_s": 0.93,
+      "ingest_s": 0.28,
       "invariance": {
         "checks": 321,
         "diffs": 0,
@@ -186,8 +186,8 @@
           "hit@4": 1.0,
           "latency_ms": {
             "n": 15,
-            "p50": 44.57,
-            "p95": 187.01
+            "p50": 4.42,
+            "p95": 4.77
           },
           "max_shared_stems": 8,
           "mrr": 1.0,
@@ -199,8 +199,8 @@
           "hit@4": 0.914,
           "latency_ms": {
             "n": 35,
-            "p50": 21.44,
-            "p95": 139.02
+            "p50": 5.45,
+            "p95": 6.96
           },
           "max_shared_stems": 0,
           "mrr": 0.812,
@@ -226,171 +226,6 @@
           "tests/test_side_channels.py::test_denied_count_in_audit"
         ],
         "passed": 10
-      },
-      "fail_closed_events": 0,
-      "ingest_s": 6.12,
-      "invariance": {
-        "checks": 321,
-        "diffs": 0,
-        "users": [
-          "guest",
-          "alice",
-          "bob"
-        ]
-      },
-      "leaks": {
-        "checks": 535,
-        "leaks": 0
-      },
-      "out_of_corpus": {
-        "false_positive_rate": 0.0,
-        "mean_results": 0.0,
-        "queries": 50
-      },
-      "quality": {
-        "lexical": {
-          "answered": 1.0,
-          "hit@1": 1.0,
-          "hit@4": 1.0,
-          "latency_ms": {
-            "n": 15,
-            "p50": 142.35,
-            "p95": 242.47
-          },
-          "max_shared_stems": 8,
-          "mrr": 1.0,
-          "n": 15
-        },
-        "paraphrase": {
-          "answered": 0.971,
-          "hit@1": 0.771,
-          "hit@4": 0.914,
-          "latency_ms": {
-            "n": 35,
-            "p50": 130.4,
-            "p95": 320.62
-          },
-          "max_shared_stems": 0,
-          "mrr": 0.817,
-          "n": 35
-        }
-      },
-      "rung": "hybrid"
-    },
-    {
-      "chunks": 37,
-      "config": {
-        "embed_backend": "fastembed",
-        "min_score": 0.55,
-        "rerank_min_score": -1000.0,
-        "reranker": "fastembed",
-        "sparse_backend": "splade"
-      },
-      "existing_suites": {
-        "failed": 3,
-        "failed_tests": [
-          "tests/test_revocation.py::test_doc_revocation_propagates_under_bound",
-          "tests/test_revocation.py::test_group_change_loses_all_group_content",
-          "tests/test_side_channels.py::test_denied_count_in_audit"
-        ],
-        "passed": 10
-      },
-      "fail_closed_events": 0,
-      "ingest_s": 3.89,
-      "invariance": {
-        "checks": 321,
-        "diffs": 0,
-        "users": [
-          "guest",
-          "alice",
-          "bob"
-        ]
-      },
-      "leaks": {
-        "checks": 535,
-        "leaks": 0
-      },
-      "out_of_corpus": {
-        "false_positive_rate": 0.0,
-        "mean_results": 0.0,
-        "queries": 50
-      },
-      "quality": {
-        "lexical": {
-          "answered": 1.0,
-          "hit@1": 1.0,
-          "hit@4": 1.0,
-          "latency_ms": {
-            "n": 15,
-            "p50": 101.04,
-            "p95": 195.65
-          },
-          "max_shared_stems": 8,
-          "mrr": 1.0,
-          "n": 15
-        },
-        "paraphrase": {
-          "answered": 0.971,
-          "hit@1": 0.714,
-          "hit@4": 0.886,
-          "latency_ms": {
-            "n": 35,
-            "p50": 125.26,
-            "p95": 230.06
-          },
-          "max_shared_stems": 0,
-          "mrr": 0.795,
-          "n": 35
-        }
-      },
-      "rung": "hybrid_rerank_no_floor"
-    },
-    {
-      "chunks": 37,
-      "concurrency": {
-        "callers": 20,
-        "modes": {
-          "asyncio": {
-            "latency_ms": {
-              "n": 160,
-              "p50": 974.81,
-              "p95": 2489.88
-            },
-            "round_wall_ms_p50": 1911.4,
-            "wrong_or_empty_responses": 0
-          },
-          "sequential": {
-            "latency_ms": {
-              "n": 160,
-              "p50": 124.86,
-              "p95": 237.29
-            },
-            "round_wall_ms_p50": 2670.2,
-            "wrong_or_empty_responses": 0
-          },
-          "threadpool_sync": {
-            "latency_ms": {
-              "n": 160,
-              "p50": 900.35,
-              "p95": 2165.68
-            },
-            "round_wall_ms_p50": 1835.6,
-            "wrong_or_empty_responses": 0
-          }
-        },
-        "rounds": 8
-      },
-      "config": {
-        "embed_backend": "fastembed",
-        "min_score": 0.55,
-        "rerank_min_score": -10.0,
-        "reranker": "fastembed",
-        "sparse_backend": "splade"
-      },
-      "existing_suites": {
-        "failed": 0,
-        "failed_tests": [],
-        "passed": 13
       },
       "fail_closed_events": 0,
       "ingest_s": 1.65,
@@ -419,8 +254,173 @@
           "hit@4": 1.0,
           "latency_ms": {
             "n": 15,
-            "p50": 51.91,
-            "p95": 100.18
+            "p50": 31.63,
+            "p95": 52.97
+          },
+          "max_shared_stems": 8,
+          "mrr": 1.0,
+          "n": 15
+        },
+        "paraphrase": {
+          "answered": 0.971,
+          "hit@1": 0.771,
+          "hit@4": 0.914,
+          "latency_ms": {
+            "n": 35,
+            "p50": 42.69,
+            "p95": 56.36
+          },
+          "max_shared_stems": 0,
+          "mrr": 0.817,
+          "n": 35
+        }
+      },
+      "rung": "hybrid"
+    },
+    {
+      "chunks": 37,
+      "config": {
+        "embed_backend": "fastembed",
+        "min_score": 0.55,
+        "rerank_min_score": -1000.0,
+        "reranker": "fastembed",
+        "sparse_backend": "splade"
+      },
+      "existing_suites": {
+        "failed": 3,
+        "failed_tests": [
+          "tests/test_revocation.py::test_doc_revocation_propagates_under_bound",
+          "tests/test_revocation.py::test_group_change_loses_all_group_content",
+          "tests/test_side_channels.py::test_denied_count_in_audit"
+        ],
+        "passed": 10
+      },
+      "fail_closed_events": 0,
+      "ingest_s": 2.99,
+      "invariance": {
+        "checks": 321,
+        "diffs": 0,
+        "users": [
+          "guest",
+          "alice",
+          "bob"
+        ]
+      },
+      "leaks": {
+        "checks": 535,
+        "leaks": 0
+      },
+      "out_of_corpus": {
+        "false_positive_rate": 0.0,
+        "mean_results": 0.0,
+        "queries": 50
+      },
+      "quality": {
+        "lexical": {
+          "answered": 1.0,
+          "hit@1": 1.0,
+          "hit@4": 1.0,
+          "latency_ms": {
+            "n": 15,
+            "p50": 135.67,
+            "p95": 333.74
+          },
+          "max_shared_stems": 8,
+          "mrr": 1.0,
+          "n": 15
+        },
+        "paraphrase": {
+          "answered": 0.971,
+          "hit@1": 0.714,
+          "hit@4": 0.886,
+          "latency_ms": {
+            "n": 35,
+            "p50": 83.06,
+            "p95": 227.67
+          },
+          "max_shared_stems": 0,
+          "mrr": 0.795,
+          "n": 35
+        }
+      },
+      "rung": "hybrid_rerank_no_floor"
+    },
+    {
+      "chunks": 37,
+      "concurrency": {
+        "callers": 20,
+        "modes": {
+          "asyncio": {
+            "latency_ms": {
+              "n": 160,
+              "p50": 970.72,
+              "p95": 2097.4
+            },
+            "round_wall_ms_p50": 2024.7,
+            "wrong_or_empty_responses": 0
+          },
+          "sequential": {
+            "latency_ms": {
+              "n": 160,
+              "p50": 97.24,
+              "p95": 401.29
+            },
+            "round_wall_ms_p50": 2824.7,
+            "wrong_or_empty_responses": 0
+          },
+          "threadpool_sync": {
+            "latency_ms": {
+              "n": 160,
+              "p50": 884.94,
+              "p95": 2093.33
+            },
+            "round_wall_ms_p50": 2021.9,
+            "wrong_or_empty_responses": 0
+          }
+        },
+        "rounds": 8
+      },
+      "config": {
+        "embed_backend": "fastembed",
+        "min_score": 0.55,
+        "rerank_min_score": -10.0,
+        "reranker": "fastembed",
+        "sparse_backend": "splade"
+      },
+      "existing_suites": {
+        "failed": 0,
+        "failed_tests": [],
+        "passed": 13
+      },
+      "fail_closed_events": 0,
+      "ingest_s": 3.0,
+      "invariance": {
+        "checks": 321,
+        "diffs": 0,
+        "users": [
+          "guest",
+          "alice",
+          "bob"
+        ]
+      },
+      "leaks": {
+        "checks": 535,
+        "leaks": 0
+      },
+      "out_of_corpus": {
+        "false_positive_rate": 0.0,
+        "mean_results": 0.0,
+        "queries": 50
+      },
+      "quality": {
+        "lexical": {
+          "answered": 1.0,
+          "hit@1": 1.0,
+          "hit@4": 1.0,
+          "latency_ms": {
+            "n": 15,
+            "p50": 53.52,
+            "p95": 88.17
           },
           "max_shared_stems": 8,
           "mrr": 1.0,
@@ -432,8 +432,8 @@
           "hit@4": 0.686,
           "latency_ms": {
             "n": 35,
-            "p50": 54.24,
-            "p95": 78.29
+            "p50": 124.4,
+            "p95": 294.48
           },
           "max_shared_stems": 0,
           "mrr": 0.657,
