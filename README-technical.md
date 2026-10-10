@@ -211,6 +211,27 @@ The model is an injected callable; the tests use scripted fakes and there is no 
 These are tested mechanics. No answer-quality or cost number is claimed until a real model and a
 calibrated judge are run.
 
+## Text-to-SQL under row-level security (pgvector backend)
+
+`app/text_to_sql.py` + `PgVectorRAG.run_sql` answer structured questions ("how many credit documents can I
+read?") over a `doc_meta` table (id, title, department, data_class, created_at, chunk count) filled at ingest.
+A model turns the question into one SELECT; **Postgres, not a SQL parser, decides what comes back**. The
+statement runs inside `rag_sql_run` as the `rag_sql` role, which can read only the non-ACL columns of
+`doc_meta`, under the same signed-principal RLS as chunks (T18). It is a single cursor query, read-only,
+2 s timeout, 100-row cap, and the database writes the hash-chained audit row (hashes and status, never question
+or SQL text). The app's pre-check is only defence in depth; the adversarial suite switches it off.
+
+Evidence: [`app/test_text_to_sql.py`](app/test_text_to_sql.py) (160 hostile-statement cases across 4 users, aggregate and
+metamorphic hidden-rows tests, planted weaknesses that must fail the suite) and the
+[eval table](evals/results/2026-10-10-text-to-sql/table.md). Threat row: T25.
+
+Honest limits:
+- The model is a deterministic fake. **Nothing here says how often a real model writes correct SQL.**
+- `doc_meta` is gated by the document-level ACL only (B14); any role can read the table's total row estimate from the
+  catalog (B15), so "N documents exist" is not hidden from a determined statement author.
+- Metadata only: it does not run SQL over customer data tables, and `platform/` does not have it.
+- Audit rows hold hashes, so a reviewer can match a retained statement to its row but cannot read it from the log.
+
 ## Scope and honest limitations
 
 - **Ranking is BM25, on purpose.** The contribution is the permission model; `_score()` is
