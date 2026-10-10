@@ -1,0 +1,344 @@
+{
+  "checked_at": "2026-10-10T08:44:02.844471+00:00",
+  "source_commit": "b65e0c420d464bc248bbb35f8669cf085fa0d7cc",
+  "source_tree": "10b62b146e8af928be77b6d2cae12de58bdee379",
+  "merged_prs": [
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+  ],
+  "endpoint": "https://permission-rag-demo.b9hphyfz7skjm.us-east-2.cs.amazonlightsail.com/",
+  "region": "us-east-2",
+  "service": "permission-rag-demo",
+  "power": "nano",
+  "scale": 1,
+  "deployment_version": 2,
+  "deployment_state": "ACTIVE",
+  "image": ":permission-rag-demo.git-b65e0c420d46.2",
+  "image_digest": "sha256:c61ab71a5a410c494ab0bfa7e63cc0affce27bb57ed8852204573e8c75f6f491",
+  "model_key_configured": false,
+  "ci": {
+    "pull_request_run": "https://github.com/kgorle1111/permission-aware-rag/actions/runs/38036195914",
+    "push_run": "https://github.com/kgorle1111/permission-aware-rag/actions/runs/38036192853",
+    "both_completed": "SUCCESS",
+    "mutation_counters": {
+      "killed": 1688,
+      "survived": 20,
+      "total": 1708,
+      "no_tests": 0,
+      "skipped": 0,
+      "suspicious": 0,
+      "timeout": 0,
+      "check_was_interrupted_by_user": 0,
+      "segfault": 0
+    },
+    "parent_validator": "Passed for both downloaded artifacts under supported Python3.12/current source/waiver pins"
+  },
+  "focused_local_tests": {
+    "passed": 28,
+    "files": [
+      "platform/tests/test_sync_journal_upgrade.py",
+      "platform/tests/test_hierarchy_migrations.py",
+      "platform/tests/test_independent_audit.py",
+      "platform/tests/test_independent_contract.py"
+    ]
+  },
+  "live": {
+    "checked_at": "2026-10-10T08:44:02.844471+00:00",
+    "endpoint": "https://permission-rag-demo.b9hphyfz7skjm.us-east-2.cs.amazonlightsail.com",
+    "passed": true,
+    "permission_probes": [
+      {
+        "role": "junior",
+        "target": "claims-10023",
+        "returned_ids": [
+          "claims-10023",
+          "policy-10023",
+          "policy-10088"
+        ],
+        "target_allowed": true
+      },
+      {
+        "role": "junior",
+        "target": "bank-delgado",
+        "returned_ids": [
+          "policy-10088"
+        ],
+        "target_allowed": false
+      },
+      {
+        "role": "junior",
+        "target": "credit-memo-delgado",
+        "returned_ids": [
+          "guidelines",
+          "policy-10023",
+          "policy-10088"
+        ],
+        "target_allowed": false
+      },
+      {
+        "role": "junior",
+        "target": "watchlist",
+        "returned_ids": [
+          "policy-10088"
+        ],
+        "target_allowed": false
+      },
+      {
+        "role": "junior",
+        "target": "guidelines",
+        "returned_ids": [
+          "guidelines",
+          "policy-10023",
+          "policy-10088"
+        ],
+        "target_allowed": true
+      },
+      {
+        "role": "senior",
+        "target": "claims-10023",
+        "returned_ids": [
+          "claims-10023",
+          "policy-10023",
+          "policy-10088"
+        ],
+        "target_allowed": true
+      },
+      {
+        "role": "senior",
+        "target": "bank-delgado",
+        "returned_ids": [
+          "bank-delgado",
+          "credit-memo-delgado",
+          "policy-10088"
+        ],
+        "target_allowed": true
+      },
+      {
+        "role": "senior",
+        "target": "credit-memo-delgado",
+        "returned_ids": [
+          "bank-delgado",
+          "credit-memo-delgado",
+          "policy-10023",
+          "policy-10088"
+        ],
+        "target_allowed": true
+      },
+      {
+        "role": "senior",
+        "target": "watchlist",
+        "returned_ids": [
+          "bank-delgado",
+          "credit-memo-delgado",
+          "policy-10088"
+        ],
+        "target_allowed": false
+      },
+      {
+        "role": "senior",
+        "target": "guidelines",
+        "returned_ids": [
+          "credit-memo-delgado",
+          "guidelines",
+          "policy-10023",
+          "policy-10088"
+        ],
+        "target_allowed": true
+      },
+      {
+        "role": "compliance",
+        "target": "claims-10023",
+        "returned_ids": [
+          "claims-10023",
+          "policy-10023",
+          "policy-10088"
+        ],
+        "target_allowed": true
+      },
+      {
+        "role": "compliance",
+        "target": "bank-delgado",
+        "returned_ids": [
+          "policy-10088",
+          "watchlist"
+        ],
+        "target_allowed": false
+      },
+      {
+        "role": "compliance",
+        "target": "credit-memo-delgado",
+        "returned_ids": [
+          "guidelines",
+          "policy-10023",
+          "policy-10088"
+        ],
+        "target_allowed": false
+      },
+      {
+        "role": "compliance",
+        "target": "watchlist",
+        "returned_ids": [
+          "policy-10088",
+          "watchlist"
+        ],
+        "target_allowed": true
+      },
+      {
+        "role": "compliance",
+        "target": "guidelines",
+        "returned_ids": [
+          "guidelines",
+          "policy-10023",
+          "policy-10088",
+          "watchlist"
+        ],
+        "target_allowed": true
+      },
+      {
+        "role": "auditor",
+        "target": "claims-10023",
+        "returned_ids": [],
+        "target_allowed": false
+      },
+      {
+        "role": "auditor",
+        "target": "bank-delgado",
+        "returned_ids": [
+          "bank-delgado",
+          "watchlist"
+        ],
+        "target_allowed": true
+      },
+      {
+        "role": "auditor",
+        "target": "credit-memo-delgado",
+        "returned_ids": [
+          "bank-delgado",
+          "guidelines"
+        ],
+        "target_allowed": false
+      },
+      {
+        "role": "auditor",
+        "target": "watchlist",
+        "returned_ids": [
+          "bank-delgado",
+          "watchlist"
+        ],
+        "target_allowed": true
+      },
+      {
+        "role": "auditor",
+        "target": "guidelines",
+        "returned_ids": [
+          "guidelines",
+          "watchlist"
+        ],
+        "target_allowed": true
+      }
+    ],
+    "audit_json_roles_checked": 4,
+    "audit_csv_roles_checked": 4,
+    "unknown_role_denials": 3,
+    "retrieval_only": true,
+    "limits": [
+      "Synthetic predefined selectable roles, not real authentication",
+      "Flat demo corpus; hierarchy and platform migration tested separately",
+      "Audit history is ephemeral; no model invocation"
+    ]
+  },
+  "supplemental_csv": {
+    "checked_at_utc": "2026-10-10T08:44:04.720149+00:00",
+    "endpoint": "https://permission-rag-demo.b9hphyfz7skjm.us-east-2.cs.amazonlightsail.com",
+    "script_sha256": "66e69376ad7f32afd0a6a8240df1248b2df366e20e46f0c24e23cbd8f0de8bbb",
+    "passed": true,
+    "csv_views": [
+      {
+        "role": "junior",
+        "rows": 12,
+        "users": [
+          "junior"
+        ],
+        "columns": [
+          "ts",
+          "user",
+          "query",
+          "returned",
+          "denied_chunks",
+          "elapsed_ms"
+        ],
+        "csv_sha256": "04bc3e70cc321c3875b480283f96787b8c98797dfdfc03ebf8130285850eec7d"
+      },
+      {
+        "role": "senior",
+        "rows": 5,
+        "users": [
+          "senior"
+        ],
+        "columns": [
+          "ts",
+          "user",
+          "query",
+          "returned",
+          "denied_chunks",
+          "elapsed_ms"
+        ],
+        "csv_sha256": "7b430c75a1284e26d6906a19b1867bceebbb4cfe9ccf575f5836df81e58fa575"
+      },
+      {
+        "role": "compliance",
+        "rows": 5,
+        "users": [
+          "compliance"
+        ],
+        "columns": [
+          "ts",
+          "user",
+          "query",
+          "returned",
+          "denied_chunks",
+          "elapsed_ms"
+        ],
+        "csv_sha256": "1e4624f45a46468ed46ee4fc9d088b0fedc1bf5fff5437458c76a46938366ef3"
+      },
+      {
+        "role": "auditor",
+        "rows": 27,
+        "users": [
+          "auditor",
+          "compliance",
+          "junior",
+          "senior"
+        ],
+        "columns": [
+          "ts",
+          "user",
+          "query",
+          "returned",
+          "denied_chunks",
+          "elapsed_ms"
+        ],
+        "csv_sha256": "80f414b25ca074129a682f4eccdbb5971902ead12443d1c15c935218f6a596cf"
+      }
+    ],
+    "limits": [
+      "Requires primary release probes to seed all four roles; recent views retain only fifty rows",
+      "Predefined selectable synthetic roles, not verified production identity",
+      "Checks fixed flat chunk IDs and metadata; no text-content oracle, hierarchical permissions, model calls, durable audit, or concurrency coverage"
+    ]
+  },
+  "primary_probe_sha256": "0603feb744ec648c6e1b41233a1ec2149a994a90a59b40b2a8ccfaf44fcabdbc",
+  "limits": [
+    "Hosted component is synthetic stdlib reference workbench, not FastAPI/Qdrant platform",
+    "Demo roles are selectable, not real-user authentication",
+    "In-memory index rebuilt from synthetic corpus on startup; platform persisted-index upgrades checked separately in local/CI tests",
+    "Finite ID/metadata probes do not prove universal security, text integrity, live hierarchical revocation, score isolation, restart durability, concurrency or 100k performance",
+    "Private frozen extended probe scripts/preregistrations and original CSV schema-assumption failure retained by maintainer; public smoke is portable",
+    "Private article remains ignored and unpublished"
+  ]
+}

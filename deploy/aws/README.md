@@ -1,11 +1,18 @@
 # AWS demo deployment
 
-[Open the live demo](https://permission-rag-demo.b9hphyfz7skjm.us-east-2.cs.amazonlightsail.com/). Verified 2026-10-07 on
-Lightsail deployment version 1: HTTPS UI, allowed retrieval, forbidden-document
-check, retrieval-only answers and auditor query redaction passed. The junior
-claims workflow was also verified in the browser. The user chose to keep the
-portfolio service running. Deployment 1 uses stable reference commit `2d2b0f9e862b`;
-the hierarchy and scale changes in [PR #6](https://github.com/kgorle1111/permission-aware-rag/pull/6) are not deployed yet.
+[Open the live demo](https://permission-rag-demo.b9hphyfz7skjm.us-east-2.cs.amazonlightsail.com/). Verified 2026-10-10 on
+Lightsail deployment **version 2**, from merged commit
+`b65e0c420d464bc248bbb35f8669cf085fa0d7cc`. PRs #6–#12 are merged. HTTPS UI,
+retrieval-only operation, 20 permission probes, unknown-role denial and all four
+roles' JSON/CSV audit privacy checks passed. [Release evidence](../../evals/results/2026-10-10-aws-release/table.md)
+records the image, source tree, CI results and limits. The user chose to keep the
+portfolio service running; capacity remains one Nano node. Version 1's private
+image and deployment specification were retained for rollback.
+
+This image includes the current reference ACL/privacy implementation. It hosts
+the synthetic stdlib workbench, not the separate FastAPI/Qdrant platform or its
+scale benchmark. The reference in-memory index is rebuilt on startup; platform
+persisted-index upgrades are verified separately in local and CI tests.
 
 One **Lightsail Nano container node** in **us-east-2** serves the synthetic
 underwriting workbench over managed HTTPS. It uses predefined demo roles and
