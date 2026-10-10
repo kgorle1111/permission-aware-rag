@@ -144,7 +144,7 @@ its upgrade trigger. `app/test_ledgers.py` fails if a shortcut comment has no ro
 | B03 | open | Rate limiter is in-memory, per process | More than one server process or host | `app/underwriter_server.py` "in-memory per-process" |
 | B04 | open | Smallest model tier (Haiku) for grounded answers | An answer-quality eval shows Haiku below bar | `app/llm.py` "smallest tier" |
 | B05 | open | RLS ingest gated by a forgeable GUC, not a DB role | Before any deployment that runs untrusted SQL paths (THREAT_MODEL T13) | `app/pgvector_rag.py` "rag.mode" |
-| B06 | open | JWT group with a comma → 500 on pgvector | First real IdP integration (THREAT_MODEL T14) | `app/pgvector_rag.py` "contain no comma" |
+| B06 | done (T14, 2026-10-10) | JWT group with a comma → 500 on pgvector | First real IdP integration (THREAT_MODEL T14) | `app/pgvector_rag.py` "contain no comma" |
 | B08 | open | Semantic cache is per process, in memory | More than one server process or host | `app/rungs.py` "per-process cache" |
 | B09 | open | Semantic cache scans a scope's entries linearly | Cache holds more than ~10k entries | `app/rungs.py` "linear scan over entries" |
 | B10 | open | Chunk size counts words, not model tokens | A real embedder with a hard token limit replaces the feature-hash one | `app/rungs.py` "words approximate tokens" |

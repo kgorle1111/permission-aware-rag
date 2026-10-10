@@ -16,3 +16,4 @@ docs/COMPETITOR_SCAN-*.md
 
 # Private marketing drafts and article previews; never publish automatically.
 /marketing/
+AGENTS.local.md
