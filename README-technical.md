@@ -104,6 +104,8 @@ For readers evaluating the engineering rather than the demo:
 | **Production seams** | SSO-ready: one env var switches identity from demo dropdown to HS256 JWT validation (constant-time compare, expiry) — `can_read()` untouched. Rate limiting, input caps, CSP/nosniff, XSS-safe rendering throughout. |
 | **Prompt caching** | Static system prompt marked `cache_control: ephemeral`; per-request context deliberately uncached. Token usage surfaced per response to verify cache engagement. |
 | **Test discipline** | Four test files: exact-content leak tests, role ACL tests, mocked-LLM payload tests, and HTTP endpoint tests against a real in-process server (auth, rate-limit 429s, CSV export). Plus ruff lint + format gating CI. |
+| **Ladder harness** | `python3 evals/ladder.py` runs the kit leak suite, the app isolation check, recall@k and p50/p95 latency per retriever "rung" and prints a table against the baseline. Any leak or isolation diff marks a rung REJECTED whatever its quality. The baseline plus all 8 mutants run as negative controls; CI runs `--check` and fails if the baseline is rejected or any control is accepted. |
+| **Answer metrics** | `evals/metrics.py`: faithfulness, answer relevancy, position-weighted context precision, context recall, via an injected `judge(prompt) -> JSON` with strict parsing. Tests use a deterministic offline judge (word overlap, not meaning). A real LLM judge needs calibration against ~20 human labels (ROADMAP 7.3) before any number is reported. |
 | **Frontend** | Single-file vanilla-JS workbench on a token-based design system (dark + light, WCAG-checked), inline SVG icons, strict CSP with zero external origins. Deep links, keyboard-first, audit trail with CSV export. |
 
 ## Two backends, one guarantee
