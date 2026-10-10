@@ -316,7 +316,8 @@ def test_audit_endpoint_serves_ops_summary(api):
     assert {o: v["count"] for o, v in ops["outcomes"].items()} == {"bad_request": 1, "no_results": 1, "ok": 1}
     assert ops["cost_per_day_usd"] == {"2026-10-10": 3.5e-05}
     assert ops["failure_rate"] == 0.0
-    assert ops["latency_ms"]["p50"] > 0 and ops["latency_ms"]["p95"] >= ops["latency_ms"]["p50"]
+    # total_ms is rounded to 0.1 ms, so a fast local request can honestly be 0.0
+    assert 0 <= ops["latency_ms"]["p50"] <= ops["latency_ms"]["p95"]
 
 
 # --- daily spend cap -------------------------------------------------------------------------
