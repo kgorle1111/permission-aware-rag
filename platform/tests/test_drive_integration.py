@@ -67,7 +67,7 @@ def test_drive_vector_failure_rolls_back_checkpoint_and_retry_uses_old_token(cli
     from conftest import CORPUS
     from app import sync as sync_module
     from app.ingest import ingest_corpus
-    from app.vectorstore import update_chunk_acl as real_update
+    from app.vectorstore import update_doc_acls as real_update
 
     _reset_corpus()
     saved_tokens = []
@@ -82,7 +82,7 @@ def test_drive_vector_failure_rolls_back_checkpoint_and_retry_uses_old_token(cli
     def fail_vector_write(*_args, **_kwargs):
         raise RuntimeError("vector store unavailable")
 
-    monkeypatch.setattr(sync_module, "update_chunk_acl", fail_vector_write)
+    monkeypatch.setattr(sync_module, "update_doc_acls", fail_vector_write)
     try:
         with pytest.raises(RuntimeError, match="vector store unavailable"):
             sync_once()
@@ -95,7 +95,7 @@ def test_drive_vector_failure_rolls_back_checkpoint_and_retry_uses_old_token(cli
             assert state.pending is True
             assert row.acl == ["group:hr"]
 
-        monkeypatch.setattr(sync_module, "update_chunk_acl", real_update)
+        monkeypatch.setattr(sync_module, "update_doc_acls", real_update)
         assert "hr-salaries" in sync_once()
         assert saved_tokens == ["drive-token-1", "drive-token-1"]
         with SessionLocal() as session:

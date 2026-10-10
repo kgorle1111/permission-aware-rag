@@ -123,7 +123,7 @@ def resolve_user(handler, qs, body):
     if JWT_SECRET:
         return user_from_jwt(handler.headers.get("Authorization", ""))
     uid = (body or {}).get("user") or qs.get("user", [""])[0]
-    return USERS.get(uid)
+    return USERS.get(uid) if isinstance(uid, str) else None
 
 
 # /ask is a paid API call; bound it per client IP before this ever leaves loopback.
@@ -176,9 +176,27 @@ def rate_limited(ip):
 
 
 def audit_for(user):
-    """Audit entries visible to this user: own entries only, unless in the audit group."""
+    """Audit group sees other users' ids/counts, but never their query text."""
     entries = rag.audit if "audit" in user["groups"] else [e for e in rag.audit if e["user"] == user["id"]]
-    return entries[-50:]
+    # Export a view; never mutate the append-only source or expose hashes of
+    # another user's potentially low-entropy query for offline guessing.
+    return [
+        {
+            k: ("[redacted]" if k == "query" and e["user"] != user["id"] else v)
+            for k, v in e.items()
+            if k != "prev_sha256"
+        }
+        for e in entries[-50:]
+    ]
+
+
+def csv_cell(value):
+    """Neutralize formulas in every exported cell, preserving the source value."""
+    text = str(value)
+    significant = text.lstrip(" \t\r\n\ufeff")
+    if text.startswith(("\t", "\r", "\n")) or significant.startswith(("=", "+", "-", "@")):
+        return "'" + text
+    return value
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -198,7 +216,7 @@ class Handler(BaseHTTPRequestHandler):
                 {"error": "valid bearer token required" if JWT_SECRET else "need user and q"},
             )
             return
-        if not query:
+        if not isinstance(query, str) or not query:
             self._json(400, {"error": "need user and q"})
             return
         if len(query) > MAX_Q_LEN:
@@ -207,7 +225,11 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/ask" and rate_limited(self.client_address[0]):
             self._json(429, {"error": "rate limited; retry in a minute"})
             return
-        results = rag.retrieve(query, user, k=4)
+        try:
+            results = rag.retrieve(query, user, k=4)
+        except Exception:
+            self._json(503, {"error": "retrieval unavailable"})
+            return
         out = {"results": results}
         if SHOW_DENIED:
             out["denied_chunks"] = rag.audit[-1]["denied_chunks"]
@@ -239,17 +261,23 @@ class Handler(BaseHTTPRequestHandler):
         if url.path not in ("/query", "/ask"):
             self._json(404, {"error": "not found"})
             return
-        length = int(self.headers.get("Content-Length") or 0)
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            self._json(400, {"error": "invalid Content-Length"})
+            return
         if not 0 < length <= MAX_BODY:
             self._json(400, {"error": "need a JSON body"})
             return
         try:
             body = json.loads(self.rfile.read(length))
-            assert isinstance(body, dict)
-        except (ValueError, AssertionError):
+        except ValueError:
             self._json(400, {"error": "malformed JSON body"})
             return
-        self._qa(url.path, resolve_user(self, {}, body), str(body.get("q", "")))
+        if not isinstance(body, dict):
+            self._json(400, {"error": "JSON body must be an object"})
+            return
+        self._qa(url.path, resolve_user(self, {}, body), body.get("q", ""))
 
     def do_GET(self):
         url = urlparse(self.path)
@@ -272,12 +300,15 @@ class Handler(BaseHTTPRequestHandler):
                 for e in entries:
                     w.writerow(
                         [
-                            e["ts"],
-                            e["user"],
-                            e["query"],
-                            ";".join(e["returned"]),
-                            e["denied_chunks"],
-                            e.get("elapsed_ms", ""),
+                            csv_cell(value)
+                            for value in [
+                                e["ts"],
+                                e["user"],
+                                e["query"],
+                                ";".join(e["returned"]),
+                                e["denied_chunks"],
+                                e.get("elapsed_ms", ""),
+                            ]
                         ]
                     )
                 body = buf.getvalue().encode()

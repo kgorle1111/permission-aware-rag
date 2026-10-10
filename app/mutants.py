@@ -86,3 +86,22 @@ class SharedCache(PermissionRAG):
 
 
 MUTANTS = [NoFilter, GlobalIdf, PostFilterTopK, StarSubstring, GroupPrefix, SharedCache]
+
+
+class AnyLevelGrants(PermissionRAG):
+    """Wrongly treats document/section/paragraph grants as alternatives."""
+
+    def can_read_chunk(self, user, chunk):
+        return any(self.can_read(user, chunk[level]) for level in ("acl_doc", "acl_section", "acl_para"))
+
+
+class FlattenIntersection(PermissionRAG):
+    """Locks out users who satisfy levels through different memberships."""
+
+    def can_read_chunk(self, user, chunk):
+        levels = [chunk[level] for level in ("acl_doc", "acl_section", "acl_para") if "*" not in chunk[level]]
+        flat = set.intersection(*(set(level) for level in levels)) if levels else {"*"}
+        return self.can_read(user, flat)
+
+
+MUTANTS += [AnyLevelGrants, FlattenIntersection]

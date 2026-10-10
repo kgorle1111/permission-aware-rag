@@ -56,8 +56,8 @@ This system prevents the leak by construction, instead of filtering after the fa
    this gate passed unchanged.
 4. **Evidence that scales** — a frozen 210-doc generated corpus gives **0/1,350 leaks
    (95% upper bound 0.28%)**, and an isolation check (results must be identical to a
-   corpus holding only the caller's readable docs) catches all 6 deliberately leaky
-   retrievers in [`app/mutants.py`](app/mutants.py). Hand-labeled cases alone caught 1 of 6.
+   corpus holding only the caller's readable docs) catches all 8 deliberately faulty
+   retrievers (including two hierarchy faults) in [`app/mutants.py`](app/mutants.py). Hand-labeled cases alone caught 1 of 6.
    [Results](evals/results/2026-10-03-v2/table.md) · [Threat model](docs/THREAT_MODEL.md) ·
    [Decisions](docs/DECISIONS.md) · [Roadmap](ROADMAP.md)
 
@@ -99,7 +99,7 @@ For readers evaluating the engineering rather than the demo:
 | **Eval-driven development** | Retrieval changes gate on a per-role eval suite with *negative* assertions (must-not-return docs) — for a permissions product, the absence of a result is the spec. Runs in CI on every push. |
 | **Prompt-injection boundary** | Retrieved text is framed in `<document>` tags and declared data-not-instructions; tested by inspecting the actual assembled API payload (mocked transport, zero spend). |
 | **Hallucination containment** | Every `[doc-id]` the model cites is verified against the retrieved set; unverified citations are surfaced to the user, not hidden. |
-| **Tamper-evident audit** | Each JSONL audit entry chains a SHA-256 of the previous line; `verify_audit_chain()` detects any edited or removed entry. Trail survives restarts. |
+| **Tamper-evident audit** | Each JSONL entry chains the previous line’s SHA-256; a separate `.head` checkpoint detects edits and tail truncation. Restart verifies both files and fails closed on mismatch. Rewriting both files requires an independently retained head to detect. |
 | **Cost & latency receipts** | Every LLM answer returns `llm_ms` and `est_cost_usd` from real token usage; running totals per session. Value claims are measured, not estimated. |
 | **Production seams** | SSO-ready: one env var switches identity from demo dropdown to HS256 JWT validation (constant-time compare, expiry) — `can_read()` untouched. Rate limiting, input caps, CSP/nosniff, XSS-safe rendering throughout. |
 | **Prompt caching** | Static system prompt marked `cache_control: ephemeral`; per-request context deliberately uncached. Token usage surfaced per response to verify cache engagement. |
@@ -142,11 +142,11 @@ deployable service:
 | Vectors | BM25 / pgvector + RLS | Qdrant + SQL store |
 | Identity | demo roles / HS256 seam | RS256 JWT, verified per request |
 | Source sync | static corpus | Google Drive delta + webhook, permission revocation |
-| Tests | leak evals, mutants, isolation oracle | 304 tests, 98.85% branch coverage (≥96% gate), blocking mutation gate |
+| Tests | leak evals, mutants, isolation oracle | 322 tests, 98.91% branch coverage (≥96% gate), blocking mutation gate |
 | Shipping | Render one-click | Docker image (non-root), container smoke CI |
 
 The platform has its own CI in [`.github/workflows/platform.yml`](.github/workflows/platform.yml).
-Its mutation gate is blocking: of 1,300 mutants, every survivor was either killed by a test
+Its mutation gate is blocking: of 1,486 mutants, every survivor was either killed by a test
 or recorded as a reviewed equivalent in [`platform/mutation_equivalents.json`](platform/mutation_equivalents.json),
 pinned by source and mutant hash, so any new survivor fails the build.
 
@@ -158,8 +158,8 @@ pinned by source and mutant hash, so any new survivor fails the build.
 | Score side channel from hidden docs | ✅ Fixed — visible-set statistics; regression-tested |
 | Prompt injection via document text | ✅ Bounded — data/instruction framing + payload tests |
 | Hallucinated citations | ✅ Detected — post-hoc verification, surfaced in UI |
-| Audit log tampering (edit/remove) | ✅ Detected — SHA-256 hash chain |
-| Audit log truncation from the tail | ⚠️ Needs an externally anchored head hash — documented, deferred |
+| Audit log tampering (edit/remove) | ✅ JSONL chain plus local head; pgvector checks stored line hashes |
+| Audit log truncation from the tail | ✅ JSONL-only truncation detected against local head; ⚠️ pgvector truncation or rewriting both JSONL files needs external anchoring |
 | Cross-doc aggregation (LLM synthesizes a conclusion no single doc supports) | ⚠️ Mitigated by citation-required prompting; needs answer-level evals |
 | Denied-count side channel | ⚙️ Deliberate demo feature; `SHOW_DENIED=0` disables it |
 
@@ -174,7 +174,8 @@ rag.add_document("salaries", "salary bands range from 90k to 250k", {"group:hr"}
 rag.retrieve("salary bands", {"id": "bob", "groups": ["hr"]}, k=3)  # → ranked chunks
 rag.retrieve("salary bands", {"id": "alice", "groups": ["eng"]})  # → [] (never scored)
 
-PermissionRAG.verify_audit_chain("audit_log.jsonl")  # → True unless tampered
+PermissionRAG.verify_audit_chain("audit_log.jsonl")  # checks chain + local .head
+# For a stronger check, pass an independently retained expected_head=...
 ```
 
 ```bash
@@ -185,7 +186,7 @@ curl -s -X POST http://127.0.0.1:8421/ask -H 'content-type: application/json' \
 ```
 
 Full surface: `POST /query` (retrieval only), `POST /ask` (adds the drafted answer,
-rate-limited), `GET /audit` (per-caller scoped; `&format=csv` to export), `GET /presets`.
+rate-limited), `GET /audit` (own queries; audit group sees others’ ids/counts with queries redacted; `&format=csv` neutralizes formula cells), `GET /presets`.
 ACL entries are `user:<id>`, `group:<name>`, or `"*"`; empty ACLs and duplicate ingests
 are rejected at write time.
 
@@ -214,3 +215,25 @@ eval gate; the commit history reads as the changelog.
 ## License
 
 Apache-2.0
+
+### Audit checkpoint compatibility
+
+Keep `audit_log.jsonl` and its `.head` checkpoint together. Legacy logs without a
+checkpoint are unanchored: startup rejects them without rewriting the history.
+To preserve one, independently verify its provenance and linkage using
+`verify_audit_chain(path, expected_head=trusted_head)` before provisioning the
+checkpoint with that trusted digest. Do not compute a replacement checkpoint
+from a log suspected of tampering. A crash between append and checkpoint update
+also fails closed; recovery requires checking the log against trusted evidence.
+The reference JSONL writer supports one process per audit file.
+
+### AWS showcase deployment
+
+The reference workbench has an [AWS Lightsail deployment](deploy/aws/README.md)
+with private image uploads, managed HTTPS, one Nano node and a local smoke check
+under its resource limits. It uses synthetic documents and retrieval-only answers.
+[Live HTTPS demo](https://permission-rag-demo.b9hphyfz7skjm.us-east-2.cs.amazonlightsail.com/)
+verified on 2026-10-07: allowed retrieval, forbidden-document check, retrieval-only
+answers and auditor query redaction all passed; the junior claims workflow was
+also verified in the browser. Demo role selection is not real-user authentication.
+Audit history is ephemeral across container replacement.

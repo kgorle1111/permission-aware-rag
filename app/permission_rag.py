@@ -9,8 +9,10 @@ ACL entries: "user:<id>", "group:<name>", or "*" (public).
 import hashlib
 import json
 import math
+import os
 import pathlib
 import re
+import tempfile
 import threading
 import time
 from collections import Counter
@@ -51,6 +53,10 @@ class PermissionRAG:
         self.audit_path = pathlib.Path(audit_path) if audit_path else None
         self._audit_lock = threading.Lock()  # servers run threaded; keep JSONL lines whole
         self._last_hash = ""  # tamper-evident chain: each entry carries prev line's sha256
+        self._audit_failed = False
+        if self.audit_path and (self.audit_path.exists() or self.audit_head_path(self.audit_path).exists()):
+            if not self.verify_audit_chain(self.audit_path):
+                raise ValueError("audit log or head checkpoint is missing, corrupt, or unanchored")
         if self.audit_path and self.audit_path.exists():
             with self.audit_path.open() as f:
                 lines = [line.rstrip("\n") for line in f if line.strip()]
@@ -58,21 +64,76 @@ class PermissionRAG:
             if lines:
                 self._last_hash = hashlib.sha256(lines[-1].encode()).hexdigest()
 
-    def add_document(self, doc_id: str, text: str, acl: Iterable[str], chunk_words: int = 80) -> None:
-        """Ingest a document. `acl` is the set of principals allowed to read it."""
-        acl = normalize_acl(acl)
+    def add_document(
+        self,
+        doc_id: str,
+        text: str,
+        acl: Iterable[str],
+        chunk_words: int = 80,
+        *,
+        sections: list[dict] | None = None,
+    ) -> None:
+        """Ingest atomically; each optional section/paragraph ACL narrows its parents."""
+        chunks = self.document_chunks(text, acl, chunk_words, sections=sections)
         if any(c["doc_id"] == doc_id for c in self.chunks):
             raise ValueError(f"doc_id {doc_id!r} already ingested — use remove_document() then re-add")
-        for i, chunk_text in enumerate(self._chunk_texts(text, chunk_words)):
+        for i, chunk in enumerate(chunks):
             self.chunks.append(
                 {
                     "id": f"{doc_id}#{i}",
                     "doc_id": doc_id,
-                    "text": chunk_text,
-                    "acl": acl,
-                    "tf": Counter(tokenize(chunk_text)),
+                    **chunk,
+                    "tf": Counter(tokenize(chunk["text"])),
                 }
             )
+
+    @staticmethod
+    def document_chunks(text, acl, chunk_words=80, *, sections=None):
+        """Validate all boundaries before ingest; overlap never crosses a boundary.
+
+        Missing child ACL means unrestricted at that level; an explicitly empty
+        or malformed ACL is rejected rather than silently becoming public.
+        """
+        doc_acl = normalize_acl(acl)
+        if not isinstance(text, str) or not isinstance(chunk_words, int) or chunk_words < 1:
+            raise ValueError("text must be a string and chunk_words a positive integer")
+        if sections is not None and not isinstance(sections, list):
+            raise TypeError("sections must be a list")
+        chunks = []
+
+        def pack(value, section_acl, paragraph_acl):
+            if not isinstance(value, str):
+                raise TypeError("paragraph text must be a string")
+            for part in PermissionRAG._chunk_texts(value, chunk_words):
+                chunks.append(
+                    {
+                        "text": part,
+                        "acl": doc_acl,
+                        "acl_doc": doc_acl,
+                        "acl_section": section_acl,
+                        "acl_para": paragraph_acl,
+                    }
+                )
+
+        pack(text, frozenset({"*"}), frozenset({"*"}))
+        for section in sections or []:
+            if not isinstance(section, dict):
+                raise TypeError("section must be an object")
+            section_acl = normalize_acl(section["acl"]) if "acl" in section else frozenset({"*"})
+            if "paragraphs" in section:
+                if "text" in section or not isinstance(section["paragraphs"], list):
+                    raise ValueError("section requires either text or a paragraphs list")
+                for para in section["paragraphs"]:
+                    if not isinstance(para, dict):
+                        raise TypeError("paragraph must be an object")
+                    para_acl = normalize_acl(para["acl"]) if "acl" in para else frozenset({"*"})
+                    pack(para.get("text"), section_acl, para_acl)
+            else:
+                pack(section.get("text"), section_acl, frozenset({"*"}))
+        return chunks
+
+    def can_read_chunk(self, user, chunk):
+        return all(self.can_read(user, chunk[level]) for level in ("acl_doc", "acl_section", "acl_para"))
 
     @staticmethod
     def _chunk_texts(text: str, chunk_words: int) -> list[str]:
@@ -139,7 +200,9 @@ class PermissionRAG:
         cannot leak through relative scores or result ordering.
         """
         t0 = time.perf_counter()
-        visible = [c for c in self.chunks if self.can_read(user, c["acl"])]
+        if self._audit_failed:
+            raise RuntimeError("audit persistence failed; recovery required")
+        visible = [c for c in self.chunks if self.can_read_chunk(user, c)]
         denied = len(self.chunks) - len(visible)
         # IDF over the visible set only: a hidden doc must not shift visible scores
         df = Counter()
@@ -165,27 +228,71 @@ class PermissionRAG:
             "elapsed_ms": round((time.perf_counter() - t0) * 1000, 2),
         }
         with self._audit_lock:
+            if self._audit_failed:
+                raise RuntimeError("audit persistence failed; recovery required")
             entry["prev_sha256"] = self._last_hash
             line = json.dumps(entry)
-            self._last_hash = hashlib.sha256(line.encode()).hexdigest()
+            head = hashlib.sha256(line.encode()).hexdigest()
+            if self.audit_path:
+                try:
+                    with self.audit_path.open("a") as f:
+                        f.write(line + "\n")
+                        f.flush()
+                        os.fsync(f.fileno())
+                    self._write_audit_head(head)
+                except OSError:
+                    self._audit_failed = True
+                    raise
+            self._last_hash = head
             self.audit.append(entry)
             if len(self.audit) > self.AUDIT_MAX:
                 del self.audit[: -self.AUDIT_MAX]
-            if self.audit_path:
-                with self.audit_path.open("a") as f:
-                    f.write(line + "\n")
         return results
 
     @staticmethod
-    def verify_audit_chain(path: str | pathlib.Path) -> bool:
-        """True iff the JSONL audit log's hash chain is intact (no edited/removed lines)."""
+    def audit_head_path(path: str | pathlib.Path) -> pathlib.Path:
+        return pathlib.Path(str(path) + ".head")
+
+    def _write_audit_head(self, head: str) -> None:
+        """Replace the local checkpoint only after the append has been flushed.
+
+        A crash between the two writes fails closed on restart. This checkpoint
+        detects tail edits/truncation, but an attacker who rewrites BOTH files
+        requires an independently retained expected_head to be detected.
+        """
+        target = self.audit_head_path(self.audit_path)
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(mode="w", dir=target.parent, delete=False) as f:
+                temporary = pathlib.Path(f.name)
+                f.write(head)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(temporary, target)
+        finally:
+            if temporary and temporary.exists():
+                temporary.unlink()
+
+    @staticmethod
+    def verify_audit_chain(path: str | pathlib.Path, expected_head: str | None = None) -> bool:
+        """Verify every line AND the head; supply an external head for stronger evidence.
+
+        Without expected_head, require the local .head checkpoint. Legacy logs
+        without a checkpoint are unanchored and cannot be silently trusted.
+        """
         prev = ""
-        with pathlib.Path(path).open() as f:
-            for line in f:
-                line = line.rstrip("\n")
-                if not line.strip():
-                    continue
-                if json.loads(line).get("prev_sha256") != prev:
-                    return False
-                prev = hashlib.sha256(line.encode()).hexdigest()
-        return True
+        try:
+            if expected_head is None:
+                expected_head = PermissionRAG.audit_head_path(path).read_text()
+            with pathlib.Path(path).open() as f:
+                for line in f:
+                    if not line.endswith("\n"):
+                        return False
+                    line = line[:-1]
+                    entry = json.loads(line)
+                    if not isinstance(entry, dict) or entry.get("prev_sha256") != prev:
+                        return False
+                    prev = hashlib.sha256(line.encode()).hexdigest()
+        except (OSError, ValueError, UnicodeError):
+            return False
+        return prev == expected_head

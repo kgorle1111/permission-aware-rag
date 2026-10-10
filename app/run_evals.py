@@ -81,7 +81,59 @@ def isolation_gate(cls, verbose=True):
                 diffs += 1
                 if verbose:
                     print(f"ISOLATION  [{role}] {q[:50]!r}: got {got} want {want}")
-    return diffs, len(srv.USERS) * len(probes)
+    hd, hp = hierarchy_isolation_gate(cls, verbose)
+    return diffs + hd, len(srv.USERS) * len(probes) + hp
+
+
+def hierarchy_isolation_gate(cls, verbose=True):
+    """Explicit expected ids; oracle does not invoke the tested ACL matcher."""
+
+    def build(kind):
+        rag = kind()
+        rag.add_document(
+            "nested",
+            "",
+            ["group:hr"],
+            sections=[
+                {
+                    "acl": ["user:bob"],
+                    "paragraphs": [
+                        {"text": "salary policy ordinary details"},
+                        {"text": "salary policy secret compensation", "acl": ["group:executive"]},
+                    ],
+                },
+            ],
+        )
+        rag.add_document(
+            "public",
+            "salary policy public overview",
+            ["*"],
+            sections=[
+                {"text": "salary policy private forecast", "acl": ["group:executive"]},
+            ],
+        )
+        return rag
+
+    cases = [
+        ({"id": "bob", "groups": ["hr"]}, {"nested#0", "public#0"}),
+        ({"id": "bob", "groups": []}, {"public#0"}),
+        ({"id": "alice", "groups": ["hr"]}, {"public#0"}),
+        ({"id": "bob", "groups": ["hr", "executive"]}, {"nested#0", "nested#1", "public#0", "public#1"}),
+    ]
+    rag = build(cls)
+    diffs = 0
+    probes = ["salary policy", "secret compensation private forecast"]
+    for user, allowed in cases:
+        ref = build(PermissionRAG)
+        ref.chunks = [c for c in ref.chunks if c["id"] in allowed]
+        for query in probes:
+            got = [(r["id"], r["score"]) for r in rag.retrieve(query, user, k=20)]
+            want = [(r["id"], r["score"]) for r in ref.retrieve(query, user, k=20)]
+            if got != want:
+                diffs += 1
+                if verbose:
+                    print(f"HIERARCHY ISOLATION [{user['id']}] {query!r}: got {got} want {want}")
+    return diffs, len(cases) * len(probes)
 
 
 def mutants():

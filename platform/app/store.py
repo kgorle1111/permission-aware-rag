@@ -19,6 +19,8 @@ from sqlalchemy import (
     String,
     Text,
     create_engine,
+    inspect,
+    text,
     update,
 )
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -69,6 +71,7 @@ class ChunkPolicy(Base):
     chunk_id = Column(Integer, primary_key=True)
     doc_acl = Column(JSON, nullable=False)
     section_acl = Column(JSON, nullable=True)
+    paragraph_acl = Column(JSON, nullable=True)
 
 
 class SourceCheckpoint(Base):
@@ -88,7 +91,15 @@ class PermissionState(Base):
 
 
 def init_db():
+    existing = inspect(engine)
+    migrate = (existing.has_table("chunk_policy") and
+               "paragraph_acl" not in {c["name"] for c in existing.get_columns("chunk_policy")})
     Base.metadata.create_all(engine)
+    if migrate:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE chunk_policy ADD COLUMN paragraph_acl JSON"))
+            conn.execute(update(PermissionState).values(pending=True, rebuild_required=True,
+                                                       revision=PermissionState.revision + 1))
     with SessionLocal() as s:
         if s.get(PermissionState, 1) is None:
             s.add(PermissionState(id=1, revision=0, pending=True))

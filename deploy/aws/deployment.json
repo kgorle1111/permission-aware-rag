@@ -1,0 +1,22 @@
+{
+  "serviceName": "permission-rag-demo",
+  "containers": {
+    "workbench": {
+      "image": "REPLACED_WITH_PRIVATE_LIGHTSAIL_IMAGE",
+      "environment": {"HOST": "0.0.0.0", "PORT": "8080"},
+      "ports": {"8080": "HTTP"}
+    }
+  },
+  "publicEndpoint": {
+    "containerName": "workbench",
+    "containerPort": 8080,
+    "healthCheck": {
+      "healthyThreshold": 2,
+      "unhealthyThreshold": 3,
+      "timeoutSeconds": 5,
+      "intervalSeconds": 10,
+      "path": "/",
+      "successCodes": "200"
+    }
+  }
+}

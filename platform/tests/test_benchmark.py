@@ -70,3 +70,13 @@ def test_benchmark_worker_errors_do_not_produce_a_success_report(monkeypatch):
     with pytest.raises(RuntimeError, match="worker failed"):
         benchmark.run_worker(DEFAULT_CORPUS, 1)
     assert benchmark._package_version("nonexistent-permission-rag-package") == "not-installed"
+
+
+def test_benchmark_oracle_preserves_independent_acl_levels():
+    from scripts.benchmark import _chunk_can_read
+    chunk={"acl":[], "acl_doc":["group:hr"],"acl_section":["user:bob"],"acl_para":["*"]}
+    assert _chunk_can_read(chunk,["*","user:bob","group:hr"])
+    assert not _chunk_can_read(chunk,["*","user:bob"])
+    assert not _chunk_can_read(chunk,["*","user:alice","group:hr"])
+    del chunk["acl_para"]
+    assert not _chunk_can_read(chunk,["*","user:bob","group:hr"])
