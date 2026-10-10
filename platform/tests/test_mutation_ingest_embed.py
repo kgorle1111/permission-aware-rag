@@ -205,7 +205,8 @@ def test_full_ingest_commits_barrier_revision_acl_rows_and_clears_retrieval_cach
     assert [chunk["acl"] for chunk in upserted] == [["*"], ["group:hr"]]
     assert all(len(chunk["vector"]) == 2 for chunk in upserted)
     assert deleted == [ChunkACL, ChunkPolicy, SourceCheckpoint,
-                       ingest.PermissionMutation, ingest.PendingSourceCheckpoint]
+                       ingest.PermissionMutation, ingest.PendingSourceCheckpoint,
+                       ingest.ChunkText, ingest.IndexFingerprint]
     assert [row.acl for row in added if isinstance(row, ChunkACL)] == [
         ["*"], ["group:hr"]
     ]

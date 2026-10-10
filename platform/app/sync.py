@@ -13,7 +13,7 @@ from . import config
 from .ingest import strictest, validate_acl
 from .retrieval import clear_cache
 from .store import (ChunkACL, ChunkPolicy, SourceCheckpoint, PermissionMutation,
-                    PendingSourceCheckpoint, permission_transaction)
+                    PendingSourceCheckpoint, ChunkText, permission_transaction)
 from .vectorstore import update_doc_acls, delete_doc
 
 log = logging.getLogger("permrag")
@@ -153,6 +153,7 @@ def sync_once(source_path: str | Path = None) -> list[str]:
             if acl is None:
                 s.delete(row)
                 s.delete(policy)
+                s.query(ChunkText).filter(ChunkText.chunk_id == row.chunk_id).delete()
                 continue
             effective = strictest(strictest(acl, policy.section_acl or []), policy.paragraph_acl)
             if policy.doc_acl != acl or row.acl != effective:

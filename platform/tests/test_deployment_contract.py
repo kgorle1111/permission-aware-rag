@@ -67,7 +67,8 @@ def test_pending_permission_state_bypasses_previously_cached_answer(client):
 
         blocked = client.post("/query", json={"query": query}, headers=auth("bob"))
         assert blocked.status_code == 200
-        assert blocked.json() == {"results": [], "answer": "No results found."}
+        from app import retrieval
+        assert blocked.json() == retrieval.EMPTY_RESPONSE
     finally:
         # Restore the durable state so this fixture does not leak into later tests.
         with SessionLocal() as session:

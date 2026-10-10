@@ -59,3 +59,9 @@ DRIVE_SUBJECT = os.getenv("DRIVE_SUBJECT", "")
 DRIVE_WEBHOOK_CHANNEL_ID = os.getenv("DRIVE_WEBHOOK_CHANNEL_ID", "")
 DRIVE_WEBHOOK_TOKEN = os.getenv("DRIVE_WEBHOOK_TOKEN", "")
 DRIVE_WEBHOOK_RESOURCE_ID = os.getenv("DRIVE_WEBHOOK_RESOURCE_ID", "")
+
+# Embedding model identity recorded in the index fingerprint ("" = backend default)
+EMBED_MODEL = os.getenv("EMBED_MODEL", "")
+# Circuit breakers (embedder / vector store / LLM): consecutive failures to open, seconds to half-open
+BREAKER_THRESHOLD = int(os.getenv("BREAKER_THRESHOLD", "3"))
+BREAKER_RESET_S = float(os.getenv("BREAKER_RESET_S", "30"))
