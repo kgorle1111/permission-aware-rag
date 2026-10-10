@@ -142,6 +142,19 @@ def test_retrieval_error_is_503(server):
     assert {k: v for k, v in response.items() if k != "request_id"} == {"error": "retrieval unavailable"}
 
 
+def test_audit_csv_exports_agent_chunk_reads(server):
+    """read_chunk entries carry `op` and no query/denied count; the export must not KeyError on them."""
+    assert _post(server, "/query", {"user": "junior", "q": "policy"})[0] == 200
+    chunk_id = srv.rag.chunks[0]["id"]
+    assert srv.rag.read_chunk(chunk_id, srv.USERS["junior"]) is not None
+    with urllib.request.urlopen(server + "/audit?user=junior&format=csv") as response:
+        assert response.status == 200
+        rows = list(csv.reader(io.StringIO(response.read().decode())))
+    assert rows[0] == ["ts", "user", "query", "returned", "denied_chunks", "elapsed_ms", "op"]
+    assert [r[6] for r in rows[1:]] == ["search", "get_chunk"]
+    assert rows[2][1:6] == ["junior", "", chunk_id, "", ""]
+
+
 def test_audit_query_redaction(server):
     for user in ("junior", "senior", "auditor"):
         assert _post(server, "/query", {"user": user, "q": user + " confidential query"})[0] == 200
