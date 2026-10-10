@@ -61,6 +61,16 @@
       "mutant_sha256": "6ecb8a435d60cebf31a2748b4620d9bb920e6d5535b8594c79fa774dcfdac936",
       "reason": "retry_after '' vs None: both make _delay fall through to jitter (float('') raises ValueError, caught)."
     },
+    "app.generation.x_answer__mutmut_18": {
+      "source_sha256": "45411945e9c8b25d9f519c1b3078d9c39f355e9ccfd24540c42f59ff7b23a57b",
+      "mutant_sha256": "bc329cd773aa02dddfec4159a27e9108525b81ff0cba68d2da31a75ce513260f",
+      "reason": "html.escape(doc_id) without quote=True is identical: html.escape's quote parameter defaults to True."
+    },
+    "app.generation.x_answer__mutmut_25": {
+      "source_sha256": "45411945e9c8b25d9f519c1b3078d9c39f355e9ccfd24540c42f59ff7b23a57b",
+      "mutant_sha256": "b595d68cb8f8a832d3686c3f4a0c68952fd09cc41e5548ec088cdb2337e69a93",
+      "reason": "html.escape(text) without quote=True is identical: html.escape's quote parameter defaults to True."
+    },
     "app.identity.x_principal_from_request__mutmut_7": {
       "reason": "Starlette Headers.get is case-insensitive, so 'AUTHORIZATION' reads the same header as 'authorization'.",
       "source_sha256": "9d7f2496c79c76f93ac76ef70a111669f2fd5b0215f0a1ac04d7486d59be83f6",
