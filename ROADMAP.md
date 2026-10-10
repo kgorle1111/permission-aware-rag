@@ -5,7 +5,7 @@ links to a test, a committed result, or a ledger row:
 [decisions](docs/DECISIONS.md) · [threat model](docs/THREAT_MODEL.md) ·
 [eval results](evals/results/2026-10-03-v2/table.md).
 
-Current implementation work is in [PR #6](https://github.com/kgorle1111/permission-aware-rag/pull/6), open and awaiting CI/review. The 2026-10-07 rows below describe locally verified work on that branch; they are not merged yet. The AWS demo is already live on the prior stable reference image.
+Current implementation work is in [PR #6](https://github.com/kgorle1111/permission-aware-rag/pull/6), open with passed CI and awaiting review. The 2026-10-07 rows below describe locally verified work on that branch; they are not merged yet. The AWS demo is already live on the prior stable reference image.
 
 ## Shipped and implemented
 
@@ -28,7 +28,7 @@ The reports, kit and narrative drafts are in [draft PR #7](https://github.com/kg
 - [100k-document / 1.5M-chunk local measurement](evals/results/2026-10-08-scale/table.md): filtered engine retrieval met the local p95 target; actual folder reconciliation took **104.92 s**, missing the <60 s target. Production full-materialization ingest and end-to-end API timing remain unmeasured.
 - [Public-input fixture and adapter evidence](evals/results/2026-10-08-public-kit/table.md): 87 National Archives paragraphs with fictional permissions; zero failures in 2,088 visibility/isolation probes, 197/197 required hits, and eight planted faults caught. The missing historical corpus remains unrecovered.
 - [Portable leak-test kit](evals/kit/README.md) with an independent ACL oracle, positive controls, reference/standalone adapters and an optional promptfoo shim. An external unassisted integration remains unproven.
-- [Write-up](docs/PORTFOLIO_WRITEUP.md) and [five-minute walkthrough](docs/WALKTHROUGH.md) drafted; publication outside this repository and rehearsal are not claimed.
+- Article draft kept privately in gitignored marketing materials at the maintainer’s request. The [five-minute walkthrough](docs/WALKTHROUGH.md) is drafted; publication and rehearsal are not claimed.
 
 ### First adversarial security review (2026-07-20)
 
@@ -57,10 +57,10 @@ These were written before the scaled eval ran. Negative results get published th
 ## Next
 
 1. **Review PR #6**, whose CI checks passed, and the subsequent evidence batch. The live demo still runs the prior stable image.
-2. **Review the reconciliation improvement:** durable document intents reduce affected-row hydration and vector replay while preserving retry and deletion barriers. [Remeasurement](evals/results/2026-10-08-sync-optimized/table.md): single-document 0.63 s, folder 13.31 s; necessary global SQL integrity scans remain. Local gates: 358 tests, 98.97% branch coverage, 1,646/1,661 mutants killed and 15 reviewed equivalents.
-3. **Broader real-world eval:** realistic domain input and independent questions/permission provenance, beyond the small public-text fixture.
-4. **External integration:** have an engineer run the kit unassisted against a separate retriever (L4).
-5. **Publish the write-up and rehearse the interview walkthrough.**
+2. **Review [PR #8](https://github.com/kgorle1111/permission-aware-rag/pull/8), the reconciliation improvement:** durable document intents reduce affected-row hydration and vector replay while preserving retry and deletion barriers. [Remeasurement](evals/results/2026-10-08-sync-optimized/table.md): single-document 0.63 s, folder 13.31 s; necessary global SQL integrity scans remain. Local gates: 358 tests, 98.97% branch coverage, 1,646/1,661 mutants killed and 15 reviewed equivalents.
+3. **Broader real-world eval — paused:** resume only with industry-relevant input and documented non-fictional permissions. [Source research and requirements](docs/REAL_INPUT_REQUIREMENTS.md) record why public regulations plus invented roles do not qualify.
+4. **External integration:** have an engineer run the kit unassisted against a separate retriever (L4). [Run protocol and feedback form](docs/EXTERNAL_VALIDATION.md) are prepared; no external result is claimed.
+5. **Article publication paused; rehearse the interview walkthrough.** [Publication metadata and timed rubric](docs/PUBLICATION_CHECKLIST.md) are prepared; actual publication and human rehearsal remain open.
 
 ## Permissions that scale to 100,000 documents
 
