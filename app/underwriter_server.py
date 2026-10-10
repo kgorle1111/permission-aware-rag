@@ -79,7 +79,12 @@ if os.environ.get("RAG_BACKEND") == "pgvector":
     from pgvector_rag import PgVectorRAG
 
     # INGEST_DATABASE_URL (the ingest role) is optional: without it the server is read-only (T13)
-    rag = PgVectorRAG(os.environ["DATABASE_URL"], os.environ.get("INGEST_DATABASE_URL"))
+    # RAG_PRINCIPAL_KEY (hex) must equal the key setup_schema stored; it signs principals for RLS (T18)
+    rag = PgVectorRAG(
+        os.environ["DATABASE_URL"],
+        os.environ.get("INGEST_DATABASE_URL"),
+        principal_key=bytes.fromhex(os.environ["RAG_PRINCIPAL_KEY"]),
+    )
 else:
     rag = PermissionRAG(audit_path=pathlib.Path(__file__).with_name("audit_log.jsonl"))
 for _doc_id, _text, _acl in CORPUS:

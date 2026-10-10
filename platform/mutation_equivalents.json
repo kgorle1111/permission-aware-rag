@@ -96,6 +96,11 @@
       "mutant_sha256": "a570ef5e432152c533f545c887edcb64de052b97424d4c01096e407f9145db61",
       "reason": "total -= d instead of += d: (-x) % 10 == 0 exactly when x % 10 == 0, so the validity result never changes."
     },
+    "app.retrieval.x_retrieve__mutmut_71": {
+      "reason": "OrderedDict.popitem(last=None): None is falsy, so it pops in FIFO order exactly like last=False; eviction still drops the oldest entry.",
+      "source_sha256": "16e8a718d9e1716461f49313c376a44fb9d9052332c73cc0beb51e24f019a38c",
+      "mutant_sha256": "fb5819db3f286d6b0323deb3ec3fe8706fb9e856a73ccf716083f225b812c3e0"
+    },
     "app.store.x_init_db__mutmut_15": {
       "source_sha256": "9fe691f59464e713206b397590bba781c440bd615de0dcf95c41710d086d0d65",
       "mutant_sha256": "3035c586835b53ea2f26dcc8143b4e541e18c1fb628a04696742d929a129e5a1",

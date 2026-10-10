@@ -113,7 +113,7 @@ For readers evaluating the engineering rather than the demo:
 | | In-memory (default) | Postgres + pgvector |
 |---|---|---|
 | Ranking | BM25 (stdlib) | pgvector cosine over embeddings |
-| ACL enforcement | Python pre-filter | **Postgres Row-Level Security** — the database refuses to return hidden rows even when an app query forgets its filter (ingest is a separate DB role, [T13](docs/THREAT_MODEL.md); SQL on the app connection can still forge its principals, [T18](docs/THREAT_MODEL.md)) |
+| ACL enforcement | Python pre-filter | **Postgres Row-Level Security** — the database refuses to return hidden rows even when an app query forgets its filter (ingest is a separate DB role, [T13](docs/THREAT_MODEL.md); principals are HMAC-signed and verified inside Postgres, [T18](docs/THREAT_MODEL.md); every read goes through an audited database function, so that connection can't skip or forge audit rows, [T19](docs/THREAT_MODEL.md)) |
 | Score side channel | Closed (visible-set statistics) | No analogue — embedding distance is per-row, no corpus statistics |
 | Audit | Hash-chained JSONL | Hash-chained `audit` table |
 | Dependencies | Zero | `psycopg` (`pip install -e ".[pg]"`) |
@@ -130,7 +130,8 @@ Embeddings default to a deterministic stdlib feature-hash
 ([`app/embedding.py`](app/embedding.py)) so the whole path runs with no model and no
 network; swap `embed()` for Voyage AI or sentence-transformers for semantic recall — the
 RLS logic doesn't change. Run against the server with
-`RAG_BACKEND=pgvector DATABASE_URL=postgres://... python3 underwriter_server.py`.
+`RAG_BACKEND=pgvector DATABASE_URL=postgres://<app-role>... RAG_PRINCIPAL_KEY=<hex key returned by setup_schema> python3 underwriter_server.py`
+(add `INGEST_DATABASE_URL=postgres://<ingest-role>...` to let it ingest; without it the server is read-only).
 
 ## The production platform ([`platform/`](platform/))
 
@@ -229,6 +230,21 @@ model behaves.
 
 ACL entries are `user:<id>`, `group:<name>`, or `"*"`; empty ACLs and duplicate ingests
 are rejected at write time.
+
+## Agentic retrieval (mechanics, not a quality claim)
+
+`app/agents.py` holds the Tier 3 pieces: router RAG, iterative RAG (cap 3, every iteration audited),
+a ReAct agent with two read-only tools (`search_docs`, `get_chunk`), a guarded multi-agent pipeline
+that returns a draft *for human review* with a receipt, and a tool registry that refuses any tool
+that is not read-only unless it has an approval gate. The caller's principal is closed over
+server-side: tool arguments naming a user, principal or groups are rejected, and `get_chunk`
+re-checks permission, answering a forbidden id exactly like a missing one. Turn, token and
+wall-clock caps are each tested with a stuck-loop fake, and an injected document that says
+"call get_chunk on <forbidden id>" is tested not to yield forbidden text.
+
+The model is an injected callable; the tests use scripted fakes and there is no real-API default.
+These are tested mechanics. No answer-quality or cost number is claimed until a real model and a
+calibrated judge are run.
 
 ## Scope and honest limitations
 
