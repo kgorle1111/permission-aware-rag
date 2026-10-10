@@ -20,6 +20,7 @@ PRs [#6](https://github.com/kgorle1111/permission-aware-rag/pull/6) through [#12
 | 2026-10-07 | Independent document/section/paragraph ACL levels in memory, PostgreSQL RLS and Qdrant; isolation oracle catches both hierarchy mutants (8/8 total) | `app/test_hierarchy.py`, `app/test_pgvector.py`, `platform/tests/test_hierarchy.py` |
 | 2026-10-07 | Qdrant keyword indexes, document-filtered batched ACL updates, on-disk payload/vectors and int8 configuration; durable retry barriers | `platform/tests/test_scale_acl.py`, `platform/tests/test_hardening.py`, `evals/verify_qdrant_storage.py` |
 | 2026-10-07 | AWS Lightsail HTTPS portfolio demo, with synthetic documents and retrieval-only roles | [deployment guide](deploy/aws/README.md) |
+| 2026-10-10 | PDF ingestion on real public-domain PDFs: pdfplumber text with column-aware order, running-head removal, section breadcrumbs, table to markdown and sentences, Tesseract OCR fallback; every chunk inherits the document ACL. OCR accuracy, table coverage and a real-text leak check are measured | [results](evals/results/2026-10-10-pdf-real-corpus/table.md), `platform/app/pdf_ingest.py`, `platform/tests/test_pdf_ingest.py` |
 
 ### Evidence batch — 2026-10-08
 
@@ -127,7 +128,7 @@ retriever that leaks is a regression. The comparison table gets published, inclu
 5. **Agents:** router → iterative → tool-calling retrieval, with the caller's identity bound
    server-side so a model can't widen its own access, plus turn, token and time caps. A guarded
    multi-agent pipeline only if a single agent measurably falls short.
-6. **Beyond text:** PDF tables and OCR, selective chart descriptions, and text-to-SQL under
+6. **Beyond text:** (PDF tables and OCR shipped 2026-10-10, see above), selective chart descriptions, and text-to-SQL under
    row-level security for policy-system data, after the database-role fix ([T13](docs/THREAT_MODEL.md)).
 
 ## Open shortcuts (test-enforced)

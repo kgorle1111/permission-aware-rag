@@ -11,3 +11,5 @@ pytest>=8.0
 #   sentence-transformers>=3.0
 # optional, for the Google Drive connector:
 #   google-api-python-client google-auth
+pdfplumber>=0.11,<0.12
+pytesseract>=0.3.13,<0.4
