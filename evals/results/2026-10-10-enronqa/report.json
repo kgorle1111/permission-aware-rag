@@ -1,0 +1,235 @@
+{
+ "dataset": {
+  "dataset": "MichaelR207/enron_qa_0922",
+  "source_url": "https://huggingface.co/datasets/MichaelR207/enron_qa_0922",
+  "paper": "Ryan, Xu, Nivera, Campos. EnronQA: Towards Personalized RAG over Private Documents. arXiv:2505.00263 (paper is CC BY 4.0)",
+  "revision": "c0b3a9190fd970e83cfbe7d399a08860e43e221e",
+  "license": "No license declared on the dataset card (HF license field empty). Underlying emails: FERC 2003 public release of the Enron corpus (2015 edition, removals on request). Used for research evaluation only; never redistributed from this repo.",
+  "files": [
+   {
+    "path": "data/test-00000-of-00001.parquet",
+    "file": "test-00000-of-00001.parquet",
+    "bytes": 161772154,
+    "sha256": "9684fe7d459195ca0873616a28956a9498c88e819c0d2cd7f5196f14513143ee"
+   }
+  ],
+  "split_used": "test"
+ },
+ "seed": 20261010,
+ "params": {
+  "mailboxes": 24,
+  "min_emails": 100,
+  "questions": 600,
+  "non_owners": 3,
+  "probes": 600,
+  "no_llm": true,
+  "llm_n": 0,
+  "smoke": 0,
+  "max_usd": 5.0
+ },
+ "sample": {
+  "mailboxes": [
+   "allen-p",
+   "baughman-d",
+   "donoho-l",
+   "dorland-c",
+   "geaccone-t",
+   "giron-d",
+   "hain-m",
+   "hernandez-j",
+   "hodge-j",
+   "hyatt-k",
+   "hyvl-d",
+   "keiser-k",
+   "king-j",
+   "lokey-t",
+   "mcconnell-m",
+   "parks-j",
+   "ring-r",
+   "sager-e",
+   "shackleton-s",
+   "skilling-j",
+   "stclair-c",
+   "stepenovitch-j",
+   "taylor-m",
+   "white-s"
+  ],
+  "n_mailboxes": 24,
+  "n_docs": 14542,
+  "n_chunks": 78240,
+  "n_words": 4167876,
+  "multi_owner_docs": 0,
+  "n_questions": 600,
+  "chunk_words": 80,
+  "ingest_seconds": 18.1
+ },
+ "latency_ms_owner_query": {
+  "median": 66.65302102919668,
+  "p95": 154.86995899118483
+ },
+ "recall": {
+  "definition": "hit@k = some chunk of the gold source email (the email the question was generated from) in the top-k chunks, querying as the mailbox owner",
+  "with_acl": {
+   "hit@1": {
+    "k": 438,
+    "n": 600,
+    "rate": 0.73,
+    "wilson95": [
+     0.6930962639102405,
+     0.7639773535775849
+    ],
+    "cluster_bootstrap95": [
+     0.6621621621621622,
+     0.7968337730870713
+    ]
+   },
+   "hit@4": {
+    "k": 550,
+    "n": 600,
+    "rate": 0.9166666666666666,
+    "wilson95": [
+     0.8918125901828275,
+     0.9362193255559867
+    ],
+    "cluster_bootstrap95": [
+     0.8899082568807339,
+     0.9437819420783645
+    ]
+   },
+   "hit@10": {
+    "k": 575,
+    "n": 600,
+    "rate": 0.9583333333333334,
+    "wilson95": [
+     0.939214836882236,
+     0.97162027043046
+    ],
+    "cluster_bootstrap95": [
+     0.9373219373219374,
+     0.9720670391061452
+    ]
+   }
+  },
+  "no_acl_baseline": {
+   "hit@1": {
+    "k": 407,
+    "n": 600,
+    "rate": 0.6783333333333333,
+    "wilson95": [
+     0.639924272835357,
+     0.7144733871008556
+    ],
+    "cluster_bootstrap95": [
+     0.6113636363636363,
+     0.7467700258397932
+    ]
+   },
+   "hit@4": {
+    "k": 525,
+    "n": 600,
+    "rate": 0.875,
+    "wilson95": [
+     0.8461284728666181,
+     0.8991002512983148
+    ],
+    "cluster_bootstrap95": [
+     0.8389662027833003,
+     0.905241935483871
+    ]
+   },
+   "hit@10": {
+    "k": 560,
+    "n": 600,
+    "rate": 0.9333333333333333,
+    "wilson95": [
+     0.9104908106605786,
+     0.9506623817077883
+    ],
+    "cluster_bootstrap95": [
+     0.9023354564755839,
+     0.9537223340040242
+    ]
+   }
+  },
+  "paired_acl_only_hits_vs_baseline_only_hits@4": [
+   31,
+   6
+  ]
+ },
+ "leaks": {
+  "definition": "a leak = a returned chunk whose doc the querying user is not in owners_by_doc for (oracle independent of the engine); top-10 inspected per query",
+  "owner_queries": {
+   "k": 0,
+   "n": 600,
+   "rate": 0.0,
+   "wilson95": [
+    4.336808689942018e-19,
+    0.006361701113422819
+   ],
+   "leaked_chunks": 0
+  },
+  "non_owner_question_queries": {
+   "k": 0,
+   "n": 1800,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.0021295989524924164
+   ],
+   "queries_returning_anything": 1800
+  },
+  "non_owner_exact_content_probes": {
+   "k": 0,
+   "n": 1800,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.0021295989524924164
+   ],
+   "queries_returning_anything": 1769,
+   "probe_width_tokens": 8
+  },
+  "probe_sensitivity_control": {
+   "note": "same probes as the owner, top-1: shows the probe text really retrieves its email",
+   "k": 491,
+   "n": 600,
+   "rate": 0.8183333333333334,
+   "wilson95": [
+    0.7854884509688859,
+    0.8471279326555684
+   ]
+  },
+  "all_attempts": {
+   "k": 0,
+   "n": 4200,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.0009137972777684793
+   ]
+  },
+  "positive_control_NoFilter_mutant": {
+   "k": 100,
+   "n": 100,
+   "rate": 1.0,
+   "wilson95": [
+    0.9630065012310038,
+    1.0
+   ],
+   "note": "queries (of 100) on which the planted no-ACL-check mutant returned a leaked chunk; must be > 0. This eval inspects returned chunks only; score side channels are covered by run_evals.py"
+  }
+ },
+ "support_rule_on_gold_email_text": {
+  "k": 536,
+  "n": 581,
+  "rate": 0.9225473321858864,
+  "wilson95": [
+   0.8979306765223932,
+   0.9416130879350736
+  ]
+ },
+ "citation_validity": {
+  "status": "not run (--no-llm or --llm-n 0)"
+ },
+ "runtime_seconds": 759
+}
