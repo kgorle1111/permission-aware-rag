@@ -7,7 +7,7 @@ JWT; malformed and oversized input gets the documented status; one request log l
 
 What a pass does NOT prove: that a live model resists jailbreaks. The mock never "obeys"
 anything, so semantic injection resistance is untested here (see docs/THREAT_MODEL.md T09).
-Attacks live in evals/redteam/attacks.json and are shared with app/test_redteam.py.
+Attacks live in platform/tests/redteam/attacks.json and are shared with app/test_redteam.py.
 """
 import base64
 import html
@@ -25,7 +25,7 @@ from app.sync import sync_once
 
 from conftest import CORPUS, _key, auth, forbidden_canaries, mint, reingest
 
-DATA = json.loads((Path(__file__).resolve().parents[2] / "evals/redteam/attacks.json").read_text())
+DATA = json.loads((Path(__file__).resolve().parent / "redteam/attacks.json").read_text())
 ATTACKS = [a for a in DATA["attacks"] if "platform" in a["surfaces"]]
 FORBIDDEN = [*forbidden_canaries("alice"), "Band adjustments happen every April", "Northwind Labs",
              "$1.2M", "71 percent", "$48M"]

@@ -7,7 +7,7 @@ oversized input is rejected with the documented status; the one-line request log
 
 What a pass does NOT prove: that a live model resists jailbreaks. The mock never "obeys"
 anything, so semantic injection resistance is untested here (see docs/THREAT_MODEL.md T09).
-Attacks live in evals/redteam/attacks.json and are shared with platform/tests/test_redteam.py.
+Attacks live in platform/tests/redteam/attacks.json and are shared with platform/tests/test_redteam.py.
 """
 
 import base64
@@ -27,7 +27,9 @@ import underwriter_server as srv
 from permission_rag import PermissionRAG
 from test_http import _jwt
 
-DATA = json.loads((pathlib.Path(__file__).resolve().parent.parent / "evals/redteam/attacks.json").read_text())
+DATA = json.loads(
+    (pathlib.Path(__file__).resolve().parent.parent / "platform/tests/redteam/attacks.json").read_text()
+)
 ATTACKS = [(a, "ref") for a in DATA["attacks"] if "ref" in a["surfaces"]]
 SECRET = "redteam-secret"
 # Appears only in documents junior cannot read (bank-delgado, credit-memo-delgado, watchlist).

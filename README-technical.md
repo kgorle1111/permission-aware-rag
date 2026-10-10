@@ -218,7 +218,7 @@ retrieval-only with the note "Daily LLM budget reached", outcome `llm_fallback`.
 resets at UTC midnight. The check is not atomic (ROADMAP B13), so concurrent calls can overshoot
 by one call each.
 
-Red-team suite: `evals/redteam/attacks.json` holds 89 attacks (prompt injection incl. encoded,
+Red-team suite: `platform/tests/redteam/attacks.json` holds 89 attacks (prompt injection incl. encoded,
 nested and role-play variants, system-prompt extraction, `</document>` breakout, document-borne
 payloads, CSV formulas, identity smuggling through bodies, headers, query strings and JWT claims,
 oversized and malformed input, cross-role exact-content probes). `app/test_redteam.py` runs them

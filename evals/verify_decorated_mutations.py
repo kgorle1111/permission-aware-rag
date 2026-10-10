@@ -48,9 +48,9 @@ CASES = [
     {
         "id": "query-forged-hr-principal",
         "path": "app/main.py",
-        "source_sha256": "83b6f02b521a946cc719c6bae0b298deb218a23985bf420b3138d2bcad4945ed",
-        "old": "return retrieve(body.query, principal, k=body.k or None)",
-        "new": 'return retrieve(body.query, Principal(user_id="forged-hr@independent.test", groups=("hr",)), k=body.k or None)',
+        "source_sha256": "45d373d80ff84a656f50bba7d5f148487b5046e6b7471444a6a6430ffca90447",
+        "old": "return retrieve(body.query, principal, k=body.k or None, request_id=request.state.request_id)",
+        "new": 'return retrieve(body.query, Principal(user_id="forged-hr@independent.test", groups=("hr",)), k=body.k or None, request_id=request.state.request_id)',
         "tests": ["tests/test_failclosed.py::test_client_cannot_self_assert_groups_via_request"],
         "expected": "Guest request violates the allowed-public-document assertion after route forges HR.",
         "failure_markers": ['assert all(x["doc_id"]', '"handbook"', '"company-strategy"'],
@@ -58,7 +58,7 @@ CASES = [
     {
         "id": "audit-no-security-guard",
         "path": "app/main.py",
-        "source_sha256": "83b6f02b521a946cc719c6bae0b298deb218a23985bf420b3138d2bcad4945ed",
+        "source_sha256": "45d373d80ff84a656f50bba7d5f148487b5046e6b7471444a6a6430ffca90447",
         "old": '    if "security" not in principal.groups:\n        raise HTTPException(403, "audit access requires group:security")\n',
         "new": "",
         "tests": ["tests/test_failclosed.py::test_audit_endpoint_requires_security_group"],
