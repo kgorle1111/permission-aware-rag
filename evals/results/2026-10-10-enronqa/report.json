@@ -20,12 +20,26 @@
   "mailboxes": 24,
   "min_emails": 100,
   "questions": 600,
-  "non_owners": 3,
+  "participants": 3,
+  "non_readers": 3,
   "probes": 600,
   "no_llm": true,
   "llm_n": 0,
   "smoke": 0,
   "max_usd": 5.0
+ },
+ "acl_model": {
+  "participants": "readers = mailbox owner(s) + every Sender/Recipients header address that maps to one of the 150 users via address_map; To/Cc/Bcc are flattened into `Recipients` in this release, so they are not separable",
+  "address_map": {
+   "rule": "dominant sender address in the user's own sent folders (folder name contains 'sent'); >= 3 sent emails and >= 50% share; addresses claimed by two users dropped",
+   "users": 150,
+   "mapped": 134,
+   "no_sent_emails": 6,
+   "weak_dominance": 10,
+   "ambiguous_addresses": 0,
+   "users_dropped_as_ambiguous": 0
+  },
+  "full_mapping_location": "evals/enronqa/data/address_map.json (gitignored; not published)"
  },
  "sample": {
   "mailboxes": [
@@ -58,18 +72,614 @@
   "n_docs": 14542,
   "n_chunks": 78240,
   "n_words": 4167876,
-  "multi_owner_docs": 0,
   "n_questions": 600,
   "chunk_words": 80,
-  "ingest_seconds": 18.1
+  "ingest_seconds": 19.1
  },
- "latency_ms_owner_query": {
-  "median": 66.65302102919668,
-  "p95": 154.86995899118483
+ "sharing_structure": {
+  "readers_per_doc": {
+   "1": 12355,
+   "2": 1893,
+   "3-5": 294,
+   "6+": 0
+  },
+  "pct_docs_with_2plus_readers": 15.039196809242195,
+  "mean_readers_per_doc": 1.1727410259936735,
+  "max_readers": 5,
+  "docs_with_a_reader_outside_the_sampled_mailboxes": 1689,
+  "multi_owner_docs": 0
  },
- "recall": {
-  "definition": "hit@k = some chunk of the gold source email (the email the question was generated from) in the top-k chunks, querying as the mailbox owner",
-  "with_acl": {
+ "participants_model": {
+  "latency_ms_owner_query": {
+   "median": 69.91389545146376,
+   "p95": 165.09816609323025
+  },
+  "leaks": {
+   "owner_queries": {
+    "k": 0,
+    "n": 600,
+    "rate": 0.0,
+    "wilson95": [
+     4.336808689942018e-19,
+     0.006361701113422819
+    ]
+   },
+   "other_allowed_participant_queries": {
+    "k": 0,
+    "n": 100,
+    "rate": 0.0,
+    "wilson95": [
+     0.0,
+     0.03699349876899627
+    ]
+   },
+   "non_reader_question_queries": {
+    "k": 0,
+    "n": 1800,
+    "rate": 0.0,
+    "wilson95": [
+     0.0,
+     0.0021295989524924164
+    ],
+    "queries_returning_anything": 1800
+   },
+   "non_reader_exact_content_probes": {
+    "k": 0,
+    "n": 1800,
+    "rate": 0.0,
+    "wilson95": [
+     0.0,
+     0.0021295989524924164
+    ],
+    "queries_returning_anything": 1773,
+    "probe_width_tokens": 8
+   },
+   "probe_sensitivity_control_owner_top1": {
+    "k": 480,
+    "n": 600,
+    "rate": 0.8,
+    "wilson95": [
+     0.7661303477927119,
+     0.8300526315392345
+    ]
+   },
+   "all_attempts": {
+    "k": 0,
+    "n": 4300,
+    "rate": 0.0,
+    "wilson95": [
+     0.0,
+     0.0008925651462762098
+    ]
+   },
+   "all_non_reader_attempts": {
+    "k": 0,
+    "n": 3600,
+    "rate": 0.0,
+    "wilson95": [
+     0.0,
+     0.0010659344827251267
+    ]
+   }
+  },
+  "recall_owner": {
+   "hit@1": {
+    "k": 437,
+    "n": 600,
+    "rate": 0.7283333333333334,
+    "wilson95": [
+     0.69137214123148,
+     0.7623893485933902
+    ],
+    "cluster_bootstrap95": [
+     0.6596385542168675,
+     0.7960893854748603
+    ]
+   },
+   "hit@4": {
+    "k": 549,
+    "n": 600,
+    "rate": 0.915,
+    "wilson95": [
+     0.8899600845836637,
+     0.9347597034921955
+    ],
+    "cluster_bootstrap95": [
+     0.8884955752212389,
+     0.9430147058823529
+    ]
+   },
+   "hit@10": {
+    "k": 574,
+    "n": 600,
+    "rate": 0.9566666666666667,
+    "wilson95": [
+     0.9372639776967507,
+     0.9702590019529896
+    ],
+    "cluster_bootstrap95": [
+     0.9341825902335457,
+     0.9701492537313433
+    ]
+   }
+  },
+  "recall_other_participants": {
+   "hit@1": {
+    "k": 87,
+    "n": 100,
+    "rate": 0.87,
+    "wilson95": [
+     0.7901964848675458,
+     0.922428326043397
+    ],
+    "cluster_bootstrap95": [
+     0.7821782178217822,
+     0.9615384615384616
+    ]
+   },
+   "hit@4": {
+    "k": 97,
+    "n": 100,
+    "rate": 0.97,
+    "wilson95": [
+     0.9154806351014251,
+     0.9897454760557185
+    ],
+    "cluster_bootstrap95": [
+     0.9482758620689655,
+     1.0
+    ]
+   },
+   "hit@10": {
+    "k": 99,
+    "n": 100,
+    "rate": 0.99,
+    "wilson95": [
+     0.9455138032509935,
+     0.9982325679553905
+    ],
+    "cluster_bootstrap95": [
+     0.9758064516129032,
+     1.0
+    ]
+   }
+  }
+ },
+ "no_acl_baseline_owner_queries": {
+  "hit@1": {
+   "k": 407,
+   "n": 600,
+   "rate": 0.6783333333333333,
+   "wilson95": [
+    0.639924272835357,
+    0.7144733871008556
+   ],
+   "cluster_bootstrap95": [
+    0.6113636363636363,
+    0.7467700258397932
+   ]
+  },
+  "hit@4": {
+   "k": 525,
+   "n": 600,
+   "rate": 0.875,
+   "wilson95": [
+    0.8461284728666181,
+    0.8991002512983148
+   ],
+   "cluster_bootstrap95": [
+    0.8389662027833003,
+    0.905241935483871
+   ]
+  },
+  "hit@10": {
+   "k": 560,
+   "n": 600,
+   "rate": 0.9333333333333333,
+   "wilson95": [
+    0.9104908106605786,
+    0.9506623817077883
+   ],
+   "cluster_bootstrap95": [
+    0.9023354564755839,
+    0.9537223340040242
+   ]
+  }
+ },
+ "no_acl_baseline_questions_with_other_readers": {
+  "hit@1": {
+   "k": 61,
+   "n": 88,
+   "rate": 0.6931818181818182,
+   "wilson95": [
+    0.590438483410235,
+    0.7797646951340498
+   ],
+   "cluster_bootstrap95": [
+    0.5229357798165137,
+    0.8717948717948718
+   ]
+  },
+  "hit@4": {
+   "k": 78,
+   "n": 88,
+   "rate": 0.8863636363636364,
+   "wilson95": [
+    0.8033143605488112,
+    0.937091996539758
+   ],
+   "cluster_bootstrap95": [
+    0.8269230769230769,
+    0.9444444444444444
+   ]
+  },
+  "hit@10": {
+   "k": 83,
+   "n": 88,
+   "rate": 0.9431818181818182,
+   "wilson95": [
+    0.8738006727143681,
+    0.9754889721813438
+   ],
+   "cluster_bootstrap95": [
+    0.8840579710144928,
+    0.9827586206896551
+   ]
+  }
+ },
+ "owner_recall_questions_with_other_readers": {
+  "hit@1": {
+   "k": 67,
+   "n": 88,
+   "rate": 0.7613636363636364,
+   "wilson95": [
+    0.6625735494870731,
+    0.8382895744257827
+   ],
+   "cluster_bootstrap95": [
+    0.6341463414634146,
+    0.9090909090909091
+   ]
+  },
+  "hit@4": {
+   "k": 83,
+   "n": 88,
+   "rate": 0.9431818181818182,
+   "wilson95": [
+    0.8738006727143681,
+    0.9754889721813438
+   ],
+   "cluster_bootstrap95": [
+    0.9130434782608695,
+    0.9782608695652174
+   ]
+  },
+  "hit@10": {
+   "k": 85,
+   "n": 88,
+   "rate": 0.9659090909090909,
+   "wilson95": [
+    0.9045039571274427,
+    0.9883390028911263
+   ],
+   "cluster_bootstrap95": [
+    0.9247311827956989,
+    1.0
+   ]
+  }
+ },
+ "controls": {
+  "NoFilter_mutant_non_reader_queries_leaking": {
+   "k": 100,
+   "n": 100,
+   "rate": 1.0,
+   "wilson95": [
+    0.9630065012310038,
+    1.0
+   ]
+  },
+  "off_by_one_acl_mutant_targeted_probes_leaking": {
+   "k": 300,
+   "n": 300,
+   "rate": 1.0,
+   "wilson95": [
+    0.9873570285785234,
+    1.0
+   ],
+   "same_probes_on_correct_engine": {
+    "k": 0,
+    "n": 300,
+    "rate": 0.0,
+    "wilson95": [
+     8.673617379884035e-19,
+     0.012642971421476655
+    ]
+   }
+  },
+  "recipients_ignored_mutant_denies_legit_readers_hit@4": {
+   "queries": 42,
+   "correct_engine_hits": 41,
+   "mutant_hits": 0,
+   "note": "this bug under-grants, so the oracle sees it as lost recall for allowed readers, not as a leak"
+  }
+ },
+ "support_rule_on_gold_email_text": {
+  "k": 536,
+  "n": 581,
+  "rate": 0.9225473321858864,
+  "wilson95": [
+   0.8979306765223932,
+   0.9416130879350736
+  ]
+ },
+ "shared_email_stratum": {
+  "leaks": {
+   "owner_queries": {
+    "k": 0,
+    "n": 600,
+    "rate": 0.0,
+    "wilson95": [
+     4.336808689942018e-19,
+     0.006361701113422819
+    ]
+   },
+   "other_allowed_participant_queries": {
+    "k": 0,
+    "n": 697,
+    "rate": 0.0,
+    "wilson95": [
+     0.0,
+     0.005481209526941872
+    ]
+   },
+   "non_reader_question_queries": {
+    "k": 0,
+    "n": 1800,
+    "rate": 0.0,
+    "wilson95": [
+     0.0,
+     0.0021295989524924164
+    ],
+    "queries_returning_anything": 1800
+   },
+   "non_reader_exact_content_probes": {
+    "k": 0,
+    "n": 0,
+    "rate": null,
+    "wilson95": [
+     0.0,
+     1.0
+    ],
+    "queries_returning_anything": 0,
+    "probe_width_tokens": 8
+   },
+   "probe_sensitivity_control_owner_top1": {
+    "k": 0,
+    "n": 0,
+    "rate": null,
+    "wilson95": [
+     0.0,
+     1.0
+    ]
+   },
+   "all_attempts": {
+    "k": 0,
+    "n": 3097,
+    "rate": 0.0,
+    "wilson95": [
+     0.0,
+     0.001238844014515305
+    ]
+   },
+   "all_non_reader_attempts": {
+    "k": 0,
+    "n": 1800,
+    "rate": 0.0,
+    "wilson95": [
+     0.0,
+     0.0021295989524924164
+    ]
+   }
+  },
+  "recall_owner": {
+   "hit@1": {
+    "k": 462,
+    "n": 600,
+    "rate": 0.77,
+    "wilson95": [
+     0.7346727048688554,
+     0.8018919765298963
+    ],
+    "cluster_bootstrap95": [
+     0.7398212512413108,
+     0.8409090909090909
+    ]
+   },
+   "hit@4": {
+    "k": 553,
+    "n": 600,
+    "rate": 0.9216666666666666,
+    "wilson95": [
+     0.8973856992324738,
+     0.9405825994952062
+    ],
+    "cluster_bootstrap95": [
+     0.8974358974358975,
+     0.9796610169491525
+    ]
+   },
+   "hit@10": {
+    "k": 569,
+    "n": 600,
+    "rate": 0.9483333333333334,
+    "wilson95": [
+     0.9275970851432455,
+     0.9633652561917189
+    ],
+    "cluster_bootstrap95": [
+     0.9287469287469288,
+     0.9922178988326849
+    ]
+   }
+  },
+  "recall_other_participants": {
+   "hit@1": {
+    "k": 583,
+    "n": 697,
+    "rate": 0.836441893830703,
+    "wilson95": [
+     0.8071520614759442,
+     0.8620435091580072
+    ],
+    "cluster_bootstrap95": [
+     0.7886977886977887,
+     0.9005376344086021
+    ]
+   },
+   "hit@4": {
+    "k": 665,
+    "n": 697,
+    "rate": 0.9540889526542324,
+    "wilson95": [
+     0.935906381047023,
+     0.967293610874707
+    ],
+    "cluster_bootstrap95": [
+     0.9360544217687075,
+     0.9933993399339934
+    ]
+   },
+   "hit@10": {
+    "k": 676,
+    "n": 697,
+    "rate": 0.96987087517934,
+    "wilson95": [
+     0.9543802528935028,
+     0.9802105760302462
+    ],
+    "cluster_bootstrap95": [
+     0.956726986624705,
+     0.9970845481049563
+    ]
+   }
+  },
+  "n_questions": 600,
+  "no_acl_baseline": {
+   "hit@1": {
+    "k": 438,
+    "n": 600,
+    "rate": 0.73,
+    "wilson95": [
+     0.6930962639102405,
+     0.7639773535775849
+    ],
+    "cluster_bootstrap95": [
+     0.6866764275256223,
+     0.8013468013468014
+    ]
+   },
+   "hit@4": {
+    "k": 538,
+    "n": 600,
+    "rate": 0.8966666666666666,
+    "wilson95": [
+     0.8697338724443292,
+     0.9185525113390219
+    ],
+    "cluster_bootstrap95": [
+     0.8705738705738706,
+     0.9536423841059603
+    ]
+   },
+   "hit@10": {
+    "k": 563,
+    "n": 600,
+    "rate": 0.9383333333333334,
+    "wilson95": [
+     0.9161569370179614,
+     0.9549326383392713
+    ],
+    "cluster_bootstrap95": [
+     0.9169590643274854,
+     0.9716312056737588
+    ]
+   }
+  }
+ },
+ "single_owner_model_comparison": {
+  "latency_ms_owner_query": {
+   "median": 67.20491696614772,
+   "p95": 156.3138330820948
+  },
+  "leaks": {
+   "owner_queries": {
+    "k": 0,
+    "n": 600,
+    "rate": 0.0,
+    "wilson95": [
+     4.336808689942018e-19,
+     0.006361701113422819
+    ]
+   },
+   "other_allowed_participant_queries": {
+    "k": 0,
+    "n": 0,
+    "rate": null,
+    "wilson95": [
+     0.0,
+     1.0
+    ]
+   },
+   "non_reader_question_queries": {
+    "k": 0,
+    "n": 1800,
+    "rate": 0.0,
+    "wilson95": [
+     0.0,
+     0.0021295989524924164
+    ],
+    "queries_returning_anything": 1800
+   },
+   "non_reader_exact_content_probes": {
+    "k": 0,
+    "n": 1800,
+    "rate": 0.0,
+    "wilson95": [
+     0.0,
+     0.0021295989524924164
+    ],
+    "queries_returning_anything": 1774,
+    "probe_width_tokens": 8
+   },
+   "probe_sensitivity_control_owner_top1": {
+    "k": 475,
+    "n": 600,
+    "rate": 0.7916666666666666,
+    "wilson95": [
+     0.7573661128740564,
+     0.8222562281431135
+    ]
+   },
+   "all_attempts": {
+    "k": 0,
+    "n": 4200,
+    "rate": 0.0,
+    "wilson95": [
+     0.0,
+     0.0009137972777684793
+    ]
+   },
+   "all_non_reader_attempts": {
+    "k": 0,
+    "n": 3600,
+    "rate": 0.0,
+    "wilson95": [
+     0.0,
+     0.0010659344827251267
+    ]
+   }
+  },
+  "recall_owner": {
    "hit@1": {
     "k": 438,
     "n": 600,
@@ -110,126 +720,10 @@
     ]
    }
   },
-  "no_acl_baseline": {
-   "hit@1": {
-    "k": 407,
-    "n": 600,
-    "rate": 0.6783333333333333,
-    "wilson95": [
-     0.639924272835357,
-     0.7144733871008556
-    ],
-    "cluster_bootstrap95": [
-     0.6113636363636363,
-     0.7467700258397932
-    ]
-   },
-   "hit@4": {
-    "k": 525,
-    "n": 600,
-    "rate": 0.875,
-    "wilson95": [
-     0.8461284728666181,
-     0.8991002512983148
-    ],
-    "cluster_bootstrap95": [
-     0.8389662027833003,
-     0.905241935483871
-    ]
-   },
-   "hit@10": {
-    "k": 560,
-    "n": 600,
-    "rate": 0.9333333333333333,
-    "wilson95": [
-     0.9104908106605786,
-     0.9506623817077883
-    ],
-    "cluster_bootstrap95": [
-     0.9023354564755839,
-     0.9537223340040242
-    ]
-   }
-  },
-  "paired_acl_only_hits_vs_baseline_only_hits@4": [
-   31,
-   6
-  ]
- },
- "leaks": {
-  "definition": "a leak = a returned chunk whose doc the querying user is not in owners_by_doc for (oracle independent of the engine); top-10 inspected per query",
-  "owner_queries": {
-   "k": 0,
-   "n": 600,
-   "rate": 0.0,
-   "wilson95": [
-    4.336808689942018e-19,
-    0.006361701113422819
-   ],
-   "leaked_chunks": 0
-  },
-  "non_owner_question_queries": {
-   "k": 0,
-   "n": 1800,
-   "rate": 0.0,
-   "wilson95": [
-    0.0,
-    0.0021295989524924164
-   ],
-   "queries_returning_anything": 1800
-  },
-  "non_owner_exact_content_probes": {
-   "k": 0,
-   "n": 1800,
-   "rate": 0.0,
-   "wilson95": [
-    0.0,
-    0.0021295989524924164
-   ],
-   "queries_returning_anything": 1769,
-   "probe_width_tokens": 8
-  },
-  "probe_sensitivity_control": {
-   "note": "same probes as the owner, top-1: shows the probe text really retrieves its email",
-   "k": 491,
-   "n": 600,
-   "rate": 0.8183333333333334,
-   "wilson95": [
-    0.7854884509688859,
-    0.8471279326555684
-   ]
-  },
-  "all_attempts": {
-   "k": 0,
-   "n": 4200,
-   "rate": 0.0,
-   "wilson95": [
-    0.0,
-    0.0009137972777684793
-   ]
-  },
-  "positive_control_NoFilter_mutant": {
-   "k": 100,
-   "n": 100,
-   "rate": 1.0,
-   "wilson95": [
-    0.9630065012310038,
-    1.0
-   ],
-   "note": "queries (of 100) on which the planted no-ACL-check mutant returned a leaked chunk; must be > 0. This eval inspects returned chunks only; score side channels are covered by run_evals.py"
-  }
- },
- "support_rule_on_gold_email_text": {
-  "k": 536,
-  "n": 581,
-  "rate": 0.9225473321858864,
-  "wilson95": [
-   0.8979306765223932,
-   0.9416130879350736
-  ]
+  "recall_other_participants": null
  },
  "citation_validity": {
   "status": "not run (--no-llm or --llm-n 0)"
  },
- "runtime_seconds": 759
+ "runtime_seconds": 1752
 }

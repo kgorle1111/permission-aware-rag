@@ -14,7 +14,11 @@ Needs pyarrow (evals/enronqa/requirements.txt). Downloaded text stays in ./data/
 from __future__ import annotations
 
 import argparse
+import ast
 import collections
+import email as emaillib
+import email.utils
+import gc
 import hashlib
 import json
 import math
@@ -88,17 +92,92 @@ def body_of(email: str) -> str:
     return email.split(HEADER_SEP, 1)[-1].strip()
 
 
-def build_acl(rows: list[dict]) -> dict[str, dict]:
-    """doc_id -> {"text", "owners"}. One doc per distinct body; a body found in several mailboxes
-    keeps the first path (sorted) as its id and its readers are the UNION of those mailboxes."""
+def parse_header(email_text: str) -> tuple[list[str], list[str]]:
+    """(sender addresses, recipient addresses), lower-cased, from the header block before the `=====` line.
+
+    Uses the stdlib `email` parser (handles folded headers). EnronQA flattens To/Cc/Bcc into one
+    `Recipients: [...]` python-list header, so Bcc cannot be told apart; To/Cc/Bcc headers are also
+    read if present. Display names without an address (no '@') are ignored."""
+    msg = emaillib.message_from_string(email_text.split(HEADER_SEP, 1)[0])
+
+    def addrs(name: str) -> list[str]:
+        items: list[str] = []
+        for raw in msg.get_all(name) or []:
+            raw = " ".join(str(raw).split())
+            try:
+                lit = ast.literal_eval(raw)
+                items += [str(x) for x in lit] if isinstance(lit, (list, tuple)) else [raw]
+            except (ValueError, SyntaxError):
+                items.append(raw)
+        return sorted({a.lower() for _, a in emaillib.utils.getaddresses(items) if "@" in a})
+
+    rcpt = sorted({a for h in ("Recipients", "To", "Cc", "Bcc") for a in addrs(h)})
+    return addrs("Sender") or addrs("From"), rcpt
+
+
+SENT_FOLDER = re.compile(r"sent", re.I)
+
+
+def build_address_map(rows: list[dict], min_n: int = 3, min_share: float = 0.5) -> tuple[dict, dict]:
+    """address -> user, derived from the data: a user's address is the dominant sender address over
+    the emails in that user's own sent folders (folder name contains 'sent'), accepted only with
+    >= min_n sent emails and >= min_share of them from that address. An address claimed by two
+    users is ambiguous and dropped for both. Nothing is guessed from names."""
+    senders: dict[str, collections.Counter] = collections.defaultdict(collections.Counter)
+    users = {r["user"] for r in rows}
+    for r in rows:
+        parts = r["path"].split("/")
+        if len(parts) > 1 and SENT_FOLDER.search(parts[1]):
+            for a in parse_header(r["email"])[0]:
+                senders[r["user"]][a] += 1
+    chosen, no_sent, weak = {}, 0, 0
+    for u in sorted(users):
+        c = senders.get(u)
+        if not c:
+            no_sent += 1
+            continue
+        addr, n = c.most_common(1)[0]
+        if n < min_n or n / sum(c.values()) < min_share:
+            weak += 1
+            continue
+        chosen[u] = addr
+    by_addr = collections.defaultdict(list)
+    for u, a in chosen.items():
+        by_addr[a].append(u)
+    amap = {a: us[0] for a, us in by_addr.items() if len(us) == 1}
+    stats = {
+        "rule": f"dominant sender address in the user's own sent folders (folder name contains 'sent'); >= {min_n} sent emails and >= {min_share:.0%} share; addresses claimed by two users dropped",
+        "users": len(users),
+        "mapped": len(amap),
+        "no_sent_emails": no_sent,
+        "weak_dominance": weak,
+        "ambiguous_addresses": sum(len(us) > 1 for us in by_addr.values()),
+        "users_dropped_as_ambiguous": sum(len(us) for us in by_addr.values() if len(us) > 1),
+    }
+    return amap, stats
+
+
+def participants(email_text: str, amap: dict, recipients: bool = True) -> set[str]:
+    """Mailbox users named in the header (sender, plus recipients if asked) via the address map."""
+    sender, rcpt = parse_header(email_text)
+    return {amap[a] for a in sender + (rcpt if recipients else []) if a in amap}
+
+
+def build_acl(rows: list[dict], amap: dict | None = None) -> dict[str, dict]:
+    """doc_id -> {"text", "owners", "readers", "paths"}. One doc per distinct body; a body found in
+    several mailboxes keeps the first path (sorted) as its id. owners = those mailboxes (union);
+    readers = owners plus, when `amap` is given, every header participant that maps to a user."""
     groups: dict[str, list[dict]] = collections.defaultdict(list)
     for r in sorted(rows, key=lambda r: r["path"]):
         groups[hashlib.sha256(body_of(r["email"]).encode()).hexdigest()].append(r)
     docs = {}
     for g in groups.values():
+        owners = {r["user"] for r in g}
+        extra = set().union(*(participants(r["email"], amap) for r in g)) if amap else set()
         docs[g[0]["path"]] = {
             "text": g[0]["email"],
-            "owners": {r["user"] for r in g},
+            "owners": owners,
+            "readers": owners | extra,
             "paths": [r["path"] for r in g],
         }
     return docs
@@ -137,13 +216,15 @@ def sample_mailboxes(rows, n: int, min_emails: int, seed: int) -> list[str]:
     return sorted(random.Random(seed).sample(eligible, n))
 
 
-def make_questions(rows, doc_of_path: dict[str, str], n_q: int, seed: int) -> list[dict]:
+def make_questions(rows, doc_of_path: dict[str, str], n_q: int, seed: int, keep=None) -> list[dict]:
     qs = []
     for r in rows:
         alts = r.get("alternate_answers") or []
         for i, q in enumerate(r["questions"] or []):
             golds = [r["gold_answers"][i]] + list(alts[i] if i < len(alts) else [])
             qs.append({"user": r["user"], "gold_doc": doc_of_path[r["path"]], "question": q, "golds": golds})
+    if keep:
+        qs = [q for q in qs if keep(q)]
     qs.sort(key=lambda q: (q["user"], q["gold_doc"], q["question"]))
     random.Random(seed).shuffle(qs)
     return qs[:n_q]
@@ -278,6 +359,85 @@ def pctl(xs, p):
     return xs[min(len(xs) - 1, int(p * len(xs)))]
 
 
+def U(u: str) -> dict:
+    return {"id": u, "groups": []}
+
+
+def build_rag(docs: dict, readers: dict) -> PermissionRAG:
+    rag = PermissionRAG()
+    for d, v in docs.items():
+        rag.add_document(d, v["text"], acl_for(readers[d]))
+    return rag
+
+
+def rec(hits: list[dict], clusters: list[str]) -> dict:
+    return {
+        f"hit@{k}": prop(sum(h[k] for h in hits), len(hits))
+        | {"cluster_bootstrap95": bootstrap_ci([h[k] for h in hits], clusters)}
+        for k in KS
+    }
+
+
+def evaluate(rag, readers, qs, sampled, probes, a, seed) -> tuple[dict, list[list[dict]], list[dict]]:
+    """All retrieval metrics for one ACL model. Returns (results, owner top-10 per question, owner hits)."""
+    rnd = random.Random(seed)
+    o_hits, o_res, o_leaks = [], [], 0
+    p_hits, p_cl, p_leaks = [], [], 0
+    n_leaks = n_att = n_ret = 0
+    times = []
+    for q in qs:
+        t = time.perf_counter()
+        res = rag.retrieve(q["question"], U(q["user"]), k=max(KS))
+        times.append(time.perf_counter() - t)
+        o_leaks += count_leaks(res, q["user"], readers)
+        o_res.append(res)
+        o_hits.append(hit_ks(res, q["gold_doc"]))
+        others = sorted(readers[q["gold_doc"]] - {q["user"]})
+        for u in rnd.sample(others, min(a.participants, len(others))):
+            res = rag.retrieve(q["question"], U(u), k=max(KS))
+            p_leaks += count_leaks(res, u, readers)
+            p_hits.append(hit_ks(res, q["gold_doc"]))
+            p_cl.append(q["user"])
+        nonr = [u for u in sampled if u not in readers[q["gold_doc"]]]
+        for u in rnd.sample(nonr, a.non_readers):
+            res = rag.retrieve(q["question"], U(u), k=max(KS))
+            n_att += 1
+            n_ret += bool(res)
+            n_leaks += count_leaks(res, u, readers)
+    pr_leaks = pr_att = pr_ret = pr_own = 0
+    for d, shingle in probes:
+        owner = sorted(readers[d])[0]
+        pr_own += any(r["doc_id"] == d for r in rag.retrieve(shingle, U(owner), k=1))
+        nonr = [u for u in sampled if u not in readers[d]]
+        for u in rnd.sample(nonr, a.non_readers):
+            res = rag.retrieve(shingle, U(u), k=max(KS))
+            pr_att += 1
+            pr_ret += bool(res)
+            pr_leaks += count_leaks(res, u, readers)
+    cl = [q["user"] for q in qs]
+    out = {
+        "latency_ms_owner_query": {
+            "median": statistics.median(times) * 1000,
+            "p95": pctl(times, 0.95) * 1000,
+        },
+        "leaks": {
+            "owner_queries": prop(o_leaks, len(qs)),
+            "other_allowed_participant_queries": prop(p_leaks, len(p_hits)),
+            "non_reader_question_queries": prop(n_leaks, n_att) | {"queries_returning_anything": n_ret},
+            "non_reader_exact_content_probes": prop(pr_leaks, pr_att)
+            | {"queries_returning_anything": pr_ret, "probe_width_tokens": 8},
+            "probe_sensitivity_control_owner_top1": prop(pr_own, len(probes)),
+            "all_attempts": prop(
+                o_leaks + p_leaks + n_leaks + pr_leaks, len(qs) + len(p_hits) + n_att + pr_att
+            ),
+            "all_non_reader_attempts": prop(n_leaks + pr_leaks, n_att + pr_att),
+        },
+        "recall_owner": rec(o_hits, cl),
+        "recall_other_participants": rec(p_hits, p_cl) if p_hits else None,
+    }
+    return out, o_res, o_hits
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default=str(HERE / "data" / "test-00000-of-00001.parquet"))
@@ -285,7 +445,8 @@ def main(argv=None) -> int:
     ap.add_argument("--mailboxes", type=int, default=24)
     ap.add_argument("--min-emails", type=int, default=100)
     ap.add_argument("--questions", type=int, default=600)
-    ap.add_argument("--non-owners", type=int, default=3)
+    ap.add_argument("--participants", type=int, default=3, help="other allowed readers queried per question")
+    ap.add_argument("--non-readers", type=int, default=3, help="non-readers queried per question/probe")
     ap.add_argument("--probes", type=int, default=600)
     ap.add_argument("--no-llm", action="store_true")
     ap.add_argument("--llm-n", type=int, default=0, help="questions sent to the paid LLM step")
@@ -297,143 +458,175 @@ def main(argv=None) -> int:
     t_start = time.time()
 
     rows_all = load_rows(Path(a.data))
+    amap, map_stats = build_address_map(rows_all)
+    (HERE / "data").mkdir(exist_ok=True)
+    (HERE / "data" / "address_map.json").write_text(json.dumps(amap, indent=1, sort_keys=True))  # gitignored
     mailboxes = sample_mailboxes(rows_all, a.mailboxes, a.min_emails, SEED)
     rows = [r for r in rows_all if r["user"] in set(mailboxes)]
-    docs = build_acl(rows)
-    owners_by_doc = {d: v["owners"] for d, v in docs.items()}
+    docs = build_acl(rows, amap)
+    readers = {d: v["readers"] for d, v in docs.items()}
+    owners = {d: v["owners"] for d, v in docs.items()}
+    sender_only = {d: v["owners"] | participants(v["text"], amap, recipients=False) for d, v in docs.items()}
     doc_of_path = {p: d for d, v in docs.items() for p in v["paths"]}
     qs = make_questions(rows, doc_of_path, a.questions, SEED)
+    if a.smoke:
+        qs = qs[: a.smoke]
     print(f"{len(mailboxes)} mailboxes, {len(docs)} docs, {len(qs)} questions", flush=True)
 
-    rag = PermissionRAG()
+    sizes = [len(v) for v in readers.values()]
+    sampled_set = set(mailboxes)
+    sharing = {
+        "readers_per_doc": {
+            "1": sum(s == 1 for s in sizes),
+            "2": sum(s == 2 for s in sizes),
+            "3-5": sum(3 <= s <= 5 for s in sizes),
+            "6+": sum(s >= 6 for s in sizes),
+        },
+        "pct_docs_with_2plus_readers": 100 * sum(s >= 2 for s in sizes) / len(sizes),
+        "mean_readers_per_doc": statistics.mean(sizes),
+        "max_readers": max(sizes),
+        "docs_with_a_reader_outside_the_sampled_mailboxes": sum(
+            bool(v - sampled_set) for v in readers.values()
+        ),
+        "multi_owner_docs": sum(len(v) > 1 for v in owners.values()),
+    }
+    df = collections.Counter()
+    for v in docs.values():
+        df.update(set(tokenize(body_of(v["text"]))))
+    probe_docs = random.Random(SEED + 2).sample(sorted(docs), min(a.probes, len(docs)))
+    probes = [(d, distinctive_shingle(docs[d]["text"], df, len(docs))) for d in probe_docs]
+
     t0 = time.time()
-    for d, v in docs.items():
-        rag.add_document(d, v["text"], acl_for(v["owners"]))
+    rag = build_rag(docs, readers)
     ingest_s = time.time() - t0
+    print(f"indexed {len(rag.chunks)} chunks in {ingest_s:.0f}s", flush=True)
     base = PermissionRAG()  # no-ACL baseline: same chunks and statistics, every chunk public
     pub = frozenset({"*"})
     base.chunks = [{**c, "acl": pub, "acl_doc": pub} for c in rag.chunks]
-    print(f"indexed {len(rag.chunks)} chunks in {ingest_s:.0f}s", flush=True)
+    b_hits = [hit_ks(base.retrieve(q["question"], U(q["user"]), k=max(KS)), q["gold_doc"]) for q in qs]
 
-    user = lambda u: {"id": u, "groups": []}  # noqa: E731
-    rnd = random.Random(SEED + 1)
-    if a.smoke:
-        qs = qs[: a.smoke]
-
-    # --- owner queries: recall (ACL vs no-ACL) and owner-side leaks
-    times, owner_leaks, hits, bhits, owner_res = [], 0, [], [], []
-    for q in qs:
-        t = time.perf_counter()
-        res = rag.retrieve(q["question"], user(q["user"]), k=max(KS))
-        times.append(time.perf_counter() - t)
-        owner_leaks += count_leaks(res, q["user"], owners_by_doc)
-        owner_res.append(res)
-        hits.append(hit_ks(res, q["gold_doc"]))
-        bhits.append(hit_ks(base.retrieve(q["question"], user(q["user"]), k=max(KS)), q["gold_doc"]))
-    print(f"owner queries done; median {statistics.median(times) * 1000:.0f} ms", flush=True)
-
+    main_res, owner_res, o_hits = evaluate(
+        rag, readers, qs, mailboxes, [] if a.smoke else probes, a, SEED + 1
+    )
+    print("participant-model eval done", flush=True)
+    has_other = [bool(readers[q["gold_doc"]] - {q["user"]}) for q in qs]
+    cl = [q["user"] for q in qs]
     report = {
         "dataset": json.loads((HERE / "MANIFEST.json").read_text()) | {"split_used": "test"},
         "seed": SEED,
         "params": {k: v for k, v in vars(a).items() if k not in ("data", "out")},
+        "acl_model": {
+            "participants": "readers = mailbox owner(s) + every Sender/Recipients header address that maps to one of the 150 users via address_map; To/Cc/Bcc are flattened into `Recipients` in this release, so they are not separable",
+            "address_map": map_stats,
+            "full_mapping_location": "evals/enronqa/data/address_map.json (gitignored; not published)",
+        },
         "sample": {
             "mailboxes": mailboxes,
             "n_mailboxes": len(mailboxes),
             "n_docs": len(docs),
             "n_chunks": len(rag.chunks),
             "n_words": sum(len(v["text"].split()) for v in docs.values()),
-            "multi_owner_docs": sum(len(v["owners"]) > 1 for v in docs.values()),
             "n_questions": len(qs),
             "chunk_words": 80,
             "ingest_seconds": round(ingest_s, 1),
         },
-        "latency_ms_owner_query": {
-            "median": statistics.median(times) * 1000,
-            "p95": pctl(times, 0.95) * 1000,
-        },
-    }
-    cl = [q["user"] for q in qs]
-    report["recall"] = {
-        "definition": "hit@k = some chunk of the gold source email (the email the question was generated from) in the top-k chunks, querying as the mailbox owner",
-        "with_acl": {
-            f"hit@{k}": prop(sum(h[k] for h in hits), len(hits))
-            | {"cluster_bootstrap95": bootstrap_ci([h[k] for h in hits], cl)}
-            for k in KS
-        },
-        "no_acl_baseline": {
-            f"hit@{k}": prop(sum(h[k] for h in bhits), len(bhits))
-            | {"cluster_bootstrap95": bootstrap_ci([h[k] for h in bhits], cl)}
-            for k in KS
-        },
-        "paired_acl_only_hits_vs_baseline_only_hits@4": [
-            sum(h[4] and not b[4] for h, b in zip(hits, bhits, strict=True)),
-            sum(b[4] and not h[4] for h, b in zip(hits, bhits, strict=True)),
-        ],
+        "sharing_structure": sharing,
+        "participants_model": main_res,
+        "no_acl_baseline_owner_queries": rec(b_hits, cl),
+        "no_acl_baseline_questions_with_other_readers": rec(
+            [h for h, o in zip(b_hits, has_other, strict=True) if o],
+            [c for c, o in zip(cl, has_other, strict=True) if o],
+        ),
+        "owner_recall_questions_with_other_readers": rec(
+            [h for h, o in zip(o_hits, has_other, strict=True) if o],
+            [c for c, o in zip(cl, has_other, strict=True) if o],
+        ),
     }
 
     if not a.smoke:
-        # --- non-owner queries and exact-content probes
-        owners_all = sorted(mailboxes)
-        df = collections.Counter()
-        for v in docs.values():
-            df.update(set(tokenize(body_of(v["text"]))))
-        nq_leaks = nq_attempts = nq_returned = 0
-        for q in qs:
-            others = rnd.sample(
-                [u for u in owners_all if u not in owners_by_doc[q["gold_doc"]]], a.non_owners
-            )
-            for u in others:
-                res = rag.retrieve(q["question"], user(u), k=max(KS))
-                nq_attempts += 1
-                nq_returned += bool(res)
-                nq_leaks += count_leaks(res, u, owners_by_doc)
-        probe_docs = rnd.sample(sorted(docs), min(a.probes, len(docs)))
-        p_leaks = p_attempts = p_returned = p_owner_hit = 0
-        for d in probe_docs:
-            shingle = distinctive_shingle(docs[d]["text"], df, len(docs))
-            owner = sorted(owners_by_doc[d])[0]
-            p_owner_hit += any(r["doc_id"] == d for r in rag.retrieve(shingle, user(owner), k=1))
-            for u in rnd.sample([u for u in owners_all if u not in owners_by_doc[d]], a.non_owners):
-                res = rag.retrieve(shingle, user(u), k=max(KS))
-                p_attempts += 1
-                p_returned += bool(res)
-                p_leaks += count_leaks(res, u, owners_by_doc)
-        report["leaks"] = {
-            "definition": "a leak = a returned chunk whose doc the querying user is not in owners_by_doc for (oracle independent of the engine); top-10 inspected per query",
-            "owner_queries": prop(owner_leaks, len(qs)) | {"leaked_chunks": owner_leaks},
-            "non_owner_question_queries": prop(nq_leaks, nq_attempts)
-            | {"queries_returning_anything": nq_returned},
-            "non_owner_exact_content_probes": prop(p_leaks, p_attempts)
-            | {"queries_returning_anything": p_returned, "probe_width_tokens": 8},
-            "probe_sensitivity_control": {
-                "note": "same probes as the owner, top-1: shows the probe text really retrieves its email",
-                **prop(p_owner_hit, len(probe_docs)),
-            },
-        }
-        tot_k = owner_leaks + nq_leaks + p_leaks
-        tot_n = len(qs) + nq_attempts + p_attempts
-        report["leaks"]["all_attempts"] = prop(tot_k, tot_n)
-
-        # --- positive control: the harness must see a leak when one exists
+        # --- positive controls: the harness must see a leak (or a false denial) when one exists
         from mutants import NoFilter
 
+        rnd = random.Random(SEED + 3)
         leaky = NoFilter()
         leaky.chunks = rag.chunks
-        ctl_k = ctl_n = 0
+        c_k = c_n = 0
         for q in qs[:100]:
-            u = rnd.choice([u for u in owners_all if u not in owners_by_doc[q["gold_doc"]]])
-            ctl_n += 1
-            ctl_k += count_leaks(leaky.retrieve(q["question"], user(u), k=max(KS)), u, owners_by_doc) > 0
-        report["leaks"]["positive_control_NoFilter_mutant"] = prop(ctl_k, ctl_n) | {
-            "note": "queries (of 100) on which the planted no-ACL-check mutant returned a leaked chunk; must be > 0. This eval inspects returned chunks only; score side channels are covered by run_evals.py"
-        }
+            u = rnd.choice([u for u in mailboxes if u not in readers[q["gold_doc"]]])
+            c_n += 1
+            c_k += count_leaks(leaky.retrieve(q["question"], U(u), k=max(KS)), u, readers) > 0
+        del leaky
 
-        # --- heuristic validity check for the 'supports' rule (no LLM)
+        order = sorted(docs)
+        shingle_of = dict(probes)
+        targets = []  # docs whose next-in-order doc has a reader this doc lacks
+        for i in rnd.sample(range(len(order) - 1), len(order) - 1):
+            d, nxt = order[i], order[i + 1]
+            diff = readers[nxt] - readers[d]
+            if diff and len(targets) < 300:
+                targets.append((d, sorted(diff)[0]))
+        off = PermissionRAG()  # ACL misaligned by one: doc i is also readable by doc i+1's readers
+        for i, d in enumerate(order):
+            extra = readers[order[i + 1]] if i + 1 < len(order) else set()
+            off.add_document(d, docs[d]["text"], acl_for(readers[d] | extra))
+        off_k = ok_k = 0
+        for d, u in targets:
+            sh = shingle_of.get(d) or distinctive_shingle(docs[d]["text"], df, len(docs))
+            off_k += count_leaks(off.retrieve(sh, U(u), k=max(KS)), u, readers) > 0
+            ok_k += count_leaks(rag.retrieve(sh, U(u), k=max(KS)), u, readers) > 0
+        del off
+        gc.collect()
+
+        no_rcpt = build_rag(docs, sender_only)  # bug: recipients ignored -> legitimate readers denied
+        fd_n = fd_ok = fd_bad = 0
+        for q in qs[:300]:
+            others = sorted(readers[q["gold_doc"]] - sender_only[q["gold_doc"]])
+            if not others:
+                continue
+            u = others[0]
+            fd_n += 1
+            fd_ok += hit_ks(rag.retrieve(q["question"], U(u), k=4), q["gold_doc"], (4,))[4]
+            fd_bad += hit_ks(no_rcpt.retrieve(q["question"], U(u), k=4), q["gold_doc"], (4,))[4]
+        del no_rcpt
+        gc.collect()
+        report["controls"] = {
+            "NoFilter_mutant_non_reader_queries_leaking": prop(c_k, c_n),
+            "off_by_one_acl_mutant_targeted_probes_leaking": prop(off_k, len(targets))
+            | {"same_probes_on_correct_engine": prop(ok_k, len(targets))},
+            "recipients_ignored_mutant_denies_legit_readers_hit@4": {
+                "queries": fd_n,
+                "correct_engine_hits": fd_ok,
+                "mutant_hits": fd_bad,
+                "note": "this bug under-grants, so the oracle sees it as lost recall for allowed readers, not as a leak",
+            },
+        }
         sup = [supports(docs[q["gold_doc"]]["text"], q["golds"], q["question"]) for q in qs]
         testable = [s for s in sup if s is not None]
         report["support_rule_on_gold_email_text"] = prop(sum(testable), len(testable))
 
-    # --- paid step
+        # --- stratum with real sharing: questions whose email has 2+ readers (the random sample has few)
+        shared_qs = make_questions(
+            rows, doc_of_path, a.questions, SEED + 5, keep=lambda q: len(readers[q["gold_doc"]]) > 1
+        )
+        shared_res, _, _ = evaluate(rag, readers, shared_qs, mailboxes, [], a, SEED + 6)
+        shared_res.pop("latency_ms_owner_query")
+        shared_res["n_questions"] = len(shared_qs)
+        shared_res["no_acl_baseline"] = rec(
+            [hit_ks(base.retrieve(q["question"], U(q["user"]), k=max(KS)), q["gold_doc"]) for q in shared_qs],
+            [q["user"] for q in shared_qs],
+        )
+        report["shared_email_stratum"] = shared_res
+        print("shared stratum done", flush=True)
+
+        # --- previous model for comparison: mailbox owner only
+        del base
+        gc.collect()
+        rag_o = build_rag(docs, owners)
+        owner_only, _, _ = evaluate(rag_o, owners, qs, mailboxes, probes, a, SEED + 1)
+        del rag_o
+        report["single_owner_model_comparison"] = owner_only
+
+    # --- paid step (reads the participants-model owner retrievals)
     n_llm = a.smoke or (0 if a.no_llm else a.llm_n)
     if n_llm:
         if not os.environ.get("ANTHROPIC_API_KEY"):
@@ -442,7 +635,7 @@ def main(argv=None) -> int:
         else:
             import llm
 
-            res = run_llm(qs[:n_llm], owner_res, owners_by_doc, a.max_usd, llm.ask)
+            res = run_llm(qs[:n_llm], owner_res, readers, a.max_usd, llm.ask)
             report["citation_validity"] = summarize_llm(res)
             report["citation_validity"]["model"] = llm.MODEL
             report["citation_validity"]["pricing_usd_per_mtok"] = {
@@ -467,49 +660,111 @@ def main(argv=None) -> int:
 
 def fmt(p: dict) -> str:
     lo, hi = p["wilson95"]
-    return (
-        f"{p['k']}/{p['n']} = {100 * p['rate']:.2f}% (Wilson 95% CI {100 * lo:.2f}-{100 * hi:.2f}%)"
-        if p["n"]
-        else "n/a"
-    )
+    if not p["n"]:
+        return "n/a"
+    return f"{p['k']}/{p['n']} = {100 * p['rate']:.2f}% (Wilson 95% CI {100 * lo:.2f}-{100 * hi:.2f}%)"
+
+
+def recall_cell(p: dict) -> str:
+    lo, hi = p["wilson95"]
+    c = p["cluster_bootstrap95"]
+    return f"{100 * p['rate']:.1f}% (Wilson {100 * lo:.1f}-{100 * hi:.1f}; mailbox-bootstrap {100 * c[0]:.1f}-{100 * c[1]:.1f})"
 
 
 def render_table(r: dict) -> str:
-    s, rec, lk = r["sample"], r["recall"], r["leaks"]
+    s, m, sh, am = r["sample"], r["participants_model"], r["sharing_structure"], r["acl_model"]["address_map"]
+    lk, ctl, old = m["leaks"], r["controls"], r["single_owner_model_comparison"]
+    rd = sh["readers_per_doc"]
     L = [
         "# EnronQA permission-aware retrieval eval (2026-10-10)",
         "",
         f"Dataset `{r['dataset']['dataset']}` @ `{r['dataset']['revision'][:12]}` (test split), seed {r['seed']}. "
         f"{s['n_mailboxes']} mailboxes, {s['n_docs']} emails, {s['n_chunks']} chunks ({s['n_words']} words), "
         f"{s['n_questions']} questions. Engine: `app/permission_rag.py`, BM25 over the visible set, 80-word chunks.",
-        f"Median owner query {r['latency_ms_owner_query']['median']:.0f} ms (p95 {r['latency_ms_owner_query']['p95']:.0f} ms) at this index size.",
+        f"Median owner query {m['latency_ms_owner_query']['median']:.0f} ms (p95 {m['latency_ms_owner_query']['p95']:.0f} ms) at this index size.",
+        "",
+        "## Permission structure (header participants)",
+        "",
+        "Readers of an email = its mailbox owner plus every Sender/Recipients address that maps to one of the 150 users. "
+        "EnronQA flattens To/Cc/Bcc into one `Recipients` field, so they are not separated. "
+        f"Address map: {am['mapped']}/{am['users']} users mapped from their dominant sent-folder sender address "
+        f"({am['no_sent_emails']} have no sent emails, {am['weak_dominance']} fail the dominance rule, "
+        f"{am['users_dropped_as_ambiguous']} dropped as ambiguous).",
+        "",
+        f"Readers per email: 1: {rd['1']}, 2: {rd['2']}, 3-5: {rd['3-5']}, 6+: {rd['6+']} "
+        f"({sh['pct_docs_with_2plus_readers']:.1f}% of emails have 2+ readers; mean {sh['mean_readers_per_doc']:.2f}, max {sh['max_readers']}; "
+        f"{sh['docs_with_a_reader_outside_the_sampled_mailboxes']} emails have a reader outside the sampled mailboxes).",
         "",
         "## Leaks (lower is better)",
         "",
         "| Attempt type | Result |",
         "|---|---|",
         f"| Owner queries | {fmt(lk['owner_queries'])} |",
-        f"| Non-owner, EnronQA question (3 per question) | {fmt(lk['non_owner_question_queries'])} |",
-        f"| Non-owner, exact 8-token content probe (3 per probe) | {fmt(lk['non_owner_exact_content_probes'])} |",
+        f"| Other allowed participants, EnronQA question (up to 3 per question) | {fmt(lk['other_allowed_participant_queries'])} |",
+        f"| Non-readers, EnronQA question (3 per question) | {fmt(lk['non_reader_question_queries'])} |",
+        f"| Non-readers, exact 8-token content probe (3 per probe) | {fmt(lk['non_reader_exact_content_probes'])} |",
         f"| **All attempts** | **{fmt(lk['all_attempts'])}** |",
+        f"| All non-reader attempts | {fmt(lk['all_non_reader_attempts'])} |",
         "",
-        f"Controls: probe text retrieves its own email as the owner at top-1 in {fmt(lk['probe_sensitivity_control'])}; "
-        f"the planted `NoFilter` mutant leaks on {lk['positive_control_NoFilter_mutant']['k']}/{lk['positive_control_NoFilter_mutant']['n']} non-owner queries.",
+        f"Queries by non-readers that returned anything at all: {lk['non_reader_question_queries']['queries_returning_anything']} (questions), "
+        f"{lk['non_reader_exact_content_probes']['queries_returning_anything']} (probes); the rest correctly returned nothing.",
         "",
-        "## Recall, querying as the owner (higher is better)",
+        "Controls (the oracle must see planted bugs):",
         "",
-        "| k | With ACL | No-ACL baseline |",
-        "|---|---|---|",
+        f"- Probe text retrieves its own email for its owner at top-1: {fmt(lk['probe_sensitivity_control_owner_top1'])}.",
+        f"- `NoFilter` mutant (no ACL check): leaks on {fmt(ctl['NoFilter_mutant_non_reader_queries_leaking'])} non-reader queries.",
+        f"- Off-by-one ACL mutant (each email also readable by the next email's readers), targeted probes: leaks on {fmt(ctl['off_by_one_acl_mutant_targeted_probes_leaking'])}; same probes on the real engine: {fmt(ctl['off_by_one_acl_mutant_targeted_probes_leaking']['same_probes_on_correct_engine'])}.",
+        f"- Recipients-ignored mutant (readers = owner + sender): over-denies instead of leaking, so it shows as lost recall for legitimate readers: hit@4 {ctl['recipients_ignored_mutant_denies_legit_readers_hit@4']['mutant_hits']}/{ctl['recipients_ignored_mutant_denies_legit_readers_hit@4']['queries']} vs {ctl['recipients_ignored_mutant_denies_legit_readers_hit@4']['correct_engine_hits']}/{ctl['recipients_ignored_mutant_denies_legit_readers_hit@4']['queries']} on the real engine.",
+        "",
+        "## Recall (higher is better)",
+        "",
+        "| k | Owner, with ACL | Other allowed participants, with ACL | No-ACL baseline (all questions) |",
+        "|---|---|---|---|",
     ]
     for k in KS:
-        a, b = rec["with_acl"][f"hit@{k}"], rec["no_acl_baseline"][f"hit@{k}"]
+        po = m["recall_other_participants"][f"hit@{k}"] if m["recall_other_participants"] else None
         L.append(
-            f"| hit@{k} | {100 * a['rate']:.1f}% (Wilson {100 * a['wilson95'][0]:.1f}-{100 * a['wilson95'][1]:.1f}; "
-            f"mailbox-bootstrap {100 * a['cluster_bootstrap95'][0]:.1f}-{100 * a['cluster_bootstrap95'][1]:.1f}) "
-            f"| {100 * b['rate']:.1f}% (Wilson {100 * b['wilson95'][0]:.1f}-{100 * b['wilson95'][1]:.1f}; "
-            f"mailbox-bootstrap {100 * b['cluster_bootstrap95'][0]:.1f}-{100 * b['cluster_bootstrap95'][1]:.1f}) |"
+            f"| hit@{k} | {recall_cell(m['recall_owner'][f'hit@{k}'])} | {recall_cell(po) if po else 'n/a'} "
+            f"| {recall_cell(r['no_acl_baseline_owner_queries'][f'hit@{k}'])} |"
         )
-    L += ["", "## Citation validity (paid LLM step)", ""]
+    L += [
+        "",
+        "Owner recall on only the questions whose email has another reader: "
+        + ", ".join(
+            f"hit@{k} {recall_cell(r['owner_recall_questions_with_other_readers'][f'hit@{k}'])}" for k in KS
+        ),
+        "",
+        f"## Shared-email stratum ({r['shared_email_stratum']['n_questions']} questions whose email has 2+ readers)",
+        "",
+        "The random sample has few shared emails, so this stratum is drawn only from emails with 2+ readers "
+        "(it is not representative of all questions).",
+        "",
+        "| Attempt type | Result |",
+        "|---|---|",
+        f"| Owner queries | {fmt(r['shared_email_stratum']['leaks']['owner_queries'])} |",
+        f"| Other allowed participants (up to 3 per question) | {fmt(r['shared_email_stratum']['leaks']['other_allowed_participant_queries'])} |",
+        f"| Non-readers (3 per question) | {fmt(r['shared_email_stratum']['leaks']['non_reader_question_queries'])} |",
+        f"| **All attempts** | **{fmt(r['shared_email_stratum']['leaks']['all_attempts'])}** |",
+        "",
+        "| k | Owner | Other allowed participants | No-ACL baseline |",
+        "|---|---|---|---|",
+        *[
+            f"| hit@{k} | {recall_cell(r['shared_email_stratum']['recall_owner'][f'hit@{k}'])} "
+            f"| {recall_cell(r['shared_email_stratum']['recall_other_participants'][f'hit@{k}'])} "
+            f"| {recall_cell(r['shared_email_stratum']['no_acl_baseline'][f'hit@{k}'])} |"
+            for k in KS
+        ],
+        "",
+        "## Comparison: single-owner ACL (mailbox owner only)",
+        "",
+        f"All attempts: {fmt(old['leaks']['all_attempts'])}. Non-reader attempts: {fmt(old['leaks']['all_non_reader_attempts'])}.",
+        "Owner recall: "
+        + ", ".join(f"hit@{k} {recall_cell(old['recall_owner'][f'hit@{k}'])}" for k in KS)
+        + ".",
+        "",
+        "## Citation validity (paid LLM step)",
+        "",
+    ]
     cv = r["citation_validity"]
     if cv.get("status") != "ok":
         L.append(f"Not measured: {cv.get('status')}.")

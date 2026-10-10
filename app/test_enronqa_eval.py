@@ -162,6 +162,78 @@ def test_spend_cap_aborts_before_overshooting():
     assert abs(summary["citation_retrieved_and_readable"]["wilson95"][1] - 1.0) < 1e-9
 
 
+def hrow(user, n, sender, recipients_header, folder="inbox", body="memo body"):
+    path = f"{user}/{folder}/{n}."
+    head = f"Subject: s\nSender: {sender}\n{recipients_header}\nFile: {path}\n{SEP}{body} {user}{n}"
+    return {
+        "email": head,
+        "path": path,
+        "user": user,
+        "questions": [],
+        "gold_answers": [],
+        "alternate_answers": [],
+    }
+
+
+def test_parse_header_handles_folded_multi_address_display_names_case_and_bcc():
+    text = (
+        "Subject: s\nSender: Alice.A@Enron.com\n"
+        "Recipients: ['Bob.B@enron.com', 'Smith, John <jsmith@x.com>',\n    'David', 'c@d.com, e@f.com']\n"
+        "Bcc: hidden@enron.com\nFile: a/b/1.\n" + SEP + "To: ignored@in.body"
+    )
+    sender, rcpt = eq.parse_header(text)
+    assert sender == ["alice.a@enron.com"]
+    assert rcpt == ["bob.b@enron.com", "c@d.com", "e@f.com", "hidden@enron.com", "jsmith@x.com"]
+    assert eq.parse_header("Subject: s\nSender: x\nRecipients: []\nFile: f\n" + SEP + "b") == ([], [])
+
+
+def test_address_map_uses_dominant_sent_sender_and_drops_ambiguous_and_weak():
+    none = "Recipients: []"
+    rows = (
+        [hrow("alice-a", i, "alice@enron.com", none, "sent_items") for i in range(4)]
+        + [hrow("bob-b", i, "bob@enron.com", none, "_sent_mail") for i in range(3)]
+        + [hrow("bob-b", 9, "alias@enron.com", none, "sent")]  # 3/4 still dominant
+        + [hrow("carol-c", i, "shared@enron.com", none, "sent") for i in range(3)]
+        + [hrow("dave-d", i, "shared@enron.com", none, "sent") for i in range(3)]  # ambiguous
+        + [hrow("erin-e", 1, "erin@enron.com", none, "sent")]  # too few
+        + [hrow("fay-f", 1, "fay@enron.com", none, "inbox")]  # no sent folder
+    )
+    amap, st = eq.build_address_map(rows)
+    assert amap == {"alice@enron.com": "alice-a", "bob@enron.com": "bob-b"}
+    assert (st["users"], st["mapped"], st["no_sent_emails"], st["weak_dominance"]) == (6, 2, 1, 1)
+    assert st["ambiguous_addresses"] == 1 and st["users_dropped_as_ambiguous"] == 2
+
+
+def test_readers_are_owner_plus_mapped_participants_and_union_over_duplicates():
+    amap = {"alice@enron.com": "alice-a", "bob@enron.com": "bob-b", "carol@enron.com": "carol-c"}
+    r1 = hrow("alice-a", 1, "alice@enron.com", "Recipients: ['bob@enron.com', 'stranger@x.com', 'David']")
+    r2 = hrow("alice-a", 1, "alice@enron.com", "Recipients: ['carol@enron.com']") | {
+        "user": "carol-c",
+        "path": "carol-c/inbox/5.",
+    }
+    docs = eq.build_acl([r1, r2], amap)
+    assert len(docs) == 1
+    d = docs["alice-a/inbox/1."]
+    assert d["owners"] == {"alice-a", "carol-c"} and d["readers"] == {"alice-a", "bob-b", "carol-c"}
+    solo = eq.build_acl([r1], amap)["alice-a/inbox/1."]
+    assert solo["readers"] == {"alice-a", "bob-b"}  # unmapped address and bare display name grant nothing
+    assert eq.participants(r1["email"], amap, recipients=False) == {"alice-a"}
+    assert eq.build_acl([r1])["alice-a/inbox/1."]["readers"] == {"alice-a"}  # no map = owner only
+
+
+def test_recipient_can_retrieve_shared_email_and_stranger_cannot():
+    amap = {"alice@enron.com": "alice-a", "bob@enron.com": "bob-b"}
+    r1 = hrow("alice-a", 1, "alice@enron.com", "Recipients: ['bob@enron.com']", body="ticket zebra7 offsite")
+    docs = eq.build_acl([r1], amap)
+    readers = {d: v["readers"] for d, v in docs.items()}
+    rag = eq.build_rag(docs, readers)
+    for user in ("alice-a", "bob-b"):
+        res = rag.retrieve("ticket zebra7", {"id": user, "groups": []}, k=5)
+        assert [r["doc_id"] for r in res] == ["alice-a/inbox/1."]
+        assert eq.count_leaks(res, user, readers) == 0
+    assert rag.retrieve("ticket zebra7", {"id": "mallory", "groups": []}, k=5) == []
+
+
 def test_usage_cost_prices_cache_tiers():
     u = {
         "input_tokens": 100,
