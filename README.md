@@ -144,7 +144,7 @@ on drafted answers; without it, the workbench runs retrieval-only.
 ## 🧭 Honest limits
 
 - **Synthetic data.** It hasn't been deployed at a real underwriting shop yet.
-- **SQL injection on the app's database connection can't widen document access:** ingest is a separate role ([T13](docs/THREAT_MODEL.md)) and principals are HMAC-signed and verified inside Postgres ([T18](docs/THREAT_MODEL.md)). It could still read audit metadata or append forged audit rows ([T19](docs/THREAT_MODEL.md)).
+- **SQL injection on the app's database connection can't widen document access:** ingest is a separate role ([T13](docs/THREAT_MODEL.md)) and principals are HMAC-signed and verified inside Postgres ([T18](docs/THREAT_MODEL.md)). Every read goes through a database function that writes the audit row itself, so that connection can't skip or forge audit entries; it can still read audit metadata, which the app's audit view needs ([T19](docs/THREAT_MODEL.md)).
 - **Recall is measured on exact wording.** Semantic recall on real documents is unmeasured.
 - **Cross-document reasoning isn't solved.** The AI could combine permitted files into a conclusion no single file supports. Citations and a human decision are the guard.
 - **The newest audit entries can be deleted without detection.** Edits anywhere are caught, but trimming the tail isn't ([T12](docs/THREAT_MODEL.md)).

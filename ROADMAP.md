@@ -105,7 +105,7 @@ Designed and scoped on purpose, but not scheduled. Each waits for a reason to bu
 - **Spend cap** per day, plus a red-team suite of 50+ injection and exfiltration attacks in CI.
 - **Request logs for latency, cost and retrieval failures:** one structured line per request (request id, outcome, per-stage latency, tokens, estimated cost, failure reason) in both apps, with p50/p95 latency, daily cost and failure rate in `/audit`. Logs hold ids and counts only, never query or document text.
 - **Model SDK contract test** against the real API in CI.
-- **Server-side audit writes** ([T19](docs/THREAT_MODEL.md)), so SQL on the app connection can't read audit metadata or append forged entries. (Principal binding, T18, is done.)
+- **Separate auditor role for audit reads** ([T19](docs/THREAT_MODEL.md)): the app connection can no longer skip or forge audit rows (server-side writes, done), but it still reads audit metadata for the `/audit` view.
 
 ### The full RAG build-out, one measured rung at a time
 
