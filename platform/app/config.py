@@ -39,7 +39,9 @@ MIN_SCORE = float(os.getenv("MIN_SCORE", "0.1"))
 # Optional LLM generation (extractive answers when unset — demo runs keyless)
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com")
-GENERATION_MODEL = os.getenv("GENERATION_MODEL", "claude-haiku-4-5")
+GENERATION_MODEL = os.getenv("GENERATION_MODEL", "claude-haiku-4-5-20251001")
+# used once, only when the primary id returns 404 not_found_error (retired model)
+GENERATION_FALLBACK_MODEL = os.getenv("GENERATION_FALLBACK_MODEL", "claude-haiku-4-5")
 
 # Permission source of truth for the sync loop (synthetic stand-in for
 # Drive/Confluence; swap in the Drive connector for the real thing)
