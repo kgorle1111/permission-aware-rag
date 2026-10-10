@@ -1,7 +1,7 @@
 """Live contract test: one real Messages API call through generation.answer().
 
-Skipped unless RUN_LIVE_CONTRACT=1 and ANTHROPIC_API_KEY are both set (weekly workflow only).
-conftest blanks the key for offline tests and stashes the real one in _LIVE_CONTRACT_KEY.
+Skipped unless RUN_LIVE_CONTRACT=1 and LIVE_ANTHROPIC_API_KEY are both set (weekly workflow only).
+conftest blanks ANTHROPIC_API_KEY for offline tests, so the workflow passes the key under its own name.
 Asserts structure, never wording. Not covered: the 404 -> fallback path (needs a bad-model call).
 """
 import logging
@@ -10,11 +10,11 @@ import re
 
 import pytest
 
-KEY = os.environ.get("_LIVE_CONTRACT_KEY", "")
+KEY = os.environ.get("LIVE_ANTHROPIC_API_KEY", "")
 
 pytestmark = pytest.mark.skipif(
     os.environ.get("RUN_LIVE_CONTRACT") != "1" or not KEY,
-    reason="live contract test: set RUN_LIVE_CONTRACT=1 and ANTHROPIC_API_KEY",
+    reason="live contract test: set RUN_LIVE_CONTRACT=1 and LIVE_ANTHROPIC_API_KEY",
 )
 
 DOC = {"doc_id": "fake-doc-1", "text": "Policy ZX-9 covers water damage up to 5000 dollars."}

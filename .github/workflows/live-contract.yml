@@ -51,5 +51,5 @@ jobs:
         working-directory: platform
         run: python -m pytest tests/test_live_contract.py -q -s
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LIVE_ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}  # conftest blanks ANTHROPIC_API_KEY
           RUN_LIVE_CONTRACT: "1"
