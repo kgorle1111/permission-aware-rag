@@ -84,3 +84,5 @@ These four selected faults are a separate denominator; no setup/collection error
 were counted as detections. This does not cover every omitted decorated function.
 
 Reproduce the four supplemental faults with the [portable manual runner](../evals/DECORATED_MUTATIONS.md). Their clean baseline and security assertion failures were rerun independently by the parent agent.
+
+The portable decorated-function checks are enforced in both platform Python 3.11/3.12 CI jobs after coverage; drift or an undetected selected fault blocks CI.

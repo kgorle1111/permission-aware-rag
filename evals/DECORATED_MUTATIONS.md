@@ -32,3 +32,5 @@ denominator and do not establish exhaustive coverage. This verifier was authored
 after the independent contract tests were frozen; its construction used source
 inspection and existing tests. The original private experiment and this portable
 runner retain the same four patches and test selections.
+
+The platform unit jobs run this verifier on Python 3.11 and 3.12 after their coverage checks. A baseline, drift or detection failure blocks those jobs.
