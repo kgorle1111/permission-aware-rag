@@ -21,8 +21,8 @@ PRs [#6](https://github.com/kgorle1111/permission-aware-rag/pull/6) through [#12
 | 2026-10-07 | Qdrant keyword indexes, document-filtered batched ACL updates, on-disk payload/vectors and int8 configuration; durable retry barriers | `platform/tests/test_scale_acl.py`, `platform/tests/test_hardening.py`, `evals/verify_qdrant_storage.py` |
 | 2026-10-07 | AWS Lightsail HTTPS portfolio demo, with synthetic documents and retrieval-only roles | [deployment guide](deploy/aws/README.md) |
 | 2026-10-10 | Measurement foundation: answer metrics (7.2, offline judge only), ladder harness that rejects any leaking rung and rejects all 8 mutants (7.4), and `run_evals.py --mutants` plus `ladder.py --check` in CI (1.4) | `evals/metrics.py`, `evals/ladder.py`, `app/test_answer_metrics.py`, `app/test_ladder.py` |
+| 2026-10-10 | Tier 3 agentic-retrieval mechanics (Stage 10): router, iterative (cap 3), read-only tool agent with server-bound identity and turn/token/time caps, guarded pipeline with receipt, approval-gated tool registry. **Tested with scripted fake models only; no answer-quality claim until a real model and a calibrated judge are run (needs approval).** | `app/agents.py`, `app/test_agents.py` |
 | 2026-10-10 | Tier 3 retrieval rungs, each measured and each passing every leak gate: scoped semantic cache (8.5), embedding cache (8.6), structure-aware chunking (9.2), router + rewrite/HyDE/step-back (9.3, deterministic fakes only), multi-query RRF (9.4), abstain threshold (9.7). The unscoped-cache mutant is caught (9/9). No rung beat the baseline on recall; the lexical corpus cannot show it either way | [ladder table](evals/results/2026-10-10-tier3-ladder/table.md), `app/rungs.py`, `app/test_rungs.py` |
-
 
 ### Evidence batch — 2026-10-08
 
@@ -126,9 +126,10 @@ retriever that leaks is a regression. The comparison table gets published, inclu
    a local cross-encoder reranker. (Structure-aware chunking, router with rewrite/HyDE/step-back,
    multi-query RRF and the abstain threshold are shipped in the reference app with deterministic
    fakes for LLM steps; see the Tier 3 row above. None is in `platform/` yet.)
-5. **Agents:** router → iterative → tool-calling retrieval, with the caller's identity bound
-   server-side so a model can't widen its own access, plus turn, token and time caps. A guarded
-   multi-agent pipeline only if a single agent measurably falls short.
+5. **Agents:** mechanics shipped in `app/agents.py` (router → iterative → tool-calling retrieval,
+   identity bound server-side, turn/token/time caps, guarded pipeline, approval-gated registry),
+   tested with scripted fakes only. Still open: run against a real model, measure it on the golden
+   set with a calibrated judge, and keep the pipeline only if a single agent measurably falls short.
 6. **Beyond text:** PDF tables and OCR, selective chart descriptions, and text-to-SQL under
    row-level security for policy-system data, after principal binding ([T18](docs/THREAT_MODEL.md)); the ingest-role fix (T13) is done.
 
@@ -149,6 +150,7 @@ its upgrade trigger. `app/test_ledgers.py` fails if a shortcut comment has no ro
 | B09 | open | Semantic cache scans a scope's entries linearly | Cache holds more than ~10k entries | `app/rungs.py` "linear scan over entries" |
 | B10 | open | Chunk size counts words, not model tokens | A real embedder with a hard token limit replaces the feature-hash one | `app/rungs.py` "words approximate tokens" |
 | B07 | open | Held-out real-corpus leak eval | Real corpus available | `evals/results/2026-10-03-v2/table.md` "real-corpus held-out run" |
+| B11 | open | Agent `get_chunk` (audited via `read_chunk`) works on the in-memory backend only; collection routing filters a top-100 pool | PgVectorRAG support, or a collection with >100 matching chunks per query | `app/agents.py` "kn: in-memory backend only" and `app/agents.py` "kn: collection filter runs on a top-100 pool" |
 
 ## Deliberately not building
 
