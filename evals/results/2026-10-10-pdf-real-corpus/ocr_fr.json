@@ -1,0 +1,517 @@
+{
+ "mode": "fr",
+ "pages": [
+  {
+   "publisher": "Federal Register",
+   "file": "d23c119535-FR-1959-06-16.pdf",
+   "page": 19,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 10620,
+     "char_edits": 7706,
+     "words": 2400,
+     "word_edits": 2113,
+     "bag_hit": 1357,
+     "bag_total": 2400
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "4f790151bb-FR-1945-06-14.pdf",
+   "page": 56,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 8320,
+     "char_edits": 6268,
+     "words": 1381,
+     "word_edits": 1307,
+     "bag_hit": 1292,
+     "bag_total": 1381
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "f5f94b7335-FR-1951-06-14.pdf",
+   "page": 8,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 6858,
+     "char_edits": 5483,
+     "words": 1262,
+     "word_edits": 1170,
+     "bag_hit": 938,
+     "bag_total": 1262
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "20ddcddb98-FR-1967-06-16.pdf",
+   "page": 22,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 8514,
+     "char_edits": 6378,
+     "words": 1404,
+     "word_edits": 1307,
+     "bag_hit": 1250,
+     "bag_total": 1404
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "e5bcb240d8-FR-1941-06-18.pdf",
+   "page": 13,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 6578,
+     "char_edits": 4902,
+     "words": 1216,
+     "word_edits": 1052,
+     "bag_hit": 884,
+     "bag_total": 1216
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "e5bcb240d8-FR-1941-06-18.pdf",
+   "page": 10,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 7089,
+     "char_edits": 5554,
+     "words": 1219,
+     "word_edits": 1151,
+     "bag_hit": 1074,
+     "bag_total": 1219
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "de12d0135a-FR-1965-06-15.pdf",
+   "page": 41,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 7896,
+     "char_edits": 6193,
+     "words": 1285,
+     "word_edits": 1244,
+     "bag_hit": 1069,
+     "bag_total": 1285
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "42f65282d6-FR-1946-06-14.pdf",
+   "page": 32,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 7510,
+     "char_edits": 5710,
+     "words": 1253,
+     "word_edits": 1127,
+     "bag_hit": 1096,
+     "bag_total": 1253
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "c47e560f6f-FR-1957-06-18.pdf",
+   "page": 7,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 9087,
+     "char_edits": 6532,
+     "words": 1638,
+     "word_edits": 1445,
+     "bag_hit": 1336,
+     "bag_total": 1638
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "3777d8734e-FR-1949-06-14.pdf",
+   "page": 12,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 9153,
+     "char_edits": 6733,
+     "words": 1539,
+     "word_edits": 1427,
+     "bag_hit": 1440,
+     "bag_total": 1539
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "3777d8734e-FR-1949-06-14.pdf",
+   "page": 15,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 7870,
+     "char_edits": 6064,
+     "words": 1315,
+     "word_edits": 1247,
+     "bag_hit": 1214,
+     "bag_total": 1315
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "20ddcddb98-FR-1967-06-16.pdf",
+   "page": 47,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 969,
+     "char_edits": 355,
+     "words": 145,
+     "word_edits": 73,
+     "bag_hit": 94,
+     "bag_total": 145
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "4f790151bb-FR-1945-06-14.pdf",
+   "page": 50,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 8928,
+     "char_edits": 6729,
+     "words": 1539,
+     "word_edits": 1418,
+     "bag_hit": 1331,
+     "bag_total": 1539
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "ed1dd22684-FR-1950-06-14.pdf",
+   "page": 74,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 8816,
+     "char_edits": 6586,
+     "words": 1636,
+     "word_edits": 1484,
+     "bag_hit": 1299,
+     "bag_total": 1636
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "c47e560f6f-FR-1957-06-18.pdf",
+   "page": 18,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 9434,
+     "char_edits": 6784,
+     "words": 1951,
+     "word_edits": 1684,
+     "bag_hit": 1228,
+     "bag_total": 1951
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "424bae5747-FR-1939-06-14.pdf",
+   "page": 4,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 8446,
+     "char_edits": 6106,
+     "words": 1439,
+     "word_edits": 1311,
+     "bag_hit": 1346,
+     "bag_total": 1439
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "42f65282d6-FR-1946-06-14.pdf",
+   "page": 28,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 8091,
+     "char_edits": 6214,
+     "words": 1309,
+     "word_edits": 1242,
+     "bag_hit": 1184,
+     "bag_total": 1309
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "ed1dd22684-FR-1950-06-14.pdf",
+   "page": 67,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 8406,
+     "char_edits": 6359,
+     "words": 1480,
+     "word_edits": 1386,
+     "bag_hit": 1270,
+     "bag_total": 1480
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "5161cce93d-FR-1944-06-15.pdf",
+   "page": 10,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 7812,
+     "char_edits": 5918,
+     "words": 1382,
+     "word_edits": 1288,
+     "bag_hit": 1238,
+     "bag_total": 1382
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "f0acf1628c-FR-1969-06-17.pdf",
+   "page": 28,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 8800,
+     "char_edits": 6576,
+     "words": 1528,
+     "word_edits": 1412,
+     "bag_hit": 1330,
+     "bag_total": 1528
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "a848db601b-FR-1940-06-14.pdf",
+   "page": 7,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 8079,
+     "char_edits": 6023,
+     "words": 1478,
+     "word_edits": 1323,
+     "bag_hit": 1227,
+     "bag_total": 1478
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "ce46c2de8f-FR-1943-06-15.pdf",
+   "page": 29,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 9615,
+     "char_edits": 7298,
+     "words": 1701,
+     "word_edits": 1553,
+     "bag_hit": 1383,
+     "bag_total": 1701
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "de12d0135a-FR-1965-06-15.pdf",
+   "page": 23,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 8483,
+     "char_edits": 6350,
+     "words": 1516,
+     "word_edits": 1375,
+     "bag_hit": 1171,
+     "bag_total": 1516
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "f0acf1628c-FR-1969-06-17.pdf",
+   "page": 53,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 8609,
+     "char_edits": 6538,
+     "words": 1472,
+     "word_edits": 1344,
+     "bag_hit": 1200,
+     "bag_total": 1472
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "f5f94b7335-FR-1951-06-14.pdf",
+   "page": 3,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 7691,
+     "char_edits": 5874,
+     "words": 1485,
+     "word_edits": 1281,
+     "bag_hit": 1027,
+     "bag_total": 1485
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "ce46c2de8f-FR-1943-06-15.pdf",
+   "page": 23,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 8252,
+     "char_edits": 6370,
+     "words": 1434,
+     "word_edits": 1321,
+     "bag_hit": 1201,
+     "bag_total": 1434
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "5161cce93d-FR-1944-06-15.pdf",
+   "page": 13,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 8234,
+     "char_edits": 6006,
+     "words": 1484,
+     "word_edits": 1309,
+     "bag_hit": 1202,
+     "bag_total": 1484
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "79a85393d4-FR-1948-06-15.pdf",
+   "page": 6,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 7778,
+     "char_edits": 5942,
+     "words": 1356,
+     "word_edits": 1210,
+     "bag_hit": 1107,
+     "bag_total": 1356
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "f06a66be36-FR-1942-06-16.pdf",
+   "page": 20,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 8331,
+     "char_edits": 6463,
+     "words": 1648,
+     "word_edits": 1461,
+     "bag_hit": 671,
+     "bag_total": 1648
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "7fb3db3869-FR-1953-06-16.pdf",
+   "page": 3,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 7114,
+     "char_edits": 5371,
+     "words": 1422,
+     "word_edits": 1224,
+     "bag_hit": 896,
+     "bag_total": 1422
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "0e6275d2ce-FR-1955-06-14.pdf",
+   "page": 10,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 6560,
+     "char_edits": 4867,
+     "words": 1203,
+     "word_edits": 1050,
+     "bag_hit": 876,
+     "bag_total": 1203
+    }
+   ]
+  },
+  {
+   "publisher": "Federal Register",
+   "file": "f06a66be36-FR-1942-06-16.pdf",
+   "page": 11,
+   "runs": [
+    {
+     "dpi": 300,
+     "chars": 8367,
+     "char_edits": 6381,
+     "words": 1397,
+     "word_edits": 1334,
+     "bag_hit": 1299,
+     "bag_total": 1397
+    }
+   ]
+  }
+ ]
+}

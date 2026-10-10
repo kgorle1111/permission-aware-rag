@@ -1,0 +1,27 @@
+{
+ "docs": 96,
+ "chunks": 44060,
+ "probes": 384,
+ "principals": 8,
+ "forbidden_attempts": 2688,
+ "leaks": 0,
+ "wilson95": [
+  0.0,
+  0.0014270747144567997
+ ],
+ "leak_examples": [],
+ "control_attempts": 384,
+ "control_hits": 365,
+ "isolation": {
+  "group:tax": {
+   "queries": 150,
+   "raw_diffs": 1,
+   "diffs": 0
+  },
+  "group:examiners": {
+   "queries": 150,
+   "raw_diffs": 0,
+   "diffs": 0
+  }
+ }
+}
