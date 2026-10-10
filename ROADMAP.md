@@ -21,6 +21,7 @@ PRs [#6](https://github.com/kgorle1111/permission-aware-rag/pull/6) through [#12
 | 2026-10-07 | Qdrant keyword indexes, document-filtered batched ACL updates, on-disk payload/vectors and int8 configuration; durable retry barriers | `platform/tests/test_scale_acl.py`, `platform/tests/test_hardening.py`, `evals/verify_qdrant_storage.py` |
 | 2026-10-07 | AWS Lightsail HTTPS portfolio demo, with synthetic documents and retrieval-only roles | [deployment guide](deploy/aws/README.md) |
 | 2026-10-10 | Measurement foundation: answer metrics (7.2, offline judge only), ladder harness that rejects any leaking rung and rejects all 8 mutants (7.4), and `run_evals.py --mutants` plus `ladder.py --check` in CI (1.4) | `evals/metrics.py`, `evals/ladder.py`, `app/test_answer_metrics.py`, `app/test_ladder.py` |
+| 2026-10-10 | Tier 3 agentic-retrieval mechanics (Stage 10): router, iterative (cap 3), read-only tool agent with server-bound identity and turn/token/time caps, guarded pipeline with receipt, approval-gated tool registry. **Tested with scripted fake models only; no answer-quality claim until a real model and a calibrated judge are run (needs approval).** | `app/agents.py`, `app/test_agents.py` |
 
 ### Evidence batch — 2026-10-08
 
@@ -125,9 +126,10 @@ retriever that leaks is a regression. The comparison table gets published, inclu
    sections with different permissions; query rewriting / HyDE / step-back behind a router;
    multi-query with reciprocal rank fusion; hybrid dense + sparse search over visible rows only;
    a local cross-encoder reranker; an abstain threshold for unanswerable questions.
-5. **Agents:** router → iterative → tool-calling retrieval, with the caller's identity bound
-   server-side so a model can't widen its own access, plus turn, token and time caps. A guarded
-   multi-agent pipeline only if a single agent measurably falls short.
+5. **Agents:** mechanics shipped in `app/agents.py` (router → iterative → tool-calling retrieval,
+   identity bound server-side, turn/token/time caps, guarded pipeline, approval-gated registry),
+   tested with scripted fakes only. Still open: run against a real model, measure it on the golden
+   set with a calibrated judge, and keep the pipeline only if a single agent measurably falls short.
 6. **Beyond text:** PDF tables and OCR, selective chart descriptions, and text-to-SQL under
    row-level security for policy-system data, after the database-role fix ([T13](docs/THREAT_MODEL.md)).
 
@@ -145,6 +147,7 @@ its upgrade trigger. `app/test_ledgers.py` fails if a shortcut comment has no ro
 | B05 | open | RLS ingest gated by a forgeable GUC, not a DB role | Before any deployment that runs untrusted SQL paths (THREAT_MODEL T13) | `app/pgvector_rag.py` "rag.mode" |
 | B06 | open | JWT group with a comma → 500 on pgvector | First real IdP integration (THREAT_MODEL T14) | `app/pgvector_rag.py` "contain no comma" |
 | B07 | open | Held-out real-corpus leak eval | Real corpus available | `evals/results/2026-10-03-v2/table.md` "real-corpus held-out run" |
+| B08 | open | Agent `get_chunk` scans the in-memory backend and is unaudited; collection routing filters a top-100 pool | PgVectorRAG support, or a collection with >100 matching chunks per query | `app/agents.py` "kn: scans the in-memory backend" and `app/agents.py` "kn: collection filter runs on a top-100 pool" |
 
 ## Deliberately not building
 

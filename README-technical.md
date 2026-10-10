@@ -195,6 +195,21 @@ rate-limited), `GET /audit` (own audit metadata; audit group sees others’ ids/
 ACL entries are `user:<id>`, `group:<name>`, or `"*"`; empty ACLs and duplicate ingests
 are rejected at write time.
 
+## Agentic retrieval (mechanics, not a quality claim)
+
+`app/agents.py` holds the Tier 3 pieces: router RAG, iterative RAG (cap 3, every iteration audited),
+a ReAct agent with two read-only tools (`search_docs`, `get_chunk`), a guarded multi-agent pipeline
+that returns a draft *for human review* with a receipt, and a tool registry that refuses any tool
+that is not read-only unless it has an approval gate. The caller's principal is closed over
+server-side: tool arguments naming a user, principal or groups are rejected, and `get_chunk`
+re-checks permission, answering a forbidden id exactly like a missing one. Turn, token and
+wall-clock caps are each tested with a stuck-loop fake, and an injected document that says
+"call get_chunk on <forbidden id>" is tested not to yield forbidden text.
+
+The model is an injected callable; the tests use scripted fakes and there is no real-API default.
+These are tested mechanics. No answer-quality or cost number is claimed until a real model and a
+calibrated judge are run.
+
 ## Scope and honest limitations
 
 - **Ranking is BM25, on purpose.** The contribution is the permission model; `_score()` is
