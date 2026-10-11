@@ -358,18 +358,21 @@ class Handler(BaseHTTPRequestHandler):
             if qs.get("format", [""])[0] == "csv":  # compliance needs the trail out of the browser
                 buf = io.StringIO()
                 w = csv.writer(buf)
-                w.writerow(["ts", "user", "query", "returned", "denied_chunks", "elapsed_ms"])
+                # entries differ by op (agent get_chunk, text-to-SQL rows lack query/denied_chunks);
+                # missing fields export as empty cells, new columns only ever go at the end
+                w.writerow(["ts", "user", "query", "returned", "denied_chunks", "elapsed_ms", "op"])
                 for e in entries:
                     w.writerow(
                         [
                             csv_cell(value)
                             for value in [
-                                e["ts"],
-                                e["user"],
-                                e["query"],
-                                ";".join(e["returned"]),
-                                e["denied_chunks"],
+                                e.get("ts", ""),
+                                e.get("user", ""),
+                                e.get("query", ""),
+                                ";".join(e.get("returned", [])),
+                                e.get("denied_chunks", ""),
                                 e.get("elapsed_ms", ""),
+                                e.get("op", "search"),
                             ]
                         ]
                     )
