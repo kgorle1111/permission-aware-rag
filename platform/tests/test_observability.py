@@ -15,6 +15,7 @@ from app import config, generation, observability, resilience, retrieval
 from app.identity import Principal
 
 from conftest import auth, mint
+from failclosed_assert import assert_failed_closed
 
 CANARY = "CANARY-Zx9-private-question-text"
 FIELDS = {
@@ -139,7 +140,7 @@ def test_failed_closed_exception_path(client, ops, caplog, monkeypatch):
     monkeypatch.setattr(retrieval, "fingerprint_problem", lambda s: "index mismatch")
     r = query(client)
     rec = one_line(caplog)
-    assert r.json() == retrieval.EMPTY_RESPONSE  # indistinguishable from "nothing matched" to the caller
+    assert_failed_closed(r)
     assert (rec["outcome"], rec["source"], rec["returned"], rec["degraded"]) == ("failed_closed", "unavailable", 0, True)
 
 

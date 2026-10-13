@@ -25,7 +25,7 @@ from . import audit as audit_mod
 from . import config
 from . import observability
 from .identity import Principal, principal_from_request
-from .retrieval import retrieve
+from .retrieval import retrieve_checked
 from .store import init_db, SessionLocal, PermissionState, fingerprint_problem
 from .sync import sync_once
 
@@ -87,14 +87,14 @@ class QueryIn(BaseModel):
 
 @app.middleware("http")
 async def request_id_and_rejections(request: Request, call_next):
-    """X-Request-ID on every response (a header, not a body field: fail-closed and no-match
-    bodies must stay byte-identical). /query requests that never reach retrieval (401, 422, 405)
-    get their one log line here; retrieve() logs the ones that do (it always answers 200)."""
+    """X-Request-ID on every response (a header; the no-match body must stay byte-identical to a
+    denied one). /query requests that never reach retrieval (401, 422, 405) get their one log line
+    here; retrieve() logs the ones that do (200, or 503 when failed closed)."""
     request_id, started = uuid.uuid4().hex, time.perf_counter()
     request.state.request_id = request_id
     response = await call_next(request)
     response.headers["X-Request-ID"] = request_id
-    if request.url.path == "/query" and response.status_code != 200:
+    if request.url.path == "/query" and response.status_code not in (200, 503):
         rec = observability.new_record(request_id)
         rec["outcome"] = "bad_request"
         rec["total_ms"] = round((time.perf_counter() - started) * 1000, 1)
@@ -105,7 +105,13 @@ async def request_id_and_rejections(request: Request, call_next):
 
 @app.post("/query")
 def query(request: Request, body: QueryIn, principal: Principal = Depends(principal_from_request)):
-    return retrieve(body.query, principal, k=body.k or None, request_id=request.state.request_id)
+    response, failed_closed = retrieve_checked(
+        body.query, principal, k=body.k or None, request_id=request.state.request_id)
+    if failed_closed:
+        # Fixed body: no cause, no query echo. The cause is in the log and the audit row.
+        return JSONResponse(status_code=503, content={
+            "error": "retrieval unavailable", "request_id": request.state.request_id})
+    return response
 
 
 @app.get("/audit")

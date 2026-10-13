@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- A fail-closed `/query` now returns HTTP 503 with `{"error": "retrieval unavailable", "request_id": ...}` instead of a 200 with the empty body, so outages show in client error rates and load tests. Logging and the audit row are unchanged. Denied and no-match queries still return the identical 200 empty body.
 - Add one JSON request log line per `/query` (ids, counts, timings; no text), an `X-Request-ID` header, an in-process `ops` summary in `/audit`, and a `DAILY_BUDGET_USD` spend cap that falls back to retrieval-only.
 - Make provider failures visible to the LLM circuit breaker without changing `generation.answer`'s string result; 422 responses no longer echo rejected input.
 - Add a red-team suite driven by `platform/tests/redteam/attacks.json` (mocked model; structural claims only).
