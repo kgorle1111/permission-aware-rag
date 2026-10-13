@@ -344,7 +344,7 @@ To preserve one, independently verify its provenance and linkage using
 checkpoint with that trusted digest. Do not compute a replacement checkpoint
 from a log suspected of tampering. A crash between append and checkpoint update
 also fails closed; recovery requires checking the log against trusted evidence.
-The reference JSONL writer supports one process per audit file.
+Several app processes on one host may share one JSONL audit file: appends and verification take an exclusive `flock` on `<log>.lock` (30 s bound, then the call fails closed), and an append refuses to chain onto a log whose newest line is not the checkpointed head. Windows is thread-safe only, and several hosts need a shared store (ROADMAP B22).
 
 ### Scheduled audit verification
 

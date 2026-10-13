@@ -6,6 +6,7 @@ logs/
 app/audit_log.jsonl
 app/audit_log.jsonl.head
 app/ops.sqlite*
+app/audit_log.jsonl.lock
 app/pgvector_audit.head
 app/pgvector_audit.head.lock
 .pytest_cache/
