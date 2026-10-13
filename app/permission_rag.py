@@ -314,25 +314,63 @@ class PermissionRAG:
                 temporary.unlink()
 
     @staticmethod
-    def verify_audit_chain(path: str | pathlib.Path, expected_head: str | None = None) -> bool:
-        """Verify every line AND the head; supply an external head for stronger evidence.
+    def audit_file_failure(path: str | pathlib.Path, expected_head: str | None = None) -> str | None:
+        """Why the JSONL chain does not verify, or None when it does. Messages carry entry numbers
+        and paths only, never entry contents (invariant 9).
 
         Without expected_head, require the local .head checkpoint. Legacy logs
         without a checkpoint are unanchored and cannot be silently trusted.
         """
-        prev = ""
+        path = pathlib.Path(path)
+        if expected_head is None:
+            head_path = PermissionRAG.audit_head_path(path)
+            try:
+                expected_head = head_path.read_text()
+            except FileNotFoundError:
+                return f"checkpoint missing: {head_path} (truncation cannot be ruled out)"
+            except (OSError, UnicodeError):
+                return f"checkpoint unreadable: {head_path}"
+        prev, n, anchored = "", 0, 0
         try:
-            if expected_head is None:
-                expected_head = PermissionRAG.audit_head_path(path).read_text()
-            with pathlib.Path(path).open() as f:
-                for line in f:
+            with path.open() as f:
+                for n, line in enumerate(f, 1):
                     if not line.endswith("\n"):
-                        return False
+                        return f"entry {n} is not newline-terminated: log truncated mid-entry"
                     line = line[:-1]
-                    entry = json.loads(line)
+                    try:
+                        entry = json.loads(line)
+                    except ValueError:
+                        return f"entry {n} is not valid JSON: log edited or corrupted"
                     if not isinstance(entry, dict) or entry.get("prev_sha256") != prev:
-                        return False
+                        return f"chain broken at entry {n}: an earlier entry was edited, removed or reordered"
                     prev = hashlib.sha256(line.encode()).hexdigest()
-        except (OSError, ValueError, UnicodeError):
-            return False
-        return prev == expected_head
+                    if prev == expected_head:
+                        anchored = n
+        except FileNotFoundError:
+            return f"audit log missing: {path} (a checkpoint exists: log deleted?)"
+        except (OSError, UnicodeError) as e:
+            return f"audit log unreadable: {type(e).__name__}"
+        if prev == expected_head:
+            return None
+        if anchored:
+            return f"{n - anchored} entries follow the checkpointed head (entry {anchored}): appended without a checkpoint update"
+        if n == 0:
+            return "log is empty but the checkpoint anchors an entry: log truncated"
+        return f"newest entry ({n}) does not match the checkpoint: tail edited or log truncated"
+
+    @staticmethod
+    def verify_audit_chain(path: str | pathlib.Path, expected_head: str | None = None) -> bool:
+        """Verify every line AND the head; supply an external head for stronger evidence."""
+        return PermissionRAG.audit_file_failure(path, expected_head) is None
+
+    def audit_failure(self) -> str | None:
+        """Failure reason for this instance's own log (None = verifies, or nothing persisted).
+
+        Holds the append lock: a reader between the line append and the head write would see a
+        mismatch that is not tampering.
+        """
+        if not self.audit_path:
+            return None
+        # kn: reads the whole log under the append lock; verify incrementally from a saved head if logs grow large
+        with self._audit_lock:
+            return self.audit_file_failure(self.audit_path)

@@ -71,6 +71,7 @@ So we built evidence that can fail:
 | Original planted leak bugs caught with the isolation check | **6 of 6** |
 | Expanded gate, including OR-across-levels and flat-intersection faults | **8 of 8** |
 | Real documents we didn't write: 600 EnronQA questions over 14,542 Enron emails, readers from sender/recipient headers | **0 of 4,300** unreadable chunks returned |
+| Public benchmark (BEIR SciFact, NFCorpus, FiQA): retrieval matches published numbers; synthetic 4-tenant permission filter | bge-small within **0.001** of MTEB nDCG@10; **0 of 113,573** out-of-tenant results |
 
 In plain numbers: **0/1,350 leaks (95% upper bound 0.28%)**, and the hand-labeled gate
 still holds at recall@4: 14/14 with zero leaks. The isolation check needs no labels. For
@@ -86,7 +87,7 @@ chunks (95% upper bound 0.09%)** across owners, other recipients and non-readers
 hit@4 of **91.5% (95% CI 89.0–93.5%)**. A planted off-by-one ACL bug leaks on 300/300 of the
 same probes, so the check can see leaks. Citation validity needs a paid model run and is not
 measured yet. The questions were machine-written from each email, so recall is optimistic.
-[Full results](evals/results/2026-10-03-v2/table.md) · [EnronQA results](evals/results/2026-10-10-enronqa/table.md) · [pre-registered claims](ROADMAP.md#pre-registered-claims)
+[Full results](evals/results/2026-10-03-v2/table.md) · [EnronQA results](evals/results/2026-10-10-enronqa/table.md) · [BEIR results](evals/results/2026-10-12-beir/table.md) · [pre-registered claims](ROADMAP.md#pre-registered-claims)
 
 ## 🔭 How it flows
 

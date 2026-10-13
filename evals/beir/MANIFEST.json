@@ -1,0 +1,89 @@
+{
+ "note": "BEIR (Thakur et al. 2021, arXiv:2104.08663) re-hosted on Hugging Face as BeIR/<name> (HF card: cc-by-sa-4.0). Underlying licences differ, see README. Used for research evaluation only; never redistributed from this repo.",
+ "datasets": {
+  "scifact": {
+   "files": [
+    {
+     "repo": "BeIR/scifact",
+     "revision": "b3b5335604bf5ee3c4447671af975ea25143d4f5",
+     "path": "corpus/corpus-00000-of-00001.parquet",
+     "file": "corpus.parquet",
+     "bytes": 4469916,
+     "sha256": "243324b35f03d82bd6d98a5f575966876e86cad7ce16e5333a35b1b793dc4f45"
+    },
+    {
+     "repo": "BeIR/scifact",
+     "revision": "b3b5335604bf5ee3c4447671af975ea25143d4f5",
+     "path": "queries/queries-00000-of-00001.parquet",
+     "file": "queries.parquet",
+     "bytes": 64982,
+     "sha256": "1c37956c5dc8b810b60302323c24d1a9e79e26411ba8f5ad9d0888642e2a9034"
+    },
+    {
+     "repo": "BeIR/scifact-qrels",
+     "revision": "2938d17dc3b09882fdb8c12bbbe2e2dc0e75a029",
+     "path": "test.tsv",
+     "file": "qrels.tsv",
+     "bytes": 5389,
+     "sha256": "0864bb985e0ca2367ba217977e72004d549054b2b06666ed9d4825ac7c21284c"
+    }
+   ]
+  },
+  "nfcorpus": {
+   "files": [
+    {
+     "repo": "BeIR/nfcorpus",
+     "revision": "b5026a0e96e8a7ac4f95f482a596389289d46269",
+     "path": "corpus/corpus-00000-of-00001.parquet",
+     "file": "corpus.parquet",
+     "bytes": 3157570,
+     "sha256": "f2a1c0b570a5efdf23cfa36f5e573d062cc113c6e7251e22c69b323a33ea895e"
+    },
+    {
+     "repo": "BeIR/nfcorpus",
+     "revision": "b5026a0e96e8a7ac4f95f482a596389289d46269",
+     "path": "queries/queries-00000-of-00001.parquet",
+     "file": "queries.parquet",
+     "bytes": 80929,
+     "sha256": "edd2b878b8130fb3b5e3c4b9428ddc1e67fbd6eedf8ae099fca3b87838ba6b29"
+    },
+    {
+     "repo": "BeIR/nfcorpus-qrels",
+     "revision": "a451b3b26d3ae1358f259c1a3a4dd61fcea35a65",
+     "path": "test.tsv",
+     "file": "qrels.tsv",
+     "bytes": 279572,
+     "sha256": "f8fba6ef3d4dd9c3a242a8ba4ae38276fc3622fce7dcbae764766d564542fd2a"
+    }
+   ]
+  },
+  "fiqa": {
+   "files": [
+    {
+     "repo": "BeIR/fiqa",
+     "revision": "979c07a7cb5ccc6ca009792241fa1250b98055dd",
+     "path": "corpus/corpus-00000-of-00001.parquet",
+     "file": "corpus.parquet",
+     "bytes": 27700817,
+     "sha256": "b36bb07dab3bfad488190818828e749a52faf5ba391c1d51dac8b06064576f99"
+    },
+    {
+     "repo": "BeIR/fiqa",
+     "revision": "979c07a7cb5ccc6ca009792241fa1250b98055dd",
+     "path": "queries/queries-00000-of-00001.parquet",
+     "file": "queries.parquet",
+     "bytes": 321680,
+     "sha256": "e9b3863724ffd538d8efff19684ef8ae495bdbddd96b35e81bdc39e3e22860d6"
+    },
+    {
+     "repo": "BeIR/fiqa-qrels",
+     "revision": "252958f2d646e22cab6d0c72dd3f0d5de6d0655a",
+     "path": "test.tsv",
+     "file": "qrels.tsv",
+     "bytes": 25256,
+     "sha256": "6adc2a640dcdd22bb8b3858f89107adef2a7c3db20a63550dfa7a0f71e379e44"
+    }
+   ]
+  }
+ }
+}

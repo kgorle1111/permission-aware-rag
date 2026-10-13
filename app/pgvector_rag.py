@@ -509,28 +509,61 @@ class PgVectorRAG:
         return [json.loads(r[0]) for r in reversed(rows)]
 
     def verify_audit_chain(self) -> bool:
-        prev, last_id = "", None
-        for row_id, line, recorded_hash in self.conn.execute(
-            "SELECT id, line, line_sha256 FROM audit ORDER BY id ASC"
-        ):
-            last_id = row_id
-            try:
-                entry = json.loads(line)
-                if not isinstance(entry, dict) or entry.get("prev_sha256") != prev:
-                    return False
-            except ValueError:
-                return False
-            prev = hashlib.sha256(line.encode()).hexdigest()
-            if prev != recorded_hash:
-                return False
-        return self._head_matches_checkpoint(last_id, prev)
+        return self.audit_failure() is None
 
-    def _head_matches_checkpoint(self, last_id: int | None, head: str) -> bool:
+    def audit_failure(self) -> str | None:
+        """Why the audit table or its external checkpoint does not verify, or None when both do.
+        Messages carry row ids only, never row contents (invariant 9).
+
+        Holds the anchor lock: retrieve() commits a row and then rewrites the checkpoint, and a
+        reader between the two would see a mismatch that is not tampering.
+        """
+        # kn: full scan under the anchor lock; verify incrementally from a saved (id, hash) if audit grows large
+        with self._anchor_lock:
+            prev, last_id = "", None
+            for row_id, line, recorded_hash in self.conn.execute(
+                "SELECT id, line, line_sha256 FROM audit ORDER BY id ASC"
+            ):
+                last_id = row_id
+                try:
+                    entry = json.loads(line)
+                except ValueError:
+                    return f"audit row {row_id} is not valid JSON"
+                if not isinstance(entry, dict) or entry.get("prev_sha256") != prev:
+                    return (
+                        f"chain broken at audit row {row_id}: an earlier row was edited, deleted or reordered"
+                    )
+                prev = hashlib.sha256(line.encode()).hexdigest()
+                if prev != recorded_hash:
+                    return f"audit row {row_id} does not match its recorded hash: row edited"
+            return self._checkpoint_failure(last_id, prev)
+
+    def _checkpoint_failure(self, last_id: int | None, head: str) -> str | None:
         if not self._checkpoint:
-            return True
-        if last_id is None:  # empty audit table: fine only if nothing was ever anchored
-            return not self._checkpoint.exists()
+            return None
         try:
-            return self._checkpoint.read_text() == f"{last_id} {head}"
+            recorded = self._checkpoint.read_text()
+        except FileNotFoundError:
+            if last_id is None:  # empty table: fine only if nothing was ever anchored
+                return None
+            return f"checkpoint missing: {self._checkpoint} (tail deletion cannot be ruled out)"
         except (OSError, UnicodeError):
-            return False
+            return f"checkpoint unreadable: {self._checkpoint}"
+        if last_id is None:
+            return "audit table is empty but a checkpoint exists: all audit rows deleted"
+        if recorded == f"{last_id} {head}":
+            return None
+        try:
+            anchored = int(recorded.split(" ", 1)[0])
+        except ValueError:
+            return f"checkpoint malformed: {self._checkpoint}"
+        if anchored > last_id:
+            return (
+                f"checkpoint anchors audit row {anchored} but the newest row is {last_id}: tail rows deleted"
+            )
+        if anchored < last_id:
+            return (
+                f"newest audit row ({last_id}) is past the checkpoint (row {anchored}): "
+                "rows added outside this process, or the checkpoint is stale"
+            )
+        return f"newest audit row ({last_id}) does not match the checkpoint: tail row replaced"
