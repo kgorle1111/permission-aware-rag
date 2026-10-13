@@ -22,6 +22,7 @@ from collections import defaultdict, deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
+import audit_verify
 import llm
 import obs
 from permission_rag import PermissionRAG
@@ -84,13 +85,16 @@ if os.environ.get("RAG_BACKEND") == "pgvector":
         os.environ["DATABASE_URL"],
         os.environ.get("INGEST_DATABASE_URL"),
         principal_key=bytes.fromhex(os.environ["RAG_PRINCIPAL_KEY"]),
+        principal_key_id=os.environ.get("RAG_PRINCIPAL_KEY_ID", "k1"),  # after a rotation: the new key's id
         # T12: head checkpoint kept outside Postgres; keep it somewhere the DB admin cannot write
-        audit_checkpoint_path=os.environ.get(
-            "AUDIT_CHECKPOINT_PATH", str(pathlib.Path(__file__).with_name("pgvector_audit.head"))
-        ),
+        audit_checkpoint_path=audit_verify.pg_checkpoint_path(),
     )
+    # F5.2: fail closed on a chain that does not verify (AUDIT_VERIFY_ON_START=0 skips)
+    audit_verify.require_clean_start(rag.audit_failure)
 else:
-    rag = PermissionRAG(audit_path=pathlib.Path(__file__).with_name("audit_log.jsonl"))
+    # checked first: the constructor would also refuse, but with a bare ValueError
+    audit_verify.require_clean_start(lambda: audit_verify.jsonl_failure(audit_verify.jsonl_path()))
+    rag = PermissionRAG(audit_path=audit_verify.jsonl_path())
 for _doc_id, _text, _acl in CORPUS:
     try:
         rag.add_document(_doc_id, _text, _acl)
@@ -98,6 +102,9 @@ for _doc_id, _text, _acl in CORPUS:
         pass  # already ingested (persistent backend restart)
     except PermissionError:
         break  # read-only pgvector deployment: the corpus is ingested out of band
+
+# Background chain verification (F5.2); started in __main__ so importing the module spawns no thread.
+AUDIT_MONITOR: audit_verify.AuditMonitor | None = None
 
 UI = pathlib.Path(__file__).with_name("ui.html")
 PRESETS = pathlib.Path(__file__).with_name("presets.json")
@@ -163,21 +170,9 @@ PRICE = {
     "cache_creation_input_tokens": 1.25,
 }
 
-# Running value-receipt totals for /audit — per-process, resets on restart.
-TOTALS = {
-    "asks": 0,
-    "input_tokens": 0,
-    "output_tokens": 0,
-    "cache_read_input_tokens": 0,
-    "est_cost_usd": 0.0,
-    "llm_ms": 0.0,
-}
-_totals_lock = threading.Lock()
-
-
-# Daily spend cap (UTC day). kn: check-then-call is not atomic, so concurrent in-flight calls can
-# overshoot by one call each; reserve spend before the call if the cap must be hard.
-OPS = obs.Ops(float(os.environ.get("DAILY_BUDGET_USD", "5.0")))
+# Daily spend cap (UTC day): a reservation held before the call and settled after it, shared by every
+# server process on this host through the SQLite file at OPS_DB_PATH (see obs.Ops).
+OPS = obs.Ops(float(os.environ.get("DAILY_BUDGET_USD", "5.0")), db_path=obs.ops_db_path())
 
 
 def projected_cost(question, chunks):
@@ -188,15 +183,6 @@ def projected_cost(question, chunks):
 
 def est_cost(usage):
     return round(sum(usage.get(k, 0) * p for k, p in PRICE.items()) / 1e6, 6)
-
-
-def record_ask(usage, llm_ms):
-    with _totals_lock:
-        TOTALS["asks"] += 1
-        for k in ("input_tokens", "output_tokens", "cache_read_input_tokens"):
-            TOTALS[k] += usage.get(k, 0)
-        TOTALS["est_cost_usd"] = round(TOTALS["est_cost_usd"] + est_cost(usage), 6)
-        TOTALS["llm_ms"] = round(TOTALS["llm_ms"] + llm_ms, 1)
 
 
 def rate_limited(ip):
@@ -289,7 +275,7 @@ class Handler(BaseHTTPRequestHandler):
             llm_out = None
             if not results:
                 out["note"] = "No accessible documents matched; skipped the LLM call."
-            elif OPS.would_exceed(projected_cost(query, results)):
+            elif (hold := OPS.reserve(projected_cost(query, results))) is None:
                 out["note"] = "Daily LLM budget reached; showing retrieval only."
             else:
                 t0 = time.perf_counter()
@@ -299,9 +285,14 @@ class Handler(BaseHTTPRequestHandler):
                     rec["error"] = type(e).__name__  # the message can echo prompt text; keep it out of logs
                     out["note"] = "LLM call failed; showing retrieval only."
                 rec["llm_ms"] = round((time.perf_counter() - t0) * 1000, 1)
+                if llm_out:
+                    cost = est_cost(llm_out["usage"])
+                    OPS.settle(hold, cost)
+                    OPS.add_llm_totals(llm_out["usage"], rec["llm_ms"], cost)
+                else:
+                    OPS.release(hold)  # no billable usage: free the hold for the next caller
             if llm_out:
                 usage = llm_out["usage"]
-                record_ask(usage, rec["llm_ms"])
                 out["answer"] = llm_out["answer"]
                 out["usage"] = usage
                 out["llm_ms"] = rec["llm_ms"]
@@ -346,7 +337,15 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         url = urlparse(self.path)
-        if url.path in ("/query", "/ask"):
+        if url.path == "/healthz":
+            # liveness for the audit check only; the reason stays in the ERROR log, not in this open endpoint
+            status = AUDIT_MONITOR.status() if AUDIT_MONITOR else {"healthy": True, "last_verified": None}
+            ok = status["healthy"]
+            self._json(
+                200 if ok else 503,
+                {"status": "ok" if ok else "unhealthy", "audit_last_verified": status["last_verified"]},
+            )
+        elif url.path in ("/query", "/ask"):
             self._begin(url.path)
             qs = parse_qs(url.query)
             self._qa(url.path, resolve_user(self, qs, None), qs.get("q", [""])[0])
@@ -388,9 +387,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(body)
                 return
-            with _totals_lock:
-                summary = dict(TOTALS)
-            self._json(200, {"entries": entries, "llm_summary": summary, "ops": OPS.summary()})
+            self._json(200, {"entries": entries, "llm_summary": OPS.totals(), "ops": OPS.summary()})
         else:
             self.send_response(200)
             self.send_header("Content-Type", "text/html")
@@ -412,5 +409,8 @@ if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", 8421))
     host = os.environ.get("HOST", "127.0.0.1")
     logging.basicConfig(level=logging.INFO, format="%(message)s")  # request lines are JSON already
+    if (_interval := audit_verify.interval_seconds()) > 0:
+        AUDIT_MONITOR = audit_verify.AuditMonitor(rag, _interval)
+        AUDIT_MONITOR.start()
     print(f"http://{host}:{port}")
     ThreadingHTTPServer((host, port), Handler).serve_forever()

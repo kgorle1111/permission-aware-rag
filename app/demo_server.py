@@ -63,7 +63,7 @@ MAX_Q_LEN = 1000
 
 
 class Handler(BaseHTTPRequestHandler):
-    def do_GET(self):
+    def do_GET(self) -> None:
         url = urlparse(self.path)
         if url.path == "/query":
             qs = parse_qs(url.query)
@@ -91,7 +91,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(PAGE.encode())
 
-    def log_message(self, *a):
+    def log_message(self, *a: object) -> None:
         pass
 
 

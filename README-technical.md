@@ -131,7 +131,37 @@ Embeddings default to a deterministic stdlib feature-hash
 network; swap `embed()` for Voyage AI or sentence-transformers for semantic recall — the
 RLS logic doesn't change. Run against the server with
 `RAG_BACKEND=pgvector DATABASE_URL=postgres://<app-role>... RAG_PRINCIPAL_KEY=<hex key returned by setup_schema> python3 underwriter_server.py`
-(add `INGEST_DATABASE_URL=postgres://<ingest-role>...` to let it ingest; without it the server is read-only). `AUDIT_CHECKPOINT_PATH=<file>` (default `app/pgvector_audit.head`, gitignored) is the audit head checkpoint (T12); store it where the database admin cannot write, or tail deletion in the audit table goes undetected.
+(add `INGEST_DATABASE_URL=postgres://<ingest-role>...` to let it ingest; without it the server is read-only). `AUDIT_CHECKPOINT_PATH=<file>` (default `app/pgvector_audit.head`, gitignored) is the audit head checkpoint (T12); store it where the database admin cannot write, or tail deletion in the audit table goes undetected. Several app processes on one host may share it: audited calls and verification take an exclusive `flock` on `<path>.lock` (so the directory must be writable, and local, not NFS), which serialises audited calls across those processes, and the file only advances from a head still in the table. POSIX only; processes on several hosts, or on Windows, are unsupported (ROADMAP B17). If a database is recreated, delete the old checkpoint.
+
+**Why there is no ANN index.** Search is an exact `ORDER BY embedding <=> q LIMIT k` under RLS.
+An HNSW index scans a fixed candidate list *before* RLS filters it, so a narrow user gets almost
+nothing back: on 100k chunks, a user who can see 1% of rows got recall@10 of 0.043 and an empty
+answer on 124 of 200 queries with HNSW forced on (ef_search 40). Iterative scan raised that to 0.89,
+still short of exact. The planner also never picks the index under this policy on its own. The
+exact path returned recall 1.000 and 0 leaks at 1%, 10% and 60% visibility, at 55–73 ms p50. About
+half of that is the `denied_chunks` count in the audit row, a second full scan
+([results](evals/results/2026-10-13-pgvector-filtered-ann/table.md),
+`python evals/pgvector_ann_recall.py --dsn <superuser dsn> --out <dir>`).
+
+### Rotating the principal-signing key (T18)
+
+Tokens carry a key id (`k1`, `k2`, ...). `setup_schema` creates `k1`. To rotate, as the schema owner:
+
+```python
+from pgvector_rag import rotate_principal_key, retire_previous_key
+
+new = rotate_principal_key(admin_dsn, grace_seconds=3600)  # new.kid, new.key; 1 s .. 24 h
+# store new.key (hex) and new.kid in the secret store: never print or log them
+# set RAG_PRINCIPAL_KEY=<hex> and RAG_PRINCIPAL_KEY_ID=<kid>, restart every app process within the window
+retire_previous_key(admin_dsn)  # end the grace window; the old key stops working
+```
+
+During the grace window processes still on the old key keep working; after it (or after retire) they get
+empty results and an audit row with no user, i.e. they fail closed rather than erroring loudly, so watch
+for empty answers on a process you forgot to restart. A second rotation is refused while a previous key is
+still in its window. Upgrading a database from before key ids migrates the existing key to `k1`, but
+tokens are now four-part: deploy the schema and the app together (in-flight tokens last 60 s).
+`setup_schema` re-run keeps the current key and never rotates.
 
 ## The production platform ([`platform/`](platform/))
 
@@ -209,14 +239,22 @@ Records hold ids, counts and timings only, never query, answer or document text.
 `GET /audit` adds an `ops` object next to `entries` and `llm_summary`: `latency_ms` p50/p95
 (nearest-rank, over requests that reached retrieval), `cost_per_day_usd` (UTC days),
 `outcomes` with count and rate each, and `failure_rate` (`failed_closed` + `llm_fallback`
-over all requests). It is computed in process, so it resets on restart (ROADMAP B12).
+over all requests). It is computed from the shared SQLite store (`OPS_DB_PATH`, see `DAILY_BUDGET_USD`
+below) over the newest 10,000 requests, so every server process on the host contributes and it
+survives restarts. `llm_summary` (answers, tokens, cost) comes from the same file. The platform's
+summary is still per process (ROADMAP B12).
 
 `DAILY_BUDGET_USD` (default `5.0`) caps estimated LLM spend per UTC day. Before each call the
 server projects a worst case (all input at ~4 chars per token plus the full 600-token output); if
 spent-so-far plus that projection would pass the cap, the call is skipped and the response is
 retrieval-only with the note "Daily LLM budget reached", outcome `llm_fallback`. The count
-resets at UTC midnight. The check is not atomic (ROADMAP B13), so concurrent calls can overshoot
-by one call each.
+resets at UTC midnight. The cap is a reservation: the projected worst case is held atomically
+before the call and swapped for the actual cost afterwards (released if the call fails or bills
+nothing), so concurrent calls cannot overshoot it. State lives in a SQLite file shared by every
+server process on the host: `OPS_DB_PATH=<file>` (default `app/ops.sqlite`, gitignored; WAL mode).
+A reservation whose process died expires after 5 minutes. Windows works for this file; several
+hosts do not share it (ROADMAP B13). If the file cannot be opened or written the server errors
+rather than spending without a cap.
 
 Red-team suite: `platform/tests/redteam/attacks.json` holds 89 attacks (prompt injection incl. encoded,
 nested and role-play variants, system-prompt extraction, `</document>` breakout, document-borne
@@ -306,7 +344,23 @@ To preserve one, independently verify its provenance and linkage using
 checkpoint with that trusted digest. Do not compute a replacement checkpoint
 from a log suspected of tampering. A crash between append and checkpoint update
 also fails closed; recovery requires checking the log against trusted evidence.
-The reference JSONL writer supports one process per audit file.
+Several app processes on one host may share one JSONL audit file: appends and verification take an exclusive `flock` on `<log>.lock` (30 s bound, then the call fails closed), and an append refuses to chain onto a log whose newest line is not the checkpointed head. Windows is thread-safe only, and several hosts need a shared store (ROADMAP B22).
+
+### Scheduled audit verification
+
+Both backends are verified without an operator ([`app/audit_verify.py`](app/audit_verify.py)):
+
+- `python -m audit_verify` (from `app/`, same env as the server: `RAG_BACKEND`, `DATABASE_URL`,
+  `AUDIT_CHECKPOINT_PATH`, `AUDIT_LOG_PATH`; `RAG_PRINCIPAL_KEY` is not needed) exits 0 when the chain and
+  checkpoint match, 1 on tamper, truncation or a missing checkpoint (the message names the entry or row
+  number, never contents), 2 when misconfigured. Run it from cron against a stopped or idle JSONL file; against
+  a live JSONL log in another process it can catch an append between the line and its head write.
+- At startup the server verifies once and exits with status 2 and a CRITICAL log line on failure.
+  `AUDIT_VERIFY_ON_START=0` skips it (the JSONL constructor still refuses a bad log).
+- While serving, a background thread re-verifies every `AUDIT_VERIFY_INTERVAL_S` seconds (default 300, `0`
+  disables). A failure logs `AUDIT CHAIN VERIFICATION FAILED` at ERROR and makes `GET /healthz` return 503
+  `{"status":"unhealthy"}` until restart; the reason stays in the log. A check that cannot run (database down)
+  is unhealthy for that tick only. The check reads the whole log or table under the writer's lock (ROADMAP B20).
 
 ### AWS showcase deployment
 
