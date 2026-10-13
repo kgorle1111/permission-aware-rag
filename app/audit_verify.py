@@ -70,7 +70,7 @@ def jsonl_failure(path: pathlib.Path) -> str | None:
 
     if not path.exists() and not PermissionRAG.audit_head_path(path).exists():
         return None
-    return PermissionRAG.audit_file_failure(path)
+    return PermissionRAG.locked_audit_failure(path)
 
 
 class AuditMonitor:
