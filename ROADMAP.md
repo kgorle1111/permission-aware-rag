@@ -28,6 +28,7 @@ PRs [#6](https://github.com/kgorle1111/permission-aware-rag/pull/6) through [#12
 | 2026-10-10 | Observability and cost guards in both apps: one JSON log line per request (ids, counts, timings; never text), p50/p95 latency, cost per day and failure rate by outcome in `/audit`, a `DAILY_BUDGET_USD` cap that falls back to retrieval-only, an LLM-outage path the circuit breaker can see (platform), claim-level citation coverage (T15 mitigation, reference app), and an 89-attack red-team data file (85 run against the reference app, 84 against the platform) driving the real HTTP surfaces with a mocked model | `app/test_obs.py`, `platform/tests/test_observability.py`, `app/test_claims.py`, `app/test_redteam.py`, `platform/tests/test_redteam.py` |
 | 2026-10-10 | Text-to-SQL under Postgres RLS (11.3, T25): a fake model writes SQL over a `doc_meta` table; the statement runs as a read-only `rag_sql` role under the same signed-principal RLS, audited by the database. 40 hostile statements x 5 users (pre-check off) with 0 leaks, a metamorphic hidden-rows test, 60/60 exact-match on honest questions. **No real model was called, so no SQL-quality claim.** | [results](evals/results/2026-10-10-text-to-sql/table.md), `app/text_to_sql.py`, `app/test_text_to_sql.py` |
 | 2026-10-10 | Live model contract test: one real Messages API call per call site (pinned model id resolves, `usage` shape, `[doc-id]` citation parsing) in a weekly + manual workflow that never runs on push or PR. **Needs the maintainer to set the repo secret `ANTHROPIC_API_KEY`; without it the job skips.** The 404 to alias-fallback path is not covered (needs a bad-model call). About $0.0016 per run | `.github/workflows/live-contract.yml`, `app/test_live_contract.py`, `platform/tests/test_live_contract.py` |
+| 2026-10-10 | PDF ingestion on real public-domain PDFs: pdfplumber text with column-aware order, running-head removal, section breadcrumbs, table to markdown and sentences, Tesseract OCR fallback; every chunk inherits the document ACL. OCR accuracy, table coverage and a real-text leak check are measured | [results](evals/results/2026-10-10-pdf-real-corpus/table.md), `platform/app/pdf_ingest.py`, `platform/tests/test_pdf_ingest.py` |
 
 ### Evidence batch — 2026-10-08
 
@@ -135,7 +136,7 @@ retriever that leaks is a regression. The comparison table gets published, inclu
    identity bound server-side, turn/token/time caps, guarded pipeline, approval-gated registry),
    tested with scripted fakes only. Still open: run against a real model, measure it on the golden
    set with a calibrated judge, and keep the pipeline only if a single agent measurably falls short.
-6. **Beyond text:** PDF tables and OCR, selective chart descriptions. (Text-to-SQL under row-level security (11.3): shipped in the pgvector reference backend over a document-metadata table, see the 2026-10-10 row above; running it on policy-system data in `platform/` remains open.)
+6. **Beyond text:** (PDF tables and OCR shipped 2026-10-10, see above) selective chart descriptions. (Text-to-SQL under row-level security (11.3): shipped in the pgvector reference backend over a document-metadata table, see the 2026-10-10 row above; running it on policy-system data in `platform/` remains open.)
 
 ## Open shortcuts (test-enforced)
 

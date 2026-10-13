@@ -18,3 +18,7 @@ docs/COMPETITOR_SCAN-*.md
 /marketing/
 platform/embed_cache.sqlite
 AGENTS.local.md
+evals/enronqa/data/
+
+# Real public-domain PDF corpus (fetched by evals/pdf_corpus/fetch.py)
+evals/pdf_corpus/data/
