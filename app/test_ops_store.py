@@ -123,7 +123,7 @@ def test_db_path_is_configurable_with_a_gitignored_default() -> None:
     assert obs.ops_db_path({}).name == "ops.sqlite"
 
 
-def test_private_store_closes_its_connection_when_collected():
+def test_private_store_closes_its_connection_when_collected() -> None:
     import gc
     import warnings
 
@@ -137,9 +137,9 @@ def test_private_store_closes_its_connection_when_collected():
     assert not [w for w in caught if issubclass(w.category, ResourceWarning)]
 
 
-def test_close_releases_the_private_store():
+def test_close_releases_the_private_store() -> None:
     store = obs.Ops(1.0)
     store.close()
     store.close()  # idempotent
-    with pytest.raises(Exception):
+    with pytest.raises(sqlite3.ProgrammingError):
         store.spent_today()

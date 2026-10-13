@@ -14,8 +14,8 @@ import pathlib
 import sqlite3
 import threading
 import time
-import weakref
 import uuid
+import weakref
 from collections.abc import Callable, Iterator, Mapping
 from typing import Any
 
