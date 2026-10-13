@@ -19,6 +19,8 @@ PRs [#6](https://github.com/kgorle1111/permission-aware-rag/pull/6) through [#12
 | 2026-10-05 | Platform mutation gate made blocking: 61 surviving mutants killed by new tests, 15 pinned as reviewed equivalents | `platform/mutation_equivalents.json` |
 | 2026-10-07 | Independent document/section/paragraph ACL levels in memory, PostgreSQL RLS and Qdrant; isolation oracle catches both hierarchy mutants (8/8 total) | `app/test_hierarchy.py`, `app/test_pgvector.py`, `platform/tests/test_hierarchy.py` |
 | 2026-10-07 | Qdrant keyword indexes, document-filtered batched ACL updates, on-disk payload/vectors and int8 configuration; durable retry barriers | `platform/tests/test_scale_acl.py`, `platform/tests/test_hardening.py`, `evals/verify_qdrant_storage.py` |
+| 2026-10-10 | Platform retrieval rungs behind config: real embeddings (`fastembed`, bge-small), SPLADE hybrid with no IDF modifier and the ACL filter on both prefetches, a local cross-encoder reranker, an ingest-side embedding cache. Paraphrase probes: hit@4 0% (hash) to 91% (dense); hybrid and rerank did not beat dense on this 37-chunk synthetic corpus; 0 leaks and 0 hidden-document diffs on every rung | [rung table](evals/results/2026-10-10-platform-rungs/table.md), `platform/tests/test_retrieval_models.py` |
+| 2026-10-10 | Async retrieval path measured: `aretrieve` with 20 interleaved principals shows no cross-request bleed, but concurrent p95 ranged from -15% to +5% against the thread pool across four runs, with no consistent gain (bar: 30%), so it stays unwired; the permission transaction serializes requests | [rung table](evals/results/2026-10-10-platform-rungs/table.md), `platform/tests/test_retrieval_models.py` |
 | 2026-10-07 | AWS Lightsail HTTPS portfolio demo, with synthetic documents and retrieval-only roles | [deployment guide](deploy/aws/README.md) |
 | 2026-10-10 | Measurement foundation: answer metrics (7.2, offline judge only), ladder harness that rejects any leaking rung and rejects all 8 mutants (7.4), and `run_evals.py --mutants` plus `ladder.py --check` in CI (1.4) | `evals/metrics.py`, `evals/ladder.py`, `app/test_answer_metrics.py`, `app/test_ladder.py` |
 | 2026-10-10 | Tier 3 agentic-retrieval mechanics (Stage 10): router, iterative (cap 3), read-only tool agent with server-bound identity and turn/token/time caps, guarded pipeline with receipt, approval-gated tool registry. **Tested with scripted fake models only; no answer-quality claim until a real model and a calibrated judge are run (needs approval).** | `app/agents.py`, `app/test_agents.py` |
@@ -127,6 +129,9 @@ retriever that leaks is a regression. The comparison table gets published, inclu
    a local cross-encoder reranker. (Structure-aware chunking, router with rewrite/HyDE/step-back,
    multi-query RRF and the abstain threshold are shipped in the reference app with deterministic
    fakes for LLM steps; see the Tier 3 row above. None is in `platform/` yet.)
+   *Status 2026-10-10 (`platform/`):* real embeddings (fastembed bge-small), SPLADE hybrid and the
+   cross-encoder reranker are implemented behind config and [measured](evals/results/2026-10-10-platform-rungs/table.md);
+   only dense retrieval earned its place on that corpus.
 5. **Agents:** mechanics shipped in `app/agents.py` (router → iterative → tool-calling retrieval,
    identity bound server-side, turn/token/time caps, guarded pipeline, approval-gated registry),
    tested with scripted fakes only. Still open: run against a real model, measure it on the golden
