@@ -1,6 +1,7 @@
 """Filtered retrieval; serialized permission check, generation, and durable audit."""
 from __future__ import annotations
 
+import asyncio
 from collections import OrderedDict
 from copy import deepcopy
 import logging
@@ -11,10 +12,11 @@ from threading import RLock
 from . import config, generation
 from . import observability as obs
 from .audit import write_audit
-from .embeddings import embed_one
+from .embeddings import embed_one, sparse_embed_one, sparse_enabled
 from .generation import Generated, answer
 from .identity import Principal
 from .redact import redact
+from .rerank import rerank
 from .resilience import BREAKERS, keyword_search
 from .store import fingerprint_problem, permission_transaction
 from .vectorstore import search, search_unfiltered_count
@@ -41,8 +43,15 @@ def _extractive(results: list[dict]) -> str:
     return f"{results[0]['text']} [{results[0]['doc_id']}]"
 
 
-def _vector_hits(qvec, principals, k):
-    return (search(qvec, principals, top_k=k),
+def _embed_query(query: str):
+    return embed_one(query), (sparse_embed_one(query) if sparse_enabled() else None)
+
+
+def _vector_hits(qvec, principals, k, sparse=None, pool=None):
+    """`pool` candidates (>= k when a reranker follows) come from the ACL-filtered
+    search; the audit's denied count always samples the unfiltered top k."""
+    extra = {} if sparse is None else {"sparse": sparse}
+    return (search(qvec, principals, top_k=pool or k, **extra),
             search_unfiltered_count(qvec, principals, top_k=k))
 
 
@@ -68,8 +77,10 @@ def _compute(session, query: str, principal: Principal, k: int, rec: dict):
     degraded, source, note = False, "full_rag", None
     started = perf_counter()
     try:
-        qvec = BREAKERS["embedder"].call(embed_one, query)
-        hits, denied = BREAKERS["vectorstore"].call(_vector_hits, qvec, principal.principals, k)
+        qvec, sparse = BREAKERS["embedder"].call(_embed_query, query)
+        pool = max(k, config.RERANK_CANDIDATES) if config.RERANKER != "none" else k
+        hits, denied = BREAKERS["vectorstore"].call(
+            _vector_hits, qvec, principal.principals, k, sparse, pool)
     except Exception as exc:
         log.warning("dependency unavailable (%s); using keyword fallback", type(exc).__name__)
         try:
@@ -79,6 +90,13 @@ def _compute(session, query: str, principal: Principal, k: int, rec: dict):
             return ({"results": [], "answer": UNAVAILABLE_ANSWER,
                      "degraded": True, "source": "unavailable"}, [], [], 0)
         degraded, source = True, "keyword_fallback"
+    if source == "full_rag" and config.RERANKER != "none" and hits:
+        # `hits` are already ACL-filtered by the engine; the reranker never sees anything else.
+        try:
+            hits = BREAKERS["reranker"].call(rerank, query, hits, k)
+        except Exception as exc:
+            log.warning("reranker unavailable (%s); using vector order", type(exc).__name__)
+            hits, degraded, source = hits[:k], True, "vector_order"
     rec["retrieve_ms"] = _ms(started)
     results = [{"doc_id": h["doc_id"], "text": redact(h["text"]),
                 "score": round(h["score"], 4)} for h in hits]
@@ -109,8 +127,16 @@ def _compute(session, query: str, principal: Principal, k: int, rec: dict):
     return (response, [h["chunk_id"] for h in hits], sorted({h["doc_id"] for h in hits}), denied)
 
 
+async def aretrieve(query: str, principal: Principal, k: int = None) -> dict:
+    """Executor-backed async entry point. The principal travels as an argument
+    through the whole call; no ambient request state (contextvar/global) exists
+    to bleed between interleaved callers. Not wired into the HTTP route: see
+    evals/results/2026-10-10-platform-rungs for why."""
+    return await asyncio.to_thread(retrieve, query, principal, k)
+
+
 def _outcome(response: dict) -> str:
-    return {"unavailable": "failed_closed", "keyword_fallback": "degraded",
+    return {"unavailable": "failed_closed", "keyword_fallback": "degraded", "vector_order": "degraded",
             "retrieval_only": "llm_fallback"}.get(
         response["source"], "ok" if response["results"] else "no_results")
 

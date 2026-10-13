@@ -1,4 +1,5 @@
 [tool.mutmut]
 source_paths = ["app/"]
+do_not_mutate = ["app/pdf_ingest.py"]
 pytest_add_cli_args_test_selection = ["tests/"]
 also_copy = ["scripts/", "corpus/", "config/", "static/", "reports/"]

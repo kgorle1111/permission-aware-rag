@@ -1,0 +1,4 @@
+-r requirements.txt
+# Optional local models (ONNX, no PyTorch). Never part of the default install or CI test run:
+#   EMBED_BACKEND=fastembed  SPARSE_BACKEND=splade  RERANKER=fastembed
+fastembed>=0.7,<1
