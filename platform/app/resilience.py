@@ -1,6 +1,6 @@
 """Circuit breakers and the ACL-safe keyword fallback.
 
-Degradation covers INFRASTRUCTURE failures only (embedder, vector store, LLM).
+Degradation covers INFRASTRUCTURE failures only (embedder, vector store, reranker, LLM).
 Permission uncertainty (pending sync, rebuild required, fingerprint mismatch)
 never degrades: retrieval fails closed before any fallback runs.
 """
@@ -55,7 +55,7 @@ class CircuitBreaker:
 
 def _make_breakers() -> dict[str, CircuitBreaker]:
     return {n: CircuitBreaker(n, config.BREAKER_THRESHOLD, config.BREAKER_RESET_S)
-            for n in ("embedder", "vectorstore", "llm")}
+            for n in ("embedder", "vectorstore", "reranker", "llm")}
 
 
 BREAKERS = _make_breakers()

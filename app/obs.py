@@ -11,6 +11,8 @@ import math
 import threading
 import uuid
 from collections import deque
+from collections.abc import Callable
+from typing import Any
 
 log = logging.getLogger("permrag")
 
@@ -19,7 +21,7 @@ REJECTED = {"bad_request", "rate_limited"}
 FAILURES = {"failed_closed", "llm_fallback", "degraded"}
 
 
-def new_record(route: str) -> dict:
+def new_record(route: str) -> dict[str, Any]:
     return {
         "request_id": uuid.uuid4().hex,
         "route": route,
@@ -40,7 +42,7 @@ def new_record(route: str) -> dict:
     }
 
 
-def emit(rec: dict) -> None:
+def emit(rec: dict[str, Any]) -> None:
     log.info(json.dumps(rec, sort_keys=True))
 
 
@@ -58,11 +60,11 @@ def utc_now() -> dt.datetime:
 
 class Ops:
     # kn: per-process memory, resets on restart; a persistent store if /audit must survive restarts or span workers
-    def __init__(self, budget_usd: float, clock=utc_now, keep: int = 10_000):
+    def __init__(self, budget_usd: float, clock: Callable[[], dt.datetime] = utc_now, keep: int = 10_000):
         if budget_usd < 0:
             raise ValueError("DAILY_BUDGET_USD must be >= 0")
         self.budget_usd, self.clock = budget_usd, clock
-        self._recent: deque[dict] = deque(maxlen=keep)
+        self._recent: deque[dict[str, Any]] = deque(maxlen=keep)
         self._spend: dict[str, float] = {}
         self._lock = threading.Lock()
 
@@ -77,7 +79,7 @@ class Ops:
         """True when one more call projected at `projected_usd` would pass today's cap."""
         return self.spent_today() + projected_usd > self.budget_usd
 
-    def record(self, rec: dict) -> None:
+    def record(self, rec: dict[str, Any]) -> None:
         day = self._day()
         with self._lock:
             self._recent.append(
@@ -85,7 +87,7 @@ class Ops:
             )
             self._spend[day] = round(self._spend.get(day, 0.0) + rec["est_cost_usd"], 6)
 
-    def summary(self) -> dict:
+    def summary(self) -> dict[str, Any]:
         with self._lock:
             recent, spend = list(self._recent), dict(self._spend)
         n = len(recent)

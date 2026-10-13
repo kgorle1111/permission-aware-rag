@@ -72,7 +72,7 @@ def test_ingest_writes_fingerprint_with_explicit_id_one(client):
 # resilience._make_breakers 1-3, 7-12
 def test_make_breakers_names_and_configured_limits():
     b = resilience._make_breakers()
-    assert list(b) == ["embedder", "vectorstore", "llm"]
+    assert list(b) == ["embedder", "vectorstore", "reranker", "llm"]
     for name, br in b.items():
         assert br.name == name
         assert br.threshold == config.BREAKER_THRESHOLD

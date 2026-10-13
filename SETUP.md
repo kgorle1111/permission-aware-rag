@@ -20,17 +20,28 @@ python3 underwriter_server.py 8421  # UI at http://127.0.0.1:8421
 `ANTHROPIC_API_KEY` in your environment enables drafted answers. Without it the app answers
 retrieval-only. Never commit a key; `.env*` files are gitignored.
 
-Gates, as CI runs them (`.github/workflows/ci.yml`):
+Gates, as CI runs them (`.github/workflows/ci.yml`, on Linux and macOS). The root project uses
+[uv](https://docs.astral.sh/uv/) with a committed `uv.lock`:
 
 ```bash
-pip install pytest ruff
-ruff check . && ruff format --check .       # from the repo root
+uv sync --locked --group dev --extra pg     # --extra pg only so mypy can resolve psycopg
+uv run ruff check . && uv run ruff format --check .   # from the repo root
+uv run mypy                                 # strict; modules still in the pyproject.toml ratchet list are skipped
 cd app
-pytest -q
-python run_evals.py
-python run_evals.py --mutants               # every planted leak bug must be caught
-python ../evals/ladder.py --check           # every leaking negative-control rung must be rejected
+uv run pytest -q --cov=. --cov-config=../pyproject.toml --cov-fail-under=75
+uv run python run_evals.py
+uv run python run_evals.py --mutants        # every planted leak bug must be caught
+uv run python ../evals/ladder.py --check    # every leaking negative-control rung must be rejected
 ```
+
+Coverage is branch-aware over `app/` (test files omitted) and measured without Postgres, so the
+pgvector modules count as uncovered here; they are gated by the separate pgvector job. The floor
+is the measured 75.58% rounded down; raise it when you add tests, never lower it.
+
+mypy: new code must pass `--strict`. `[[tool.mypy.overrides]]` in `pyproject.toml` lists the
+modules that still carry strict-typing debt (`ignore_errors`); delete a module from that list when
+you fix it, and never add one. Test modules are checked in basic mode (bodies checked,
+annotations not required). Update `uv.lock` with `uv lock` when dependencies change.
 
 ## 2. pgvector backend
 

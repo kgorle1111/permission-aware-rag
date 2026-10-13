@@ -68,7 +68,7 @@ CASES = [
 ]
 
 TEST_HASHES = {
-    "tests/conftest.py": "6a1ff3ca5ebc08fe3646fe9ca64e64a618caec5d5227e53cb4a85b5ed854712a",
+    "tests/conftest.py": "ea3a7595c3b31949b13261f3d12d1136623027edadc3a0f2e97ced5bfc6c3ac7",
     "tests/test_leakage.py": "060dc8445f7f97f812478378cc96d2d9ccf5b130c4eef21e89d34d789b5780aa",
     "tests/test_side_channels.py": "9679c54be448c1f983abfa2ff0590c4359ca24b56718b3154b077998a9403776",
     "tests/test_failclosed.py": "f3c3349307be25ed13966b95531f7db45526cc6fac19971b6d7faa1046f77488",

@@ -32,10 +32,14 @@ def test_engine_all_levels_and_paragraph_boundary(client, tmp_path):
 
 
 def test_missing_acl_levels_deny_legacy_points(client):
-    from qdrant_client.models import PointStruct
+    from qdrant_client.models import PointStruct, SparseVector
     from app import config
+    from app.embeddings import sparse_enabled
+    vector = embed_one('legacy public secret')
+    if sparse_enabled():  # hybrid collections name their vectors (rung_benchmark reruns this suite)
+        vector = {vectorstore.DENSE: vector, vectorstore.SPARSE: SparseVector(indices=[1], values=[1.0])}
     vectorstore.client().upsert(config.COLLECTION, wait=True, points=[PointStruct(
-        id=9999, vector=embed_one('legacy public secret'),
+        id=9999, vector=vector,
         payload={'doc_id':'legacy','text':'legacy public secret','acl':['*']})])
     try:
         assert all(h['doc_id'] != 'legacy' for h in vectorstore.search(embed_one('legacy public secret'),['*'],20))
