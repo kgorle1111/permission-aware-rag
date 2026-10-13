@@ -322,7 +322,7 @@ Both backends are verified without an operator ([`app/audit_verify.py`](app/audi
 - While serving, a background thread re-verifies every `AUDIT_VERIFY_INTERVAL_S` seconds (default 300, `0`
   disables). A failure logs `AUDIT CHAIN VERIFICATION FAILED` at ERROR and makes `GET /healthz` return 503
   `{"status":"unhealthy"}` until restart; the reason stays in the log. A check that cannot run (database down)
-  is unhealthy for that tick only. The check reads the whole log or table under the writer's lock (ROADMAP B18).
+  is unhealthy for that tick only. The check reads the whole log or table under the writer's lock (ROADMAP B20).
 
 ### AWS showcase deployment
 
