@@ -162,6 +162,7 @@ its upgrade trigger. `app/test_ledgers.py` fails if a shortcut comment has no ro
 | B15 | open | Table row estimates (`pg_class.reltuples`, `pg_stat_user_tables`) are readable by every role, so a hostile statement learns how many `doc_meta` rows exist in total | Hidden-document counts become sensitive (T11 is off) | `app/test_text_to_sql.py` "def test_catalog_row_estimates_are_a_documented_residual_count_leak" |
 | B16 | open | Text-to-SQL is measured with a fake model only; real-model SQL accuracy and prompt-injected questions are unmeasured | A real model is approved for evals (cost estimate first) | `app/text_to_sql.py` "def anthropic_llm" |
 | B17 | open | The pgvector audit head checkpoint (T12) is per-process; several app processes would each overwrite it and verification would fail against a stale head | More than one app process serves one database | `app/pgvector_rag.py` "kn: per-process audit anchor" |
+| B18 | open | A Google Drive poll still raises the permission barrier even when nothing changed, so each poll fails in-flight queries closed (the JSONL source skips the barrier when it matches the applied mirror) | Drive is the deployed source and poll-time fail-closed bursts matter | `platform/app/sync.py` "kn: Drive polls keep the barrier" |
 
 ## Deliberately not building
 
