@@ -19,6 +19,8 @@ PRs [#6](https://github.com/kgorle1111/permission-aware-rag/pull/6) through [#12
 | 2026-10-05 | Platform mutation gate made blocking: 61 surviving mutants killed by new tests, 15 pinned as reviewed equivalents | `platform/mutation_equivalents.json` |
 | 2026-10-07 | Independent document/section/paragraph ACL levels in memory, PostgreSQL RLS and Qdrant; isolation oracle catches both hierarchy mutants (8/8 total) | `app/test_hierarchy.py`, `app/test_pgvector.py`, `platform/tests/test_hierarchy.py` |
 | 2026-10-07 | Qdrant keyword indexes, document-filtered batched ACL updates, on-disk payload/vectors and int8 configuration; durable retry barriers | `platform/tests/test_scale_acl.py`, `platform/tests/test_hardening.py`, `evals/verify_qdrant_storage.py` |
+| 2026-10-10 | Platform retrieval rungs behind config: real embeddings (`fastembed`, bge-small), SPLADE hybrid with no IDF modifier and the ACL filter on both prefetches, a local cross-encoder reranker, an ingest-side embedding cache. Paraphrase probes: hit@4 0% (hash) to 91% (dense); hybrid and rerank did not beat dense on this 37-chunk synthetic corpus; 0 leaks and 0 hidden-document diffs on every rung | [rung table](evals/results/2026-10-10-platform-rungs/table.md), `platform/tests/test_retrieval_models.py` |
+| 2026-10-10 | Async retrieval path measured: `aretrieve` with 20 interleaved principals shows no cross-request bleed, but concurrent p95 ranged from -15% to +5% against the thread pool across four runs, with no consistent gain (bar: 30%), so it stays unwired; the permission transaction serializes requests | [rung table](evals/results/2026-10-10-platform-rungs/table.md), `platform/tests/test_retrieval_models.py` |
 | 2026-10-07 | AWS Lightsail HTTPS portfolio demo, with synthetic documents and retrieval-only roles | [deployment guide](deploy/aws/README.md) |
 | 2026-10-10 | Measurement foundation: answer metrics (7.2, offline judge only), ladder harness that rejects any leaking rung and rejects all 8 mutants (7.4), and `run_evals.py --mutants` plus `ladder.py --check` in CI (1.4) | `evals/metrics.py`, `evals/ladder.py`, `app/test_answer_metrics.py`, `app/test_ladder.py` |
 | 2026-10-10 | Tier 3 agentic-retrieval mechanics (Stage 10): router, iterative (cap 3), read-only tool agent with server-bound identity and turn/token/time caps, guarded pipeline with receipt, approval-gated tool registry. **Tested with scripted fake models only; no answer-quality claim until a real model and a calibrated judge are run (needs approval).** | `app/agents.py`, `app/test_agents.py` |
@@ -26,6 +28,7 @@ PRs [#6](https://github.com/kgorle1111/permission-aware-rag/pull/6) through [#12
 | 2026-10-10 | Observability and cost guards in both apps: one JSON log line per request (ids, counts, timings; never text), p50/p95 latency, cost per day and failure rate by outcome in `/audit`, a `DAILY_BUDGET_USD` cap that falls back to retrieval-only, an LLM-outage path the circuit breaker can see (platform), claim-level citation coverage (T15 mitigation, reference app), and an 89-attack red-team data file (85 run against the reference app, 84 against the platform) driving the real HTTP surfaces with a mocked model | `app/test_obs.py`, `platform/tests/test_observability.py`, `app/test_claims.py`, `app/test_redteam.py`, `platform/tests/test_redteam.py` |
 | 2026-10-10 | Text-to-SQL under Postgres RLS (11.3, T25): a fake model writes SQL over a `doc_meta` table; the statement runs as a read-only `rag_sql` role under the same signed-principal RLS, audited by the database. 40 hostile statements x 5 users (pre-check off) with 0 leaks, a metamorphic hidden-rows test, 60/60 exact-match on honest questions. **No real model was called, so no SQL-quality claim.** | [results](evals/results/2026-10-10-text-to-sql/table.md), `app/text_to_sql.py`, `app/test_text_to_sql.py` |
 | 2026-10-10 | Live model contract test: one real Messages API call per call site (pinned model id resolves, `usage` shape, `[doc-id]` citation parsing) in a weekly + manual workflow that never runs on push or PR. **Needs the maintainer to set the repo secret `ANTHROPIC_API_KEY`; without it the job skips.** The 404 to alias-fallback path is not covered (needs a bad-model call). About $0.0016 per run | `.github/workflows/live-contract.yml`, `app/test_live_contract.py`, `platform/tests/test_live_contract.py` |
+| 2026-10-10 | PDF ingestion on real public-domain PDFs: pdfplumber text with column-aware order, running-head removal, section breadcrumbs, table to markdown and sentences, Tesseract OCR fallback; every chunk inherits the document ACL. OCR accuracy, table coverage and a real-text leak check are measured | [results](evals/results/2026-10-10-pdf-real-corpus/table.md), `platform/app/pdf_ingest.py`, `platform/tests/test_pdf_ingest.py` |
 
 ### Evidence batch — 2026-10-08
 
@@ -126,11 +129,14 @@ retriever that leaks is a regression. The comparison table gets published, inclu
    a local cross-encoder reranker. (Structure-aware chunking, router with rewrite/HyDE/step-back,
    multi-query RRF and the abstain threshold are shipped in the reference app with deterministic
    fakes for LLM steps; see the Tier 3 row above. None is in `platform/` yet.)
+   *Status 2026-10-10 (`platform/`):* real embeddings (fastembed bge-small), SPLADE hybrid and the
+   cross-encoder reranker are implemented behind config and [measured](evals/results/2026-10-10-platform-rungs/table.md);
+   only dense retrieval earned its place on that corpus.
 5. **Agents:** mechanics shipped in `app/agents.py` (router → iterative → tool-calling retrieval,
    identity bound server-side, turn/token/time caps, guarded pipeline, approval-gated registry),
    tested with scripted fakes only. Still open: run against a real model, measure it on the golden
    set with a calibrated judge, and keep the pipeline only if a single agent measurably falls short.
-6. **Beyond text:** PDF tables and OCR, selective chart descriptions. (Text-to-SQL under row-level security (11.3): shipped in the pgvector reference backend over a document-metadata table, see the 2026-10-10 row above; running it on policy-system data in `platform/` remains open.)
+6. **Beyond text:** (PDF tables and OCR shipped 2026-10-10, see above) selective chart descriptions. (Text-to-SQL under row-level security (11.3): shipped in the pgvector reference backend over a document-metadata table, see the 2026-10-10 row above; running it on policy-system data in `platform/` remains open.)
 
 ## Open shortcuts (test-enforced)
 
