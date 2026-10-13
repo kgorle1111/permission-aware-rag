@@ -5,6 +5,7 @@ __pycache__/
 logs/
 app/audit_log.jsonl
 app/audit_log.jsonl.head
+app/audit_log.jsonl.lock
 app/pgvector_audit.head
 .pytest_cache/
 PLAN.md
