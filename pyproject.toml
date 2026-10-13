@@ -8,6 +8,14 @@ dependencies = []
 [project.optional-dependencies]
 pg = ["psycopg[binary]>=3.1"]  # only for the pgvector/RLS backend; core stays stdlib
 
+[dependency-groups]
+dev = [
+    "pytest>=8,<9",
+    "pytest-cov>=5,<8",
+    "ruff>=0.6,<1",
+    "mypy>=1.11,<3",
+]
+
 [tool.ruff]
 line-length = 110
 target-version = "py312"
@@ -19,3 +27,60 @@ ignore = ["E501"]  # long lines are synthetic corpus text and inline HTML, not c
 
 [tool.pytest.ini_options]
 testpaths = ["app"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["app", "evals"]
+mypy_path = ".:app"
+exclude = ["evals/verify_qdrant_storage.py", "evals/results/"]  # platform-only imports / archived result scripts
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+# Tests: basic checking (bodies are checked, annotations not demanded).
+module = ["test_agents", "test_answer_metrics", "test_claims", "test_hierarchy", "test_hierarchy_migrations", "test_http", "test_ladder", "test_leak_kit", "test_ledgers", "test_live_contract", "test_llm", "test_obs", "test_permission_rag", "test_pgvector", "test_redteam", "test_rungs", "test_scale_harness", "test_security", "test_text_to_sql", "test_underwriter"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+disallow_untyped_decorators = false
+
+[[tool.mypy.overrides]]
+# Ratchet: strict-typing debt, one entry per module that does not yet pass `mypy --strict`
+# (tests: basic mode above). Remove a module from this list when you fix it; never add one.
+module = [
+    "agents",
+    "eval_scale",
+    "eval_text_to_sql",
+    "evals.benchmark_scale",
+    "evals.kit.harness",
+    "evals.kit.prepare_public",
+    "evals.kit.run",
+    "evals.ladder",
+    "evals.tier3_extras",
+    "evals.verify_decorated_mutations",
+    "mutants",
+    "permission_rag",
+    "pgvector_rag",
+    "run_evals",
+    "rungs",
+    "test_agents",
+    "test_claims",
+    "test_http",
+    "test_ledgers",
+    "test_live_contract",
+    "test_llm",
+    "test_obs",
+    "test_permission_rag",
+    "test_pgvector",
+    "test_redteam",
+    "test_rungs",
+    "test_scale_harness",
+    "test_security",
+    "test_text_to_sql",
+    "underwriter_server",
+]
+ignore_errors = true
+
+[tool.coverage.run]
+branch = true
+omit = ["test_*.py"]  # measure the code under test, not the tests themselves
