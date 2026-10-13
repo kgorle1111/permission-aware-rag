@@ -10,7 +10,7 @@ pg = ["psycopg[binary]>=3.1"]  # only for the pgvector/RLS backend; core stays s
 
 [dependency-groups]
 dev = [
-    "pytest>=8,<9",
+    "pytest>=9.0.3,<10",  # PYSEC-2026-1845 fixed in 9.0.3
     "pytest-cov>=5,<8",
     "ruff>=0.6,<1",
     "mypy>=1.11,<3",
