@@ -143,6 +143,26 @@ half of that is the `denied_chunks` count in the audit row, a second full scan
 ([results](evals/results/2026-10-13-pgvector-filtered-ann/table.md),
 `python evals/pgvector_ann_recall.py --dsn <superuser dsn> --out <dir>`).
 
+### Rotating the principal-signing key (T18)
+
+Tokens carry a key id (`k1`, `k2`, ...). `setup_schema` creates `k1`. To rotate, as the schema owner:
+
+```python
+from pgvector_rag import rotate_principal_key, retire_previous_key
+
+new = rotate_principal_key(admin_dsn, grace_seconds=3600)  # new.kid, new.key; 1 s .. 24 h
+# store new.key (hex) and new.kid in the secret store: never print or log them
+# set RAG_PRINCIPAL_KEY=<hex> and RAG_PRINCIPAL_KEY_ID=<kid>, restart every app process within the window
+retire_previous_key(admin_dsn)  # end the grace window; the old key stops working
+```
+
+During the grace window processes still on the old key keep working; after it (or after retire) they get
+empty results and an audit row with no user, i.e. they fail closed rather than erroring loudly, so watch
+for empty answers on a process you forgot to restart. A second rotation is refused while a previous key is
+still in its window. Upgrading a database from before key ids migrates the existing key to `k1`, but
+tokens are now four-part: deploy the schema and the app together (in-flight tokens last 60 s).
+`setup_schema` re-run keeps the current key and never rotates.
+
 ## The production platform ([`platform/`](platform/))
 
 The root of this repo is the zero-dependency reference: small enough to read in one sitting.
@@ -317,6 +337,22 @@ checkpoint with that trusted digest. Do not compute a replacement checkpoint
 from a log suspected of tampering. A crash between append and checkpoint update
 also fails closed; recovery requires checking the log against trusted evidence.
 The reference JSONL writer supports one process per audit file.
+
+### Scheduled audit verification
+
+Both backends are verified without an operator ([`app/audit_verify.py`](app/audit_verify.py)):
+
+- `python -m audit_verify` (from `app/`, same env as the server: `RAG_BACKEND`, `DATABASE_URL`,
+  `AUDIT_CHECKPOINT_PATH`, `AUDIT_LOG_PATH`; `RAG_PRINCIPAL_KEY` is not needed) exits 0 when the chain and
+  checkpoint match, 1 on tamper, truncation or a missing checkpoint (the message names the entry or row
+  number, never contents), 2 when misconfigured. Run it from cron against a stopped or idle JSONL file; against
+  a live JSONL log in another process it can catch an append between the line and its head write.
+- At startup the server verifies once and exits with status 2 and a CRITICAL log line on failure.
+  `AUDIT_VERIFY_ON_START=0` skips it (the JSONL constructor still refuses a bad log).
+- While serving, a background thread re-verifies every `AUDIT_VERIFY_INTERVAL_S` seconds (default 300, `0`
+  disables). A failure logs `AUDIT CHAIN VERIFICATION FAILED` at ERROR and makes `GET /healthz` return 503
+  `{"status":"unhealthy"}` until restart; the reason stays in the log. A check that cannot run (database down)
+  is unhealthy for that tick only. The check reads the whole log or table under the writer's lock (ROADMAP B20).
 
 ### AWS showcase deployment
 

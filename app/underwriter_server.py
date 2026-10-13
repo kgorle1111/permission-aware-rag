@@ -22,6 +22,7 @@ from collections import defaultdict, deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
+import audit_verify
 import llm
 import obs
 from permission_rag import PermissionRAG
@@ -84,13 +85,16 @@ if os.environ.get("RAG_BACKEND") == "pgvector":
         os.environ["DATABASE_URL"],
         os.environ.get("INGEST_DATABASE_URL"),
         principal_key=bytes.fromhex(os.environ["RAG_PRINCIPAL_KEY"]),
+        principal_key_id=os.environ.get("RAG_PRINCIPAL_KEY_ID", "k1"),  # after a rotation: the new key's id
         # T12: head checkpoint kept outside Postgres; keep it somewhere the DB admin cannot write
-        audit_checkpoint_path=os.environ.get(
-            "AUDIT_CHECKPOINT_PATH", str(pathlib.Path(__file__).with_name("pgvector_audit.head"))
-        ),
+        audit_checkpoint_path=audit_verify.pg_checkpoint_path(),
     )
+    # F5.2: fail closed on a chain that does not verify (AUDIT_VERIFY_ON_START=0 skips)
+    audit_verify.require_clean_start(rag.audit_failure)
 else:
-    rag = PermissionRAG(audit_path=pathlib.Path(__file__).with_name("audit_log.jsonl"))
+    # checked first: the constructor would also refuse, but with a bare ValueError
+    audit_verify.require_clean_start(lambda: audit_verify.jsonl_failure(audit_verify.jsonl_path()))
+    rag = PermissionRAG(audit_path=audit_verify.jsonl_path())
 for _doc_id, _text, _acl in CORPUS:
     try:
         rag.add_document(_doc_id, _text, _acl)
@@ -98,6 +102,9 @@ for _doc_id, _text, _acl in CORPUS:
         pass  # already ingested (persistent backend restart)
     except PermissionError:
         break  # read-only pgvector deployment: the corpus is ingested out of band
+
+# Background chain verification (F5.2); started in __main__ so importing the module spawns no thread.
+AUDIT_MONITOR: audit_verify.AuditMonitor | None = None
 
 UI = pathlib.Path(__file__).with_name("ui.html")
 PRESETS = pathlib.Path(__file__).with_name("presets.json")
@@ -346,7 +353,15 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         url = urlparse(self.path)
-        if url.path in ("/query", "/ask"):
+        if url.path == "/healthz":
+            # liveness for the audit check only; the reason stays in the ERROR log, not in this open endpoint
+            status = AUDIT_MONITOR.status() if AUDIT_MONITOR else {"healthy": True, "last_verified": None}
+            ok = status["healthy"]
+            self._json(
+                200 if ok else 503,
+                {"status": "ok" if ok else "unhealthy", "audit_last_verified": status["last_verified"]},
+            )
+        elif url.path in ("/query", "/ask"):
             self._begin(url.path)
             qs = parse_qs(url.query)
             self._qa(url.path, resolve_user(self, qs, None), qs.get("q", [""])[0])
@@ -412,5 +427,8 @@ if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", 8421))
     host = os.environ.get("HOST", "127.0.0.1")
     logging.basicConfig(level=logging.INFO, format="%(message)s")  # request lines are JSON already
+    if (_interval := audit_verify.interval_seconds()) > 0:
+        AUDIT_MONITOR = audit_verify.AuditMonitor(rag, _interval)
+        AUDIT_MONITOR.start()
     print(f"http://{host}:{port}")
     ThreadingHTTPServer((host, port), Handler).serve_forever()
