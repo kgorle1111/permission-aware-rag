@@ -121,3 +121,25 @@ def test_store_is_wal_and_a_corrupt_file_fails_loudly(tmp_path: pathlib.Path) ->
 def test_db_path_is_configurable_with_a_gitignored_default() -> None:
     assert str(obs.ops_db_path({"OPS_DB_PATH": "/x/y.sqlite"})) == "/x/y.sqlite"
     assert obs.ops_db_path({}).name == "ops.sqlite"
+
+
+def test_private_store_closes_its_connection_when_collected() -> None:
+    import gc
+    import warnings
+
+    gc.collect()  # earlier tests' garbage must not be attributed to this store
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", ResourceWarning)
+        store = obs.Ops(1.0)
+        store.spent_today()
+        del store
+        gc.collect()
+    assert not [w for w in caught if issubclass(w.category, ResourceWarning)]
+
+
+def test_close_releases_the_private_store() -> None:
+    store = obs.Ops(1.0)
+    store.close()
+    store.close()  # idempotent
+    with pytest.raises(sqlite3.ProgrammingError):
+        store.spent_today()
