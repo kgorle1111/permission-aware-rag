@@ -7,7 +7,6 @@ app/audit_log.jsonl
 app/audit_log.jsonl.head
 app/pgvector_audit.head
 .pytest_cache/
-uv.lock
 PLAN.md
 HANDOFF.md
 WORK_LOG.md
@@ -22,3 +21,5 @@ evals/enronqa/data/
 
 # Real public-domain PDF corpus (fetched by evals/pdf_corpus/fetch.py)
 evals/pdf_corpus/data/
+.coverage
+.mypy_cache/
