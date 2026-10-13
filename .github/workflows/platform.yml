@@ -7,11 +7,13 @@ on:
     paths:
       - "platform/**"
       - "evals/verify_decorated_mutations.py"
+      - "evals/enronqa/run.py"  # imported by platform/scripts/rung_enronqa.py and its tests
       - ".github/workflows/platform.yml"
   pull_request:
     paths:
       - "platform/**"
       - "evals/verify_decorated_mutations.py"
+      - "evals/enronqa/run.py"  # imported by platform/scripts/rung_enronqa.py and its tests
       - ".github/workflows/platform.yml"
 
 # the platform/ subproject (FastAPI + Qdrant + Drive sync) keeps its own gates
