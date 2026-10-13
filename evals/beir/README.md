@@ -36,3 +36,35 @@ their sha256 was recorded when the manifest was created. A mismatch deletes the 
   are the `model-index` metadata of the `BAAI/bge-small-en-v1.5` model card.
 - SciFact: Wadden et al., *Fact or Fiction*, EMNLP 2020. NFCorpus: Boteva et al., ECIR 2016.
   FiQA: Maia et al., *WWW'18 Open Challenge: Financial Opinion Mining and Question Answering*.
+
+## Run
+
+```bash
+uv venv -p 3.12 evals/beir/.venv                       # gitignored scratch venv
+uv pip install -p evals/beir/.venv/bin/python -r evals/beir/requirements.txt
+python3 evals/beir/fetch.py
+evals/beir/.venv/bin/python evals/beir/run.py          # writes evals/results/2026-10-12-beir/{report.json,table.md}
+```
+
+CPU only, no paid API. First run downloads `BAAI/bge-small-en-v1.5` via fastembed (ONNX, MIT) and
+embeds the corpora (document vectors are cached under the gitignored `data/`).
+`--limit-queries N` is a smoke test; never publish its output. Unit tests: `cd app && python -m pytest -q test_beir_metrics.py`.
+
+## What is compared
+
+- **Reference-app BM25**: `app/permission_rag.py` with every doc ACL `{"*"}` (no filtering), one chunk
+  per doc (title + text). It is *not* Elasticsearch/Anserini BM25: it has no stemming or stopwords,
+  uses `k1=1.5, b=0.75` (BEIR's Elasticsearch default is `k1=1.2`), and takes the stdlib
+  `[a-z0-9]+` tokenizer. Differences from the published figure are reported, not tuned away.
+- **bge-small-en-v1.5**: exact cosine over fastembed embeddings. Reported twice: with the model card's
+  query instruction (what MTEB uses) and without (what `platform/app/embeddings.py` does today).
+  The platform's local backend is sentence-transformers (`EMBED_BACKEND=st`); fastembed is the same
+  model through ONNX, so small numeric differences are possible.
+- **Permission tax**: docs are split into k=4 tenants by a seeded hash of the doc id. These ACLs are
+  **synthetic**; real ACLs are correlated with content, so the tax here is an exercise of the filter,
+  not a forecast. Each query is run as a user in the tenant holding most of its gold docs.
+  Reported: nDCG@10 unfiltered (full qrels) vs filtered scored on the in-tenant qrels (gold docs the
+  user can read), the filtered run against full qrels, leaks (results outside the tenant, with a
+  Wilson upper bound) and an isolation check on a seeded query sample (filtered full-corpus results
+  must equal a tenant-only corpus: ids, order and scores).
+- nDCG@10 is trec_eval `ndcg_cut` (linear gain), CIs are 10,000-resample paired bootstrap over queries.
