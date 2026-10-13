@@ -182,9 +182,9 @@ TOTALS = {
 _totals_lock = threading.Lock()
 
 
-# Daily spend cap (UTC day). kn: check-then-call is not atomic, so concurrent in-flight calls can
-# overshoot by one call each; reserve spend before the call if the cap must be hard.
-OPS = obs.Ops(float(os.environ.get("DAILY_BUDGET_USD", "5.0")))
+# Daily spend cap (UTC day): a reservation held before the call and settled after it, shared by every
+# server process on this host through the SQLite file at OPS_DB_PATH (see obs.Ops).
+OPS = obs.Ops(float(os.environ.get("DAILY_BUDGET_USD", "5.0")), db_path=obs.ops_db_path())
 
 
 def projected_cost(question, chunks):
@@ -296,7 +296,7 @@ class Handler(BaseHTTPRequestHandler):
             llm_out = None
             if not results:
                 out["note"] = "No accessible documents matched; skipped the LLM call."
-            elif OPS.would_exceed(projected_cost(query, results)):
+            elif (hold := OPS.reserve(projected_cost(query, results))) is None:
                 out["note"] = "Daily LLM budget reached; showing retrieval only."
             else:
                 t0 = time.perf_counter()
@@ -306,6 +306,10 @@ class Handler(BaseHTTPRequestHandler):
                     rec["error"] = type(e).__name__  # the message can echo prompt text; keep it out of logs
                     out["note"] = "LLM call failed; showing retrieval only."
                 rec["llm_ms"] = round((time.perf_counter() - t0) * 1000, 1)
+                if llm_out:
+                    OPS.settle(hold, est_cost(llm_out["usage"]))
+                else:
+                    OPS.release(hold)  # no billable usage: free the hold for the next caller
             if llm_out:
                 usage = llm_out["usage"]
                 record_ask(usage, rec["llm_ms"])
