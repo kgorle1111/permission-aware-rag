@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- `sync_once` no longer raises the read barrier (pending, revision + 1) when a JSONL source already matches the applied SQL mirror, so the periodic poll stops failing in-flight queries closed. Any difference, saved intent, pending barrier or validation failure still takes the full barrier path. Drive polls keep the barrier (ROADMAP B18).
+- `sync_once` no longer raises the read barrier (pending, revision + 1) when a JSONL source already matches the applied SQL mirror, so the periodic poll stops failing in-flight queries closed. Any difference, saved intent, pending barrier or validation failure still takes the full barrier path. Drive polls keep the barrier (ROADMAP B19).
 - Add one JSON request log line per `/query` (ids, counts, timings; no text), an `X-Request-ID` header, an in-process `ops` summary in `/audit`, and a `DAILY_BUDGET_USD` spend cap that falls back to retrieval-only.
 - Make provider failures visible to the LLM circuit breaker without changing `generation.answer`'s string result; 422 responses no longer echo rejected input.
 - Add a red-team suite driven by `platform/tests/redteam/attacks.json` (mocked model; structural claims only).
