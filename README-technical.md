@@ -133,6 +133,16 @@ RLS logic doesn't change. Run against the server with
 `RAG_BACKEND=pgvector DATABASE_URL=postgres://<app-role>... RAG_PRINCIPAL_KEY=<hex key returned by setup_schema> python3 underwriter_server.py`
 (add `INGEST_DATABASE_URL=postgres://<ingest-role>...` to let it ingest; without it the server is read-only). `AUDIT_CHECKPOINT_PATH=<file>` (default `app/pgvector_audit.head`, gitignored) is the audit head checkpoint (T12); store it where the database admin cannot write, or tail deletion in the audit table goes undetected.
 
+**Why there is no ANN index.** Search is an exact `ORDER BY embedding <=> q LIMIT k` under RLS.
+An HNSW index scans a fixed candidate list *before* RLS filters it, so a narrow user gets almost
+nothing back: on 100k chunks, a user who can see 1% of rows got recall@10 of 0.043 and an empty
+answer on 124 of 200 queries with HNSW forced on (ef_search 40). Iterative scan raised that to 0.89,
+still short of exact. The planner also never picks the index under this policy on its own. The
+exact path returned recall 1.000 and 0 leaks at 1%, 10% and 60% visibility, at 55–73 ms p50. About
+half of that is the `denied_chunks` count in the audit row, a second full scan
+([results](evals/results/2026-10-13-pgvector-filtered-ann/table.md),
+`python evals/pgvector_ann_recall.py --dsn <superuser dsn> --out <dir>`).
+
 ### Rotating the principal-signing key (T18)
 
 Tokens carry a key id (`k1`, `k2`, ...). `setup_schema` creates `k1`. To rotate, as the schema owner:
