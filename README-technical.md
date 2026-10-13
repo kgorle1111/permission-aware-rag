@@ -131,7 +131,7 @@ Embeddings default to a deterministic stdlib feature-hash
 network; swap `embed()` for Voyage AI or sentence-transformers for semantic recall — the
 RLS logic doesn't change. Run against the server with
 `RAG_BACKEND=pgvector DATABASE_URL=postgres://<app-role>... RAG_PRINCIPAL_KEY=<hex key returned by setup_schema> python3 underwriter_server.py`
-(add `INGEST_DATABASE_URL=postgres://<ingest-role>...` to let it ingest; without it the server is read-only). `AUDIT_CHECKPOINT_PATH=<file>` (default `app/pgvector_audit.head`, gitignored) is the audit head checkpoint (T12); store it where the database admin cannot write, or tail deletion in the audit table goes undetected.
+(add `INGEST_DATABASE_URL=postgres://<ingest-role>...` to let it ingest; without it the server is read-only). `AUDIT_CHECKPOINT_PATH=<file>` (default `app/pgvector_audit.head`, gitignored) is the audit head checkpoint (T12); store it where the database admin cannot write, or tail deletion in the audit table goes undetected. Several app processes on one host may share it: audited calls and verification take an exclusive `flock` on `<path>.lock` (so the directory must be writable, and local, not NFS), which serialises audited calls across those processes, and the file only advances from a head still in the table. POSIX only; processes on several hosts, or on Windows, are unsupported (ROADMAP B17). If a database is recreated, delete the old checkpoint.
 
 **Why there is no ANN index.** Search is an exact `ORDER BY embedding <=> q LIMIT k` under RLS.
 An HNSW index scans a fixed candidate list *before* RLS filters it, so a narrow user gets almost
@@ -239,14 +239,22 @@ Records hold ids, counts and timings only, never query, answer or document text.
 `GET /audit` adds an `ops` object next to `entries` and `llm_summary`: `latency_ms` p50/p95
 (nearest-rank, over requests that reached retrieval), `cost_per_day_usd` (UTC days),
 `outcomes` with count and rate each, and `failure_rate` (`failed_closed` + `llm_fallback`
-over all requests). It is computed in process, so it resets on restart (ROADMAP B12).
+over all requests). It is computed from the shared SQLite store (`OPS_DB_PATH`, see `DAILY_BUDGET_USD`
+below) over the newest 10,000 requests, so every server process on the host contributes and it
+survives restarts. `llm_summary` (answers, tokens, cost) comes from the same file. The platform's
+summary is still per process (ROADMAP B12).
 
 `DAILY_BUDGET_USD` (default `5.0`) caps estimated LLM spend per UTC day. Before each call the
 server projects a worst case (all input at ~4 chars per token plus the full 600-token output); if
 spent-so-far plus that projection would pass the cap, the call is skipped and the response is
 retrieval-only with the note "Daily LLM budget reached", outcome `llm_fallback`. The count
-resets at UTC midnight. The check is not atomic (ROADMAP B13), so concurrent calls can overshoot
-by one call each.
+resets at UTC midnight. The cap is a reservation: the projected worst case is held atomically
+before the call and swapped for the actual cost afterwards (released if the call fails or bills
+nothing), so concurrent calls cannot overshoot it. State lives in a SQLite file shared by every
+server process on the host: `OPS_DB_PATH=<file>` (default `app/ops.sqlite`, gitignored; WAL mode).
+A reservation whose process died expires after 5 minutes. Windows works for this file; several
+hosts do not share it (ROADMAP B13). If the file cannot be opened or written the server errors
+rather than spending without a cap.
 
 Red-team suite: `platform/tests/redteam/attacks.json` holds 89 attacks (prompt injection incl. encoded,
 nested and role-play variants, system-prompt extraction, `</document>` breakout, document-borne
