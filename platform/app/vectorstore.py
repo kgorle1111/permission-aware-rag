@@ -16,13 +16,11 @@ from qdrant_client.models import (
     Distance,
     FieldCondition,
     Filter,
-    Fusion,
-    FusionQuery,
+    HasIdCondition,
     MatchAny,
     MatchValue,
     PointStruct,
     PayloadSchemaType,
-    Prefetch,
     ScalarQuantization,
     ScalarQuantizationConfig,
     ScalarType,
@@ -38,6 +36,14 @@ ACL_LEVELS = ("acl_doc", "acl_section", "acl_para")
 
 # Hybrid collections name their vectors; dense-only collections keep the unnamed default.
 DENSE, SPARSE = "dense", "sparse"
+
+# Qdrant's RRF constant (qdrant_client.hybrid.fusion.DEFAULT_RANKING_CONSTANT_K, also the server
+# default): a list contributes 1 / (rank + RRF_K - 1) for a 1-based rank.
+RRF_K = 2
+
+# kn: cap on the tie-expansion fetch (points); past it the tied boundary group is dropped whole,
+# which is still order-independent. Raise it if real corpora show tie groups this large.
+MAX_TIE_FETCH = 4096
 
 _client: QdrantClient | None = None
 
@@ -92,13 +98,55 @@ def _acl_filter(principals: list[str]) -> Filter:
     return Filter(must=[FieldCondition(key=level, match=MatchAny(any=principals)) for level in ACL_LEVELS])
 
 
+def _competition_ranks(hits: list[tuple[int, float]]) -> dict[int, int]:
+    """1-based competition ranking: equal scores share the best rank (1, 1, 1, 4, ...)."""
+    return {cid: 1 + sum(1 for _, other in hits if other > score) for cid, score in hits}
+
+
+def rrf_fuse(*branches: list[tuple[int, float]]) -> list[tuple[int, float]]:
+    """Reciprocal-rank fusion as a pure function of raw scores and chunk ids.
+
+    Input order is irrelevant: ties share a rank and the final order is (-fused, chunk_id), so
+    insertion order (which a hidden document can shift) never reaches the result.
+    """
+    fused: dict[int, float] = {}
+    for branch in branches:
+        for cid, rank in _competition_ranks(branch).items():
+            fused[cid] = fused.get(cid, 0.0) + 1 / (rank + RRF_K - 1)
+    return sorted(fused.items(), key=lambda item: (-item[1], item[0]))
+
+
+def _dense_pool(query_vector: list[float], acl: Filter, pool: int) -> list:
+    """The `pool` best dense hits by (-score, chunk_id), with the cut made tie-complete.
+
+    The engine cuts exact ties by insertion order, so fetch one past the pool and keep widening
+    until a strictly lower score proves the whole boundary tie group was returned (or the
+    readable set is exhausted).
+    """
+    limit = pool + 1
+    while True:
+        hits = sorted(client().query_points(
+            collection_name=config.COLLECTION, query=query_vector, using=DENSE, query_filter=acl,
+            limit=limit, score_threshold=config.MIN_SCORE, with_payload=True).points,
+            key=lambda h: (-h.score, h.id))
+        if len(hits) < limit:
+            return hits[:pool]
+        boundary = hits[pool - 1].score
+        if hits[-1].score < boundary:
+            return hits[:pool]
+        if limit >= MAX_TIE_FETCH:
+            return [h for h in hits if h.score > boundary][:pool]
+        limit = min(limit * 2, MAX_TIE_FETCH)
+
+
 def search(query_vector: list[float], principals: list[str], top_k: int,
            sparse: tuple[list[int], list[float]] | None = None) -> list[dict]:
     """THE security boundary: acl-match filter applied inside the engine.
 
-    With `sparse`, dense and sparse branches are fused (RRF) server-side. The
-    same filter is attached to EACH prefetch, so both candidate lists are built
-    from readable rows only; the fused ranking never sees a hidden chunk.
+    With `sparse`, a dense query and a sparse re-score of its candidates are fused (RRF)
+    client-side by `rrf_fuse`. Every query sent carries the ACL filter, so both candidate lists
+    are built from readable rows only; fusion never sees a hidden chunk, and being independent of
+    insertion order it cannot be moved by one either.
     """
     acl = _acl_filter(principals)
     if sparse is None:
@@ -111,25 +159,20 @@ def search(query_vector: list[float], principals: list[str], top_k: int,
             score_threshold=config.MIN_SCORE,
             with_payload=True,
         ).points
-    else:
-        hits = client().query_points(
-            collection_name=config.COLLECTION,
-            prefetch=[
-                Prefetch(query=query_vector, using=DENSE, filter=acl, limit=2 * top_k,
-                         score_threshold=config.MIN_SCORE),
-                # Sparse re-scores only dense-qualified candidates (nested prefetch), so it can
-                # re-rank but never add a chunk below the MIN_SCORE floor.
-                Prefetch(prefetch=Prefetch(query=query_vector, using=DENSE, filter=acl,
-                                           limit=2 * top_k, score_threshold=config.MIN_SCORE),
-                         query=SparseVector(indices=sparse[0], values=sparse[1]), using=SPARSE,
-                         filter=acl, limit=2 * top_k),
-            ],
-            query=FusionQuery(fusion=Fusion.RRF),
-            query_filter=acl,
-            limit=top_k,
-            with_payload=True,
-        ).points
-    return [{"chunk_id": h.id, "score": h.score, **h.payload} for h in hits]
+        return [{"chunk_id": h.id, "score": h.score, **h.payload} for h in hits]
+    dense = _dense_pool(query_vector, acl, 2 * top_k)
+    if not dense:
+        return []
+    # Sparse re-scores only dense-qualified candidates, so it can re-rank but never add a chunk
+    # below the MIN_SCORE floor. The id restriction replaces the old nested prefetch, whose
+    # candidate set was cut by the engine's tie order.
+    sparse_hits = client().query_points(
+        collection_name=config.COLLECTION, query=SparseVector(indices=sparse[0], values=sparse[1]),
+        using=SPARSE, query_filter=Filter(must=[*acl.must, HasIdCondition(has_id=[h.id for h in dense])]),
+        limit=len(dense), with_payload=False).points
+    by_id = {h.id: h for h in dense}
+    fused = rrf_fuse([(h.id, h.score) for h in dense], [(h.id, h.score) for h in sparse_hits])
+    return [{"chunk_id": cid, "score": score, **by_id[cid].payload} for cid, score in fused[:top_k]]
 
 
 def search_unfiltered_count(query_vector: list[float], principals: list[str], top_k: int) -> int:

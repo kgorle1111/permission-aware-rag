@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fix (security, S1-class): hybrid RRF now runs client-side with competition ranking and a (-score, chunk id) order, so exact score ties no longer let hidden documents shift a visible chunk's fused score through the engine's insertion order (T27).
 - Add one JSON request log line per `/query` (ids, counts, timings; no text), an `X-Request-ID` header, an in-process `ops` summary in `/audit`, and a `DAILY_BUDGET_USD` spend cap that falls back to retrieval-only.
 - Make provider failures visible to the LLM circuit breaker without changing `generation.answer`'s string result; 422 responses no longer echo rejected input.
 - Add a red-team suite driven by `platform/tests/redteam/attacks.json` (mocked model; structural claims only).
