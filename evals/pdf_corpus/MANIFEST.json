@@ -1,0 +1,962 @@
+[
+ {
+  "url": "https://agents.floodsmart.gov/sites/default/files/bulletins/W-25004/w-25004.pdf",
+  "file": "d2cbd1d2c3-w-25004.pdf",
+  "publisher": "FEMA",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 192188,
+  "sha256": "1d8fd99db19429ac862614c346e52e8efd6f20284ef637ca5ae6792879213380",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:41:14+00:00"
+ },
+ {
+  "url": "https://files.consumerfinance.gov/f/documents/cfpb_mortgage_servicing_small-entity-compliance-guide.pdf",
+  "file": "90b32d11c4-cfpb_mortgage_servicing_small-entity-compliance-guide.pdf",
+  "publisher": "CFPB",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 2194929,
+  "sha256": "18bcc36edea754cfc84b6b5384b9f3ba6253746530e6262676b58f23e14e914b",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:41:11+00:00"
+ },
+ {
+  "url": "https://files.consumerfinance.gov/f/documents/cpfb_atr-qm_small-entity_compliance-guide_2021-02.pdf",
+  "file": "529cdb7abb-cpfb_atr-qm_small-entity_compliance-guide_2021-02.pdf",
+  "publisher": "CFPB",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 998965,
+  "sha256": "58b10b4a07d93ced4a8c77570c644de602efc7e13ae27baf0fabdcd207aa9294",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:41:09+00:00"
+ },
+ {
+  "url": "https://home.treasury.gov/system/files/261/FSOC2025AnnualReport.pdf",
+  "file": "b7e74ab28e-FSOC2025AnnualReport.pdf",
+  "publisher": "Treasury",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 5720153,
+  "sha256": "3d32e5ccf0035a1102a7f2303e5b2e43d917ee414f6cf70558e5e024667d379a",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:41:35+00:00"
+ },
+ {
+  "url": "https://home.treasury.gov/system/files/311/2015%20FIO%20Annual%20Report_Final.pdf",
+  "file": "f825a5ebeb-2015_FIO_Annual_Report_Final.pdf",
+  "publisher": "Treasury",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1036559,
+  "sha256": "6b7bc41037a1ce59e0e785be66f40146716f056c3f2e1b213af3946ae5ddc6ee",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:41:25+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section1-1.pdf",
+  "file": "b4d1b6eeb4-section1-1.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 492444,
+  "sha256": "e2d5958efcf216328f2bf082e4af7c7eb56c33ab02a06855d703638118157503",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:15+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section10-1.pdf",
+  "file": "6197f52698-section10-1.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 418445,
+  "sha256": "ae04ed149a387ae0412843025228a45ab0d93f30a5495cca30f660152b298a30",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:55+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section13-1.pdf",
+  "file": "56832a7543-section13-1.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 129442,
+  "sha256": "78a25536477553f572df6eb09a31883ef1f46cffc3f6430865131d2815d9862d",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:56+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section14-1.pdf",
+  "file": "aef50b28b2-section14-1.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 676187,
+  "sha256": "13b42c71c4a1d206580788880158b221f89b29df8883075320c8b2fdc0335650",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:58+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section15-1.pdf",
+  "file": "e60c559a84-section15-1.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 643316,
+  "sha256": "e8f90392abafe0dc394cc1ac0fd781b09a91ee2f532761d8786e92a53e0bf418",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:00+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section16-1.pdf",
+  "file": "d0ca51d171-section16-1.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 820098,
+  "sha256": "3f994cd1caf41b69d90f3fec328f6526173e9b1effc158dbeb2dc3cb7abfab2b",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:02+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section16-2.pdf",
+  "file": "e8de527cc2-section16-2.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 614529,
+  "sha256": "4154f487ebee48c834246801670f58a9e4a3b42700837219ad4c726b90afa04e",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:04+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section17-1.pdf",
+  "file": "86f3aa1270-section17-1.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 237340,
+  "sha256": "ceed222dd62efe0c864e4248185ab4b7768d5225a543eecbfa7df10863d02767",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:05+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section2-1.pdf",
+  "file": "31d12ccf1a-section2-1.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 610970,
+  "sha256": "7a96efcad18e341a1347e175bff167baadf1412a8a7e6dbd776952ba6d4f6a3c",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:16+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section21-1.pdf",
+  "file": "514b801f3f-section21-1.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 539198,
+  "sha256": "5f1a6f2bdab6d1719d69c4cfbfe2982d9f915f4a3bd2af5547faa5db54a59095",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:07+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section21-2.pdf",
+  "file": "7ad906664b-section21-2.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 222868,
+  "sha256": "3707fe1c7d2aa593999a394bed98e319ab9acb714fb4a231a1ec445ef4a1be59",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:09+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section3-1.pdf",
+  "file": "db350deb9c-section3-1.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 162313,
+  "sha256": "f22c5c7cd9df71686b95f0462dde71d2eb9f208ef5c029167776c93a8e9a61ad",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:19+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section3-2.pdf",
+  "file": "af1a59e2ef-section3-2.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 2085732,
+  "sha256": "b4a73592356ca77963ce25022b1bf12690040928cfb653301ca91ae99645c87b",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:20+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section3-3.pdf",
+  "file": "d59798326d-section3-3.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 591215,
+  "sha256": "7867386b535804c8ec731716fce77f9e60a184abd215f658017dc047241d2e45",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:23+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section3-4.pdf",
+  "file": "8b5470f426-section3-4.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 98020,
+  "sha256": "7221bc1f3937c78daceb4e1e9b6665003b26172ac9820b09b71549e97714312c",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:24+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section3-5.pdf",
+  "file": "2fac92a1e4-section3-5.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 201354,
+  "sha256": "c8ecb8783e21991188d0cc6ca47cd0702f91235a5cd68af1046ef03aa035851d",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:26+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section3-6.pdf",
+  "file": "b4dfbe0aba-section3-6.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 492145,
+  "sha256": "e31c1285ad39363d525659ab0f54fa4441c44df39e9ffb8ca0511f47d528992e",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:28+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section3-7.pdf",
+  "file": "c242f06b37-section3-7.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 256499,
+  "sha256": "455eef6a22e8cece3290841d58e48b3f33843acdb1bc1b08bead6dee69d33265",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:30+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section3-8.pdf",
+  "file": "0b3834d14a-section3-8.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 242567,
+  "sha256": "5343b08264fa6388b132bff5270ebbf60a74a535bd6c8943d3783a784a951632",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:32+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section4-1.pdf",
+  "file": "22c2c74713-section4-1.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 608764,
+  "sha256": "a6dd39ea0761fc445762349be20cf40ca88189964ff151fb84b4400d5fdf446d",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:34+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section4-2.pdf",
+  "file": "2723f455c5-section4-2.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 519811,
+  "sha256": "708a03ab74941c8df714543cb7d797100fd2c85680b27374c3ae697f004c1479",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:36+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section4-3.pdf",
+  "file": "4d6c862153-section4-3.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 321540,
+  "sha256": "bbba5caba8c35d9720dde0c4ea2124bb149400b06be3b25b2e31b457372dc5a1",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:38+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section4-4.pdf",
+  "file": "f0024dd0e7-section4-4.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 237920,
+  "sha256": "316ef774e0b056ff7fcf2ce729ce9cc623b0a83caa75846bdf82bcb318addc20",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:39+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section4-5.pdf",
+  "file": "66955483e6-section4-5.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 213950,
+  "sha256": "af42517a5442970b014f4c8961f2005e31ebc8154fa3222f83e6863a5d974423",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:41+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section4-6.pdf",
+  "file": "9abe4eb0c9-section4-6.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 64643,
+  "sha256": "99a03139a3d99c0dec8d25fb4591033ebde67f5360a9f344dd64a6879ceac350",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:43+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section5-1.pdf",
+  "file": "b20a0a6e4b-section5-1.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 165629,
+  "sha256": "82d335b477b57b770b281bb20fb5c0aad5e766ae701f986280cd60ad24a43ea3",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:45+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section6-1.pdf",
+  "file": "24a4d30d5a-section6-1.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 944596,
+  "sha256": "f68b32a03590e1f1a3c1df4f1bd0d8da747d74b9d6f94b0ac5233de670846bbb",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:47+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section7-1.pdf",
+  "file": "3166dc74d4-section7-1.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1325248,
+  "sha256": "e5530a02aced7b9aad4eae51c0b4ba759384b41c1f1ca1af6b79c1e132d46e78",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:49+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section8-1.pdf",
+  "file": "847b6cda88-section8-1.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 819872,
+  "sha256": "639bd11ab86d2ab3be3bfcb1e160b9122cf9a9e802defc4eb6459cfd4c445c71",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:51+00:00"
+ },
+ {
+  "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/section9-1.pdf",
+  "file": "949e3c8b7c-section9-1.pdf",
+  "publisher": "FDIC",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 724200,
+  "sha256": "e59d81754f200b291feaf1bf3c03a56a8d96952d31a66c7ef29fbf2c3fa9b48f",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:39:53+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1936-06-16/pdf/FR-1936-06-16.pdf",
+  "file": "ed3c3e3ca9-FR-1936-06-16.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 685192,
+  "sha256": "cd4d3f9f446171aeb7c63a23818fda7c83e25498f9d161681ee52c2f5dff5a1d",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:48:10+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1937-06-15/pdf/FR-1937-06-15.pdf",
+  "file": "ab2eecad5a-FR-1937-06-15.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 6090330,
+  "sha256": "626a30f3b34cbfdb7a9a9b18818551feddb78d1e40660c22d89a088f380c325e",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:42:12+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1938-06-14/pdf/FR-1938-06-14.pdf",
+  "file": "2e5a0bf005-FR-1938-06-14.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 2625349,
+  "sha256": "7c1962adb5fc3421b26b37663e526ae6c03ac8a45b508739100fb8aecf232d52",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:48:14+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1939-06-14/pdf/FR-1939-06-14.pdf",
+  "file": "424bae5747-FR-1939-06-14.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 4325923,
+  "sha256": "b05b3f845b66a54729c3b43c460cdefefe8c1217541b3e09e924e27198a4941a",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:42:18+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1940-06-14/pdf/FR-1940-06-14.pdf",
+  "file": "a848db601b-FR-1940-06-14.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 5751941,
+  "sha256": "3d735e94eaf1aa62538484c1f1a481719f3ee2ac217e26c7db974250bd29bcf6",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:48:21+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1941-06-18/pdf/FR-1941-06-18.pdf",
+  "file": "e5bcb240d8-FR-1941-06-18.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 7861560,
+  "sha256": "e36a5e6fea4c6f9c9b5d46af6b1210ac0b27eafbf12eb8ea569353b34cd6809c",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:42:29+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1942-06-16/pdf/FR-1942-06-16.pdf",
+  "file": "f06a66be36-FR-1942-06-16.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 13573030,
+  "sha256": "07f15e1ffdeb64d8de709f3beb132aca35a9c1a0aaace49eac95648749672d6b",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:48:37+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1943-06-15/pdf/FR-1943-06-15.pdf",
+  "file": "ce46c2de8f-FR-1943-06-15.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 21867071,
+  "sha256": "601ea12bb9cc0c8442ad0863d06530976b3199c761a525ea3d08f32c898368da",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:49:01+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1944-06-15/pdf/FR-1944-06-15.pdf",
+  "file": "5161cce93d-FR-1944-06-15.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 11813284,
+  "sha256": "c32f1b67ccc4017f9e8e98c17b109a3e6b2452be96d9d61521e38e430b34637c",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:49:15+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1945-06-14/pdf/FR-1945-06-14.pdf",
+  "file": "4f790151bb-FR-1945-06-14.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 24935588,
+  "sha256": "d44f73c03b7a4ed27c3622862ac65d2ec70c379c4a54ddf6f494b00965e4ad8e",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:49:40+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1946-06-14/pdf/FR-1946-06-14.pdf",
+  "file": "42f65282d6-FR-1946-06-14.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 18823109,
+  "sha256": "d453ddd5cf17d3a4ea8d74fe42598f525d7ba6b4616632be36c38f5d89672349",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:50:00+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1947-06-17/pdf/FR-1947-06-17.pdf",
+  "file": "18d76f76b8-FR-1947-06-17.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 8093137,
+  "sha256": "7b231c4683c3fc801c1fd36909d01c1ab824e951f7bc0011b3b8194a0bab6f19",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:42:53+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1948-06-15/pdf/FR-1948-06-15.pdf",
+  "file": "79a85393d4-FR-1948-06-15.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 8299182,
+  "sha256": "3bf695f505db7e70e443fe53450884d3d022d70c3bed1d729d5a919d90973578",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:50:11+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1949-06-14/pdf/FR-1949-06-14.pdf",
+  "file": "3777d8734e-FR-1949-06-14.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 9783896,
+  "sha256": "39f795f8fa3d9e51d8d741c5183150d404c8807dd17cc95b4811119ffa6c591b",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:43:03+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1950-06-14/pdf/FR-1950-06-14.pdf",
+  "file": "ed1dd22684-FR-1950-06-14.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 20585261,
+  "sha256": "2c99698c32d2da2309843ef45a26e3bb9434984cc23480517b883d4490039f22",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:50:32+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1951-06-14/pdf/FR-1951-06-14.pdf",
+  "file": "f5f94b7335-FR-1951-06-14.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 6154538,
+  "sha256": "3b308156d50f63bff188ee8a1bc359efc0642256e8303701c580374322d2811c",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:43:11+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1952-06-17/pdf/FR-1952-06-17.pdf",
+  "file": "d906931af9-FR-1952-06-17.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 6961092,
+  "sha256": "80e495e7ae85bcf344301238c7903eea426417cb2e6fd70dace60a17650dd14a",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:50:41+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1953-06-16/pdf/FR-1953-06-16.pdf",
+  "file": "7fb3db3869-FR-1953-06-16.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 7762396,
+  "sha256": "66b1715d1d9c4b8bba868b0b7209abc281918953201d555649f97710cdd2fc32",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:43:21+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1955-06-14/pdf/FR-1955-06-14.pdf",
+  "file": "0e6275d2ce-FR-1955-06-14.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 7717225,
+  "sha256": "5dd1a73a3b49bbdc0a297a129e51cfdbb91707af7bb9051c25ba84c243c04937",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:43:29+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1957-06-18/pdf/FR-1957-06-18.pdf",
+  "file": "c47e560f6f-FR-1957-06-18.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 13149780,
+  "sha256": "efd414e4da1bff8d6c32a9b75924c1b91ee11f3799e5c1329b2abd96435e6c5a",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:43:46+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1959-06-16/pdf/FR-1959-06-16.pdf",
+  "file": "d23c119535-FR-1959-06-16.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 9783352,
+  "sha256": "e08d5f69e20e5ee52473f3a074ef353decf09c4ee368181cdbfbedf2e6f5a030",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:43:58+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1965-06-15/pdf/FR-1965-06-15.pdf",
+  "file": "de12d0135a-FR-1965-06-15.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 8039517,
+  "sha256": "63ee777d5bf46df2e004d8243966ea6dc1a7d3949f198ffcc12d9f65c83e9235",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:44:21+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1967-06-16/pdf/FR-1967-06-16.pdf",
+  "file": "20ddcddb98-FR-1967-06-16.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 8207597,
+  "sha256": "6682060ffa4e1377249a55f9db8b24c8a37344a4d72110c7b54f2fb15008f144",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:44:33+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/FR-1969-06-17/pdf/FR-1969-06-17.pdf",
+  "file": "f0acf1628c-FR-1969-06-17.pdf",
+  "publisher": "Federal Register",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 10816030,
+  "sha256": "b876a98ecb96725a205bbfb2a70f4491ca1bdd0a025093d97cf4e04fb2ee8b87",
+  "kind": "scanned",
+  "fetched_at": "2026-10-10T11:44:47+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/GAOREPORTS-GAO-05-1/pdf/GAOREPORTS-GAO-05-1.pdf",
+  "file": "1caf9e1983-GAOREPORTS-GAO-05-1.pdf",
+  "publisher": "GAO",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 3675759,
+  "sha256": "e7d7aaafd599f3e1b9ae5ee96264e4499b757834629784d3a2eb8f79e089d683",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:42:01+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/GAOREPORTS-GAO-05-10/pdf/GAOREPORTS-GAO-05-10.pdf",
+  "file": "17c792f742-GAOREPORTS-GAO-05-10.pdf",
+  "publisher": "GAO",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 6064722,
+  "sha256": "8e3b54c46f477ec256f69de066839e02bfe74fa6817a8de8912819fa0d5f29bf",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:47:35+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/GAOREPORTS-GAO-05-50/pdf/GAOREPORTS-GAO-05-50.pdf",
+  "file": "d31283018e-GAOREPORTS-GAO-05-50.pdf",
+  "publisher": "GAO",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 7706236,
+  "sha256": "6b1af335520d0087bfe06edd5dc71737c6463a6715ebecf4726b7ba143daa82d",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:47:44+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/GAOREPORTS-GAO-06-100/pdf/GAOREPORTS-GAO-06-100.pdf",
+  "file": "0b0ff1ea37-GAOREPORTS-GAO-06-100.pdf",
+  "publisher": "GAO",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 792265,
+  "sha256": "a6e5ea87be80aeb5399cf123da3d32c8d9afcee2947b3412b253cb5e225ecdc6",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:47:46+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/GAOREPORTS-GAO-06-300/pdf/GAOREPORTS-GAO-06-300.pdf",
+  "file": "a5ff1bdbfd-GAOREPORTS-GAO-06-300.pdf",
+  "publisher": "GAO",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1048946,
+  "sha256": "e1278590941ac196737f4032a9581ae7897cc3354b81d196c0c25237589c2520",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:47:48+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/GAOREPORTS-GAO-07-100/pdf/GAOREPORTS-GAO-07-100.pdf",
+  "file": "5c3d6bd06b-GAOREPORTS-GAO-07-100.pdf",
+  "publisher": "GAO",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 752589,
+  "sha256": "adb3f1eb558ec05de823d6986e293dcf55055b33e2b14a837ac88aa433739421",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:47:50+00:00"
+ },
+ {
+  "url": "https://www.govinfo.gov/content/pkg/GAOREPORTS-GAO-07-820T/pdf/GAOREPORTS-GAO-07-820T.pdf",
+  "file": "b40308e152-GAOREPORTS-GAO-07-820T.pdf",
+  "publisher": "GAO",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 337977,
+  "sha256": "f74b1d3db7522e412302a25d301f6955c4613a920e5cfdc191121ae637304081",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:41:37+00:00"
+ },
+ {
+  "url": "https://www.hud.gov/sites/dfiles/OCHCO/documents/4000.1hsgh.pdf",
+  "file": "47c2f1183d-4000.1hsgh.pdf",
+  "publisher": "HUD",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 7022355,
+  "sha256": "cc548229a0796c62bf5d4b3b5262cd00bb2f14723259d59707e18df8b70e9732",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:21+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p15.pdf",
+  "file": "c7fb9fc76b-p15.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1713916,
+  "sha256": "b46c3622439d8521e3a0faca4cd5b5ece3451b526f65f06a5e38d5c9f804c88b",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:30+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p15a.pdf",
+  "file": "0b058600be-p15a.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1364431,
+  "sha256": "3486cf0ad83401494aa57c688ffb411346ef399bd8202317c1eb3e6d41575c2e",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:31+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p15b.pdf",
+  "file": "b7e117eb86-p15b.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1343521,
+  "sha256": "a0af8513d6f45e65620bfd3eaa564cde7a6912781b9cb1c5b03dcd77b639ec46",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:33+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p15t.pdf",
+  "file": "9a846f38c1-p15t.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 2480887,
+  "sha256": "31b3e2428628e8d2e40f6266c2c8f1b9b0b6ccd24607895f9b3be3d9d306d3fb",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:28+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p17.pdf",
+  "file": "df10546c5a-p17.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 3088632,
+  "sha256": "2d2381d62c7c77ed4b64b83ac23c28ed85b7c8304eb580c09bd9fd660be0840b",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:22+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p17sp.pdf",
+  "file": "63590caa76-p17sp.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 3545060,
+  "sha256": "d90ec71fd53a3dae4a6a402edb8909c383ccdaf708d971f9d0d373f308735373",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:41:08+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p334.pdf",
+  "file": "345f92e459-p334.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 2714784,
+  "sha256": "722639ba7bfd6f5348234b58d21e1afd8cb0c04895138bd5c4539142dde6c60a",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:34+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p463.pdf",
+  "file": "10a89cbd45-p463.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1851538,
+  "sha256": "ddc3bb15e437bd65c37da2036debdae78c1a0bf5a080b19d5301c81f5ec5ae5d",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:27+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p501.pdf",
+  "file": "b2f611fa44-p501.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1553735,
+  "sha256": "288b62a4917f3bc3df0bade7a22c23a8ae648ba9eb5086df5b8b50e881148ff6",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:47+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p502.pdf",
+  "file": "cdc04aced5-p502.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1401964,
+  "sha256": "11801353ab959ee04dcadc1f799b6c0b87e1879680fe6f8511af3fa113690d25",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:48+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p503.pdf",
+  "file": "08a639287b-p503.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1326038,
+  "sha256": "3a00d0c1a1d6d3a88afdf418b79873f95f6d2de584c330ec67647139c09c5532",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:51+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p505.pdf",
+  "file": "5ad20fc57a-p505.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1776844,
+  "sha256": "c69e87caa93cdefa4493f0ec1d8478b1ff9ec1329ee18c7b9d442f2dcb79c621",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:52+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p523.pdf",
+  "file": "25db761124-p523.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1366676,
+  "sha256": "f11fca89408fa329fdbfec9b9bd0aa22f411f30704e805088076d89a754f736b",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:54+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p525.pdf",
+  "file": "d0680091d4-p525.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1783977,
+  "sha256": "39b0fa5e04c5d159a34583da12a91326f396f69286f4b7a6f399d34cebc2c25b",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:45+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p527.pdf",
+  "file": "db09f70238-p527.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1515629,
+  "sha256": "20c826e98dce23d20f80ab89da7e668a8ee7162a2194f480ce417cff651201d6",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:55+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p529.pdf",
+  "file": "00a4f9d023-p529.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1412064,
+  "sha256": "ee7210f1fcc2e838b6e14ad054e71e022893248971085cbb231a25c99a44e1a0",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:57+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p541.pdf",
+  "file": "b39964e543-p541.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1403973,
+  "sha256": "21b7dfe14dd52166ddfa11c63f02ad59715ad2473aad2b5560e031b4c21c7bb4",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:38+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p542.pdf",
+  "file": "f6ad8ea000-p542.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1281298,
+  "sha256": "9bae90126317b0de17313cdae8245209fd9de403a455d52f418f4a5b85c13b30",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:39+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p544.pdf",
+  "file": "9d578d33ca-p544.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1732834,
+  "sha256": "b8282a22f637e147b6435787bf9e20db6c24d08d8124386cce75eaab05de0cfd",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:41+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p547.pdf",
+  "file": "d760b1d0e3-p547.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1483922,
+  "sha256": "1389cd83618e75eb8294190fef200af688d876e6bcd850409e274dba00bd73d8",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:44+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p551.pdf",
+  "file": "01b4ef5a88-p551.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1319374,
+  "sha256": "0fbd4f0d37d575f95bd3dbdff09be846a2bf62e882902e02f0318739c4f904d2",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:42+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p559.pdf",
+  "file": "d9b917e7dc-p559.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1598257,
+  "sha256": "b5ccb4c22799256eed92972cd0fea78f186be0b0d8611ed94ff91af62c9423e9",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:59+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p575.pdf",
+  "file": "3e228698fe-p575.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1616319,
+  "sha256": "30bd37ccfcb1fe2e191abadbb38ce7cf7fcbb638e3065335436dd6025a35caa5",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:41:00+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p590a.pdf",
+  "file": "402fd941ef-p590a.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1817459,
+  "sha256": "ca0e42873cfd66d2d9bfd082125d381f8a0c2f3b0a441d7d65ab5ccc06a0e1c7",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:41:02+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p590b.pdf",
+  "file": "f28f4c1acb-p590b.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 2097777,
+  "sha256": "d18a592e55ce56d43953dc338272ece3984565792d6dca06989a6ca8121f7360",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:25+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p596.pdf",
+  "file": "1c16c948b0-p596.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 2093863,
+  "sha256": "29e8c6695912318253743210fcd68aaa10ad874c76edcab4aa7dc4b23ff51dbf",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:41:03+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p946.pdf",
+  "file": "17d82a71ce-p946.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 2345848,
+  "sha256": "07fadfb2a6ee34767d77b9a2d3a28413c4afa2d0bd2f0488fd6a4b1b9b5904c4",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:40:24+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p970.pdf",
+  "file": "7944db21bd-p970.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 1935425,
+  "sha256": "167f3d6df0d9370a3980b25b7a2e7b479ab7f336cce763d1f0c1c4962b18285e",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:41:05+00:00"
+ },
+ {
+  "url": "https://www.irs.gov/pub/irs-pdf/p972.pdf",
+  "file": "74b22362fd-p972.pdf",
+  "publisher": "IRS",
+  "license": "17 USC 105 (US federal government work, no copyright)",
+  "bytes": 174881,
+  "sha256": "0830be6033167db47662e8336ca8c64eebf2eb5b21be3dc8b7c337f5ce85a95f",
+  "kind": "born_digital",
+  "fetched_at": "2026-10-10T11:41:06+00:00"
+ }
+]

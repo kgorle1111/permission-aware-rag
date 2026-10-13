@@ -26,8 +26,11 @@ os.environ["PERMISSIONS_BACKEND"] = "jsonl"
 os.environ["QDRANT_URL"] = ""
 os.environ["JWKS_URL"] = ""
 os.environ["JWT_ISSUER"] = ""
-os.environ["EMBED_BACKEND"] = "hash"
-os.environ["EMBED_DIM"] = "384"
+os.environ.setdefault("EMBED_BACKEND", "hash")  # rung_benchmark reruns suites with other rungs via env
+os.environ.setdefault("EMBED_DIM", "384")
+os.environ.setdefault("SPARSE_BACKEND", "none")
+os.environ.setdefault("RERANKER", "none")
+os.environ.setdefault("EMBED_CACHE_PATH", "")  # default suite never writes a cache file
 
 import jwt as pyjwt  # noqa: E402
 import pytest  # noqa: E402
