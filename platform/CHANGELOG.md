@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Queries no longer hold the permission write lock while they retrieve and generate. They read the permission state lock-free and re-check revision and barrier flags in the short transaction that writes the audit row; a revocation that lands mid-query fails that query closed instead of queueing behind it. Queries no longer serialize on the lock, which matters when generation or the database is slow; on the keyless hash-embedder profile throughput is unchanged because one process is CPU-bound. Side effect: queries that start while a reconciliation is pending fail closed immediately instead of queueing behind it.
 - Add one JSON request log line per `/query` (ids, counts, timings; no text), an `X-Request-ID` header, an in-process `ops` summary in `/audit`, and a `DAILY_BUDGET_USD` spend cap that falls back to retrieval-only.
 - Make provider failures visible to the LLM circuit breaker without changing `generation.answer`'s string result; 422 responses no longer echo rejected input.
 - Add a red-team suite driven by `platform/tests/redteam/attacks.json` (mocked model; structural claims only).

@@ -14,9 +14,19 @@ store or restore document text.
 ## Three committed phases
 
 Every phase uses `permission_transaction`, which locks the shared
-`PermissionState` row. Retrieval, generation, auditing, sync, and full ingestion
-use the same locking boundary. Revision checks prevent an older reconciliation
+`PermissionState` row. Sync, full ingestion, and the audit commit that closes
+each query use that boundary. Revision checks prevent an older reconciliation
 from completing over a newer mutation.
+
+A query does not hold the lock while it retrieves or generates. It reads the
+permission state, does its work, and then re-checks the revision and barrier
+flags inside the closing `permission_transaction` that writes its audit row. Phase
+1 above commits `revision + 1` and `pending` before anything else changes, so an
+unchanged revision at the close means no mutation began since the query read its
+state, and the result is ordered before any later revocation. A changed revision
+or a standing barrier fails the query closed: nothing it computed is returned or
+cached. [Interleaving regressions](../platform/tests/test_query_concurrency.py)
+run a revocation to completion while a query is parked after its vector search.
 
 | Phase | Work | Durable state after commit |
 |---|---|---|
