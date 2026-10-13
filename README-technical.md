@@ -328,6 +328,22 @@ from a log suspected of tampering. A crash between append and checkpoint update
 also fails closed; recovery requires checking the log against trusted evidence.
 The reference JSONL writer supports one process per audit file.
 
+### Scheduled audit verification
+
+Both backends are verified without an operator ([`app/audit_verify.py`](app/audit_verify.py)):
+
+- `python -m audit_verify` (from `app/`, same env as the server: `RAG_BACKEND`, `DATABASE_URL`,
+  `AUDIT_CHECKPOINT_PATH`, `AUDIT_LOG_PATH`; `RAG_PRINCIPAL_KEY` is not needed) exits 0 when the chain and
+  checkpoint match, 1 on tamper, truncation or a missing checkpoint (the message names the entry or row
+  number, never contents), 2 when misconfigured. Run it from cron against a stopped or idle JSONL file; against
+  a live JSONL log in another process it can catch an append between the line and its head write.
+- At startup the server verifies once and exits with status 2 and a CRITICAL log line on failure.
+  `AUDIT_VERIFY_ON_START=0` skips it (the JSONL constructor still refuses a bad log).
+- While serving, a background thread re-verifies every `AUDIT_VERIFY_INTERVAL_S` seconds (default 300, `0`
+  disables). A failure logs `AUDIT CHAIN VERIFICATION FAILED` at ERROR and makes `GET /healthz` return 503
+  `{"status":"unhealthy"}` until restart; the reason stays in the log. A check that cannot run (database down)
+  is unhealthy for that tick only. The check reads the whole log or table under the writer's lock (ROADMAP B20).
+
 ### AWS showcase deployment
 
 The reference workbench has an [AWS Lightsail deployment](deploy/aws/README.md)
