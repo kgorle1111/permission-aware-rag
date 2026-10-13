@@ -36,8 +36,9 @@ python3 run_evals.py --mutants       # every known-leaky retriever must be caugh
 python3 eval_scale.py                # frozen 1,350-probe leak eval; refuses to run if the eval set changed
 DATABASE_URL=postgresql://... python3 -m pytest test_pgvector.py   # pgvector + RLS (needs Postgres)
 
-# lint (repo root)
-ruff check . && ruff format --check .
+# lint and types (repo root; uv sync --locked --group dev --extra pg first)
+uv run ruff check . && uv run ruff format --check .
+uv run mypy                          # strict; debt modules are listed in pyproject.toml, shrink never grow
 
 # platform (run from platform/)
 python -m pytest tests/ -q --cov=app --cov=scripts --cov-branch --cov-fail-under=96
