@@ -85,6 +85,7 @@ if os.environ.get("RAG_BACKEND") == "pgvector":
         os.environ["DATABASE_URL"],
         os.environ.get("INGEST_DATABASE_URL"),
         principal_key=bytes.fromhex(os.environ["RAG_PRINCIPAL_KEY"]),
+        principal_key_id=os.environ.get("RAG_PRINCIPAL_KEY_ID", "k1"),  # after a rotation: the new key's id
         # T12: head checkpoint kept outside Postgres; keep it somewhere the DB admin cannot write
         audit_checkpoint_path=audit_verify.pg_checkpoint_path(),
     )
