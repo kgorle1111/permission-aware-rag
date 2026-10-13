@@ -70,6 +70,7 @@ So we built evidence that can fail:
 | Planted leak bugs caught by the original hand-written check | 1 of 6 |
 | Original planted leak bugs caught with the isolation check | **6 of 6** |
 | Expanded gate, including OR-across-levels and flat-intersection faults | **8 of 8** |
+| Real documents we didn't write: 600 EnronQA questions over 14,542 Enron emails, readers from sender/recipient headers | **0 of 4,300** unreadable chunks returned |
 
 In plain numbers: **0/1,350 leaks (95% upper bound 0.28%)**, and the hand-labeled gate
 still holds at recall@4: 14/14 with zero leaks. The isolation check needs no labels. For
@@ -78,8 +79,14 @@ results over an archive holding only that role's files.
 
 Kept on purpose: the corpus is synthetic, probes reuse the documents' own wording (so this
 measures exact-wording recall, not semantic recall), and the probes aren't independent.
-A real-world document set is next on the [roadmap](ROADMAP.md).
-[Full results](evals/results/2026-10-03-v2/table.md) · [pre-registered claims](ROADMAP.md#pre-registered-claims)
+
+On real documents and questions we didn't write ([EnronQA](evals/enronqa/README.md), Enron mail
+from the public FERC release; 15% of emails have two or more readers): **0/4,300 unreadable
+chunks (95% upper bound 0.09%)** across owners, other recipients and non-readers, with owner
+hit@4 of **91.5% (95% CI 89.0–93.5%)**. A planted off-by-one ACL bug leaks on 300/300 of the
+same probes, so the check can see leaks. Citation validity needs a paid model run and is not
+measured yet. The questions were machine-written from each email, so recall is optimistic.
+[Full results](evals/results/2026-10-03-v2/table.md) · [EnronQA results](evals/results/2026-10-10-enronqa/table.md) · [pre-registered claims](ROADMAP.md#pre-registered-claims)
 
 ## 🔭 How it flows
 
