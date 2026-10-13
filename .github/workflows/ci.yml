@@ -54,3 +54,24 @@ jobs:
         working-directory: app
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/scale_eval
+
+  audit:
+    # known-vulnerability gate over every dependency set we ship or test with, plus a CycloneDX SBOM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10.2.0   # exact tag: setup-uv has no moving major tags since v8
+        with:
+          python-version: "3.12"
+      - run: uv export --locked --group dev --extra pg --no-hashes > root-requirements.txt
+      - run: >-
+          uvx pip-audit==2.10.1
+          -r root-requirements.txt
+          -r platform/requirements.txt -r platform/requirements-dev.txt
+          -r platform/requirements-models.txt -r platform/requirements-pdf.txt
+          --format cyclonedx-json -o sbom.cdx.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sbom
+          path: sbom.cdx.json
