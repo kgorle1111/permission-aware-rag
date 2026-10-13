@@ -150,6 +150,7 @@ def server_split(log_paths, request_ids):
     rest = [r["total_ms"] - r["retrieve_ms"] for r in rows]
     return {
         "n": len(rows),
+        "failed_closed": sum(1 for r in rows if r.get("outcome") == "failed_closed"),
         "total_p50": percentile(tot, 50),
         "total_p95": percentile(tot, 95),
         "retrieve_p50": percentile(ret, 50),
@@ -208,16 +209,16 @@ def cmd_run(a):
 def cmd_render(a):
     runs = [json.loads(p.read_text()) for p in sorted(Path(a.dir).glob("*.json"))]
     lines = [
-        "| config | VUs | req/s | p50 ms | p95 ms | p99 ms | error rate | srv total p50 | srv retrieve p50 | "
+        "| config | VUs | req/s | p50 ms | p95 ms | p99 ms | error rate | srv fail-closed | srv total p50 | srv retrieve p50 | "
         "srv outside-retrieve p50 | leaks/results | Wilson95 upper |",
-        "|" + "---|" * 12,
+        "|" + "---|" * 13,
     ]
     for run in runs:
         for lv in run["levels"]:
             s = lv.get("server") or {}
             lines.append(
                 f"| {run['label']} | {lv['vus']} | {lv['rps']} | {lv['p50_ms']:.1f} | {lv['p95_ms']:.1f} | "
-                f"{lv['p99_ms']:.1f} | {lv['error_rate']:.2%} | {s.get('total_p50', '-')} | "
+                f"{lv['p99_ms']:.1f} | {lv['error_rate']:.2%} | {s.get('failed_closed', '-')} | {s.get('total_p50', '-')} | "
                 f"{s.get('retrieve_p50', '-')} | {s.get('outside_retrieve_p50', '-')} | "
                 f"{lv['leaks_over_results']} | {lv['leak_rate_wilson95_upper']:.2e} |"
             )
