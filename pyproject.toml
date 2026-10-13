@@ -33,12 +33,12 @@ python_version = "3.12"
 strict = true
 files = ["app", "evals"]
 mypy_path = ".:app"
-exclude = ["evals/verify_qdrant_storage.py", "evals/verify_qdrant_nested_filter.py", "evals/pdf_corpus/", "evals/load/", "evals/results/"]  # platform-only imports / archived result scripts
+exclude = ["evals/verify_qdrant_storage.py", "evals/verify_qdrant_nested_filter.py", "evals/pdf_corpus/", "evals/beir/run.py", "evals/load/", "evals/results/"]  # platform-only imports / archived result scripts
 explicit_package_bases = true
 
 [[tool.mypy.overrides]]
 # Tests: basic checking (bodies are checked, annotations not demanded).
-module = ["test_agents", "test_answer_metrics", "test_claims", "test_enronqa_eval", "test_hierarchy", "test_hierarchy_migrations", "test_http", "test_ladder", "test_leak_kit", "test_ledgers", "test_live_contract", "test_load_lib", "test_llm", "test_obs", "test_permission_rag", "test_pgvector", "test_redteam", "test_rungs", "test_scale_harness", "test_security", "test_text_to_sql", "test_underwriter"]
+module = ["test_agents", "test_answer_metrics", "test_beir_metrics", "test_claims", "test_enronqa_eval", "test_hierarchy", "test_hierarchy_migrations", "test_http", "test_ladder", "test_leak_kit", "test_ledgers", "test_live_contract", "test_load_lib", "test_llm", "test_obs", "test_permission_rag", "test_pgvector", "test_redteam", "test_rungs", "test_scale_harness", "test_security", "test_text_to_sql", "test_underwriter"]
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
 disallow_untyped_calls = false

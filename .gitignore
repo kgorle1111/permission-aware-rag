@@ -23,3 +23,7 @@ evals/enronqa/data/
 evals/pdf_corpus/data/
 .coverage
 .mypy_cache/
+
+# BEIR eval: downloaded datasets and scratch venv, never committed
+evals/beir/data/
+evals/beir/.venv/
