@@ -5,11 +5,12 @@ and scores before generation. This example uses term overlap, not BM25.
 """
 
 import re
+from typing import Any
 
 
 class ExampleAdapter:
-    def build(self, chunks):
-        self.chunks = []
+    def build(self, chunks: list[dict[str, Any]]) -> None:
+        self.chunks: list[dict[str, Any]] = []
         for chunk in chunks:
             for level in ("acl_doc", "acl_section", "acl_para"):
                 value = chunk[level]
@@ -24,7 +25,7 @@ class ExampleAdapter:
                     raise ValueError("invalid ACL")
             self.chunks.append({**chunk, "words": set(re.findall(r"[a-z0-9]+", chunk["text"].lower()))})
 
-    def retrieve(self, query, principal, k):
+    def retrieve(self, query: str, principal: dict[str, Any], k: int) -> list[dict[str, Any]]:
         # In a remote adapter, select credentials for the fixture identity here;
         # do not let the query itself supply a production identity or groups.
         scope = {"*", "user:" + principal["id"], *("group:" + g for g in principal["groups"])}
@@ -38,7 +39,7 @@ class ExampleAdapter:
                 hits.append({"id": chunk["id"], "score": score})
         return sorted(hits, key=lambda h: (-h["score"], h["id"]))[:k]
 
-    def replace_acl(self, chunk_id, levels):
+    def replace_acl(self, chunk_id: str, levels: dict[str, Any]) -> None:
         for chunk in self.chunks:
             if chunk["id"] == chunk_id:
                 chunk.update(levels)
@@ -46,5 +47,5 @@ class ExampleAdapter:
         raise ValueError("unknown chunk")
 
 
-def factory():
+def factory() -> ExampleAdapter:
     return ExampleAdapter()
