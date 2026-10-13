@@ -11,6 +11,7 @@ The model is an injected callable (question -> SQL text). Tests and evals use de
 
 import re
 from collections.abc import Callable
+from typing import Any
 
 SCHEMA_PROMPT = """Table doc_meta(doc_id text, title text, department text, data_class text, created_at date, n_chunks integer).
 One row per document the caller may read. Answer with ONE PostgreSQL SELECT over doc_meta and nothing else."""
@@ -40,7 +41,9 @@ def precheck(sql: str) -> str:
     return stmt
 
 
-def answer(rag, question: str, user: dict, llm: Callable[[str], str], *, check: bool = True) -> dict:
+def answer(
+    rag: Any, question: str, user: dict[str, Any], llm: Callable[[str], str], *, check: bool = True
+) -> dict[str, Any]:
     """question -> {"sql", "status", "rows", "truncated"[, "sqlstate"]}; every attempt is audited.
 
     `check=False` skips the pre-check so tests can prove the database alone holds the line.
@@ -71,4 +74,4 @@ def anthropic_llm(question: str) -> str:
         "system": SCHEMA_PROMPT,
         "messages": [{"role": "user", "content": question}],
     }
-    return llm._post(body, key, 30)["content"][0]["text"]
+    return str(llm._post(body, key, 30)["content"][0]["text"])

@@ -7,7 +7,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "evals" / "load"))
-from lib import Oracle, percentile, principals, wilson_upper  # noqa: E402
+from lib import Oracle, percentile, principals, wilson_upper  # type: ignore[import-not-found]  # noqa: E402  (sys.path import; evals/load is mypy-excluded)
 
 ORACLE = Oracle.from_files(ROOT / "platform/corpus/docs.json", ROOT / "platform/corpus/permissions.jsonl")
 SALARY = {"doc_id": "hr-salaries", "text": "Compensation bands: salary bands range from 90k"}
