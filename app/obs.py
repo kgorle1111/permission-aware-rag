@@ -14,6 +14,7 @@ import pathlib
 import sqlite3
 import threading
 import time
+import weakref
 import uuid
 from collections.abc import Callable, Iterator, Mapping
 from typing import Any
@@ -115,7 +116,14 @@ class Ops:
         self._mem = self._connect(":memory:") if self._path is None else None
         if self._mem is not None:
             self._mem.executescript(_SCHEMA)
+            # close the private store when this object goes away, not whenever the GC finds the connection
+            self._close_mem = weakref.finalize(self, self._mem.close)
         self._ready = self._mem is not None
+
+    def close(self) -> None:
+        """Release the private in-memory store (file-backed stores hold no open connection)."""
+        if self._mem is not None:
+            self._close_mem()
 
     @staticmethod
     def _connect(target: str) -> sqlite3.Connection:
