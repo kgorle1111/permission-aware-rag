@@ -17,3 +17,7 @@ docs/COMPETITOR_SCAN-*.md
 # Private marketing drafts and article previews; never publish automatically.
 /marketing/
 AGENTS.local.md
+
+# BEIR eval: downloaded datasets and scratch venv, never committed
+evals/beir/data/
+evals/beir/.venv/
