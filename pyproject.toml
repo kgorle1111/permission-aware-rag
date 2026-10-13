@@ -38,7 +38,7 @@ explicit_package_bases = true
 
 [[tool.mypy.overrides]]
 # Tests: basic checking (bodies are checked, annotations not demanded).
-module = ["test_agents", "test_answer_metrics", "test_audit_verify", "test_beir_metrics", "test_claims", "test_enronqa_eval", "test_hierarchy", "test_hierarchy_migrations", "test_http", "test_ladder", "test_leak_kit", "test_ledgers", "test_live_contract", "test_llm", "test_load_lib", "test_obs", "test_permission_rag", "test_pgvector", "test_pgvector_keys", "test_redteam", "test_rungs", "test_scale_harness", "test_security", "test_text_to_sql", "test_underwriter"]
+module = ["test_agents", "test_answer_metrics", "test_audit_multiprocess", "test_audit_verify","test_beir_metrics", "test_claims", "test_enronqa_eval", "test_hierarchy", "test_hierarchy_migrations", "test_http", "test_ladder", "test_leak_kit", "test_ledgers", "test_live_contract", "test_llm", "test_load_lib", "test_obs", "test_permission_rag", "test_pgvector", "test_pgvector_keys", "test_redteam", "test_rungs", "test_scale_harness", "test_security", "test_text_to_sql", "test_underwriter"]
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
 disallow_untyped_calls = false
