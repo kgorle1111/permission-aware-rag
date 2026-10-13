@@ -2,21 +2,26 @@ name: ci
 on: [push, pull_request]
 jobs:
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v10.2.0   # exact tag: setup-uv has no moving major tags since v8
         with:
           python-version: "3.12"
-      - run: pip install pytest ruff
-      - run: ruff check . && ruff format --check .
-      - run: pytest -q
+      - run: uv sync --locked --group dev --extra pg   # psycopg only so mypy can resolve pgvector_rag imports
+      - run: uv run ruff check . && uv run ruff format --check .
+      - run: uv run mypy   # strict, except the modules listed in the pyproject.toml ratchet
+      - run: uv run pytest -q --cov=. --cov-config=../pyproject.toml --cov-fail-under=75   # measured 75.58% without Postgres
         working-directory: app
-      - run: python run_evals.py   # leak gate: exits 1 on any ACL leak or recall miss
+      - run: uv run python run_evals.py   # leak gate: exits 1 on any ACL leak or recall miss
         working-directory: app
-      - run: python run_evals.py --mutants   # the gate must catch every known-leaky retriever
+      - run: uv run python run_evals.py --mutants   # the gate must catch every known-leaky retriever
         working-directory: app
-      - run: python ../evals/ladder.py --check   # baseline accepted, every negative-control rung rejected
+      - run: uv run python ../evals/ladder.py --check   # baseline accepted, every negative-control rung rejected
         working-directory: app
 
   pgvector:
@@ -49,3 +54,24 @@ jobs:
         working-directory: app
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/scale_eval
+
+  audit:
+    # known-vulnerability gate over every dependency set we ship or test with, plus a CycloneDX SBOM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10.2.0   # exact tag: setup-uv has no moving major tags since v8
+        with:
+          python-version: "3.12"
+      - run: uv export --locked --group dev --extra pg --no-hashes > root-requirements.txt
+      - run: >-
+          uvx pip-audit==2.10.1
+          -r root-requirements.txt
+          -r platform/requirements.txt -r platform/requirements-dev.txt
+          -r platform/requirements-models.txt -r platform/requirements-pdf.txt
+          --format cyclonedx-json -o sbom.cdx.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sbom
+          path: sbom.cdx.json

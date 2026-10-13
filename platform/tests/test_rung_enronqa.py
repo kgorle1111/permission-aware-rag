@@ -1,5 +1,11 @@
 """Scoring contracts of the EnronQA rung harness: the oracle must be able to fail. No models, no data."""
+import pytest
+
 from scripts import rung_enronqa as re_
+
+# The helpers reuse evals/enronqa/run.py from outside platform/. The mutation job mounts only
+# platform/, so there the file is absent; the unit job (whole repo) runs these tests.
+pytestmark = pytest.mark.skipif(not (re_.ENRON / "run.py").exists(), reason="evals/enronqa/run.py not mounted")
 
 
 def test_first_rank_is_one_based_and_none_when_absent():

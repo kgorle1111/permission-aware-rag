@@ -13,6 +13,7 @@ from permission_rag import PermissionRAG
 _spec = importlib.util.spec_from_file_location(
     "enronqa_run", pathlib.Path(__file__).resolve().parent.parent / "evals" / "enronqa" / "run.py"
 )
+assert _spec is not None and _spec.loader is not None
 eq = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(eq)
 
