@@ -29,7 +29,7 @@ GUEST = {"id": "guest", "groups": []}
 _open: list = []
 
 
-def _fresh() -> PgVectorRAG:
+def _fresh(checkpoint=None) -> PgVectorRAG:
     while _open:  # close prior test's connection so DROP TABLE can't block on its locks
         _open.pop().close()
     with psycopg.connect(ADMIN, autocommit=True) as c:
@@ -42,7 +42,7 @@ def _fresh() -> PgVectorRAG:
     KEY = setup_schema(ADMIN)
     app_dsn = psycopg.conninfo.make_conninfo(ADMIN, user="rag_app", password="rag_app")
     ingest_dsn = psycopg.conninfo.make_conninfo(ADMIN, user="rag_ingest", password="rag_ingest")
-    rag = PgVectorRAG(app_dsn, ingest_dsn, principal_key=KEY)
+    rag = PgVectorRAG(app_dsn, ingest_dsn, principal_key=KEY, audit_checkpoint_path=checkpoint)
     _open.append(rag)
     return rag
 
@@ -144,6 +144,52 @@ def test_newest_audit_entry_tamper():
     assert rag.verify_audit_chain()
     with psycopg.connect(ADMIN, autocommit=True) as conn:
         conn.execute("UPDATE audit SET line = replace(line, 'elapsed_ms', 'elapsed_mx')")
+    assert not rag.verify_audit_chain()
+
+
+def test_tail_deletion_is_caught_by_the_external_checkpoint(tmp_path):
+    """T12: with a head checkpoint kept outside the database, deleting the newest audit rows
+    (even re-chaining what is left) no longer verifies."""
+    cp = tmp_path / "audit.head"
+    rag = _fresh(cp)
+    rag.retrieve("vacation", GUEST)  # normal operation verifies
+    rag.retrieve("salary bands", BOB)
+    rag.run_sql("q", "SELECT count(*) FROM doc_meta", BOB)  # the SQL path is anchored too
+    assert rag.verify_audit_chain()
+    with psycopg.connect(
+        ADMIN, autocommit=True
+    ) as c:  # admin drops the newest row: chain still self-consistent
+        c.execute("DELETE FROM audit WHERE id = (SELECT max(id) FROM audit)")
+    assert not rag.verify_audit_chain()
+    with psycopg.connect(ADMIN, autocommit=True) as c:  # ...and then everything
+        c.execute("DELETE FROM audit")
+    assert not rag.verify_audit_chain()
+
+
+def test_tail_deletion_with_rewritten_chain_still_fails(tmp_path):
+    rag = _fresh(tmp_path / "audit.head")
+    for q in ("vacation", "policy", "payments"):
+        rag.retrieve(q, GUEST)
+    with psycopg.connect(ADMIN, autocommit=True) as c:  # delete newest, then forge a replacement tail row
+        c.execute("DELETE FROM audit WHERE id = (SELECT max(id) FROM audit)")
+        prev = c.execute("SELECT line_sha256 FROM audit ORDER BY id DESC LIMIT 1").fetchone()[0]
+        line = json.dumps({"ts": 1.0, "user": "x", "returned": [], "denied_chunks": 0, "prev_sha256": prev})
+        c.execute(
+            "INSERT INTO audit (line, line_sha256) VALUES (%s, encode(sha256(convert_to(%s, 'UTF8')), 'hex'))",
+            (line, line),
+        )
+    assert not rag.verify_audit_chain()
+
+
+def test_missing_checkpoint_fails_closed_when_configured(tmp_path):
+    cp = tmp_path / "audit.head"
+    rag = _fresh(cp)
+    assert rag.verify_audit_chain()  # nothing audited yet, nothing to anchor
+    rag.retrieve("vacation", GUEST)
+    assert rag.verify_audit_chain()
+    cp.unlink()
+    assert not rag.verify_audit_chain()
+    cp.write_text("garbage")
     assert not rag.verify_audit_chain()
 
 
