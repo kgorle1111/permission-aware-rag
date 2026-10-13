@@ -9,11 +9,12 @@ import logging
 import time
 from pathlib import Path
 
-from . import config
+from . import config, store
 from .ingest import strictest, validate_acl
 from .retrieval import clear_cache
 from .store import (ChunkACL, ChunkPolicy, SourceCheckpoint, PermissionMutation,
-                    PendingSourceCheckpoint, ChunkText, permission_transaction)
+                    PendingSourceCheckpoint, ChunkText, PermissionState,
+                    permission_transaction)
 from .vectorstore import update_doc_acls, delete_doc
 
 log = logging.getLogger("permrag")
@@ -32,6 +33,11 @@ def read_source(path: str | Path = None):
             raise ValueError("deleted must be a boolean")
         desired[doc_id] = None if row.get("deleted") else validate_acl(row.get("acl"))
     return desired
+
+
+# Separate binding: the pre-barrier peek is not a barrier-protected read, and callers that wrap
+# `read_source` to observe reconciliation phases must see only the protected one.
+_peek_source = read_source
 
 
 def _validate_desired(desired):
@@ -79,7 +85,37 @@ def _validate_mirror(session):
         raise RuntimeError("inconsistent document policy; full reingestion required")
 
 
+def _source_unchanged(s, state, source_path) -> bool:
+    """Read-only: True only when nothing is pending and the source already matches the applied SQL
+    mirror, so the poll can skip the read barrier. Any doubt (pending state, saved intents, a
+    source or mirror that fails validation, a non-JSONL backend) returns False and the full
+    barrier path runs and raises exactly as before."""
+    try:
+        if state.pending or state.rebuild_required:
+            return False
+        if s.query(PermissionMutation).first() or s.query(PendingSourceCheckpoint).first():
+            return False
+        _validate_mirror(s)
+        if source_path is None and config.PERMISSIONS_BACKEND != "jsonl":
+            return False  # kn: Drive polls keep the barrier; its cursor must advance atomically
+        desired = _validate_desired(_peek_source(source_path))
+        for row, policy in _affected_rows(s, desired):
+            _validate_policy(policy)
+            acl = desired[row.doc_id]
+            if acl is None or policy.doc_acl != acl or row.acl != strictest(
+                    strictest(acl, policy.section_acl or []), policy.paragraph_acl):
+                return False
+        return True
+    except Exception:
+        return False
+
+
 def sync_once(source_path: str | Path = None) -> list[str]:
+    # An unchanged source must not raise the barrier: that would fail in-flight queries closed.
+    with store.SessionLocal() as s:
+        state = s.get(PermissionState, 1)
+        if state is not None and _source_unchanged(s, state, source_path):
+            return []
     # Commit the barrier even if source parsing or journaling later fails.
     with permission_transaction() as (s, state):
         state.revision += 1

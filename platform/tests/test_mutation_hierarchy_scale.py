@@ -118,6 +118,10 @@ def test_superseded_bulk_sync_reports_retry_reason_and_keeps_read_barrier(client
     from app import sync
     from conftest import reingest
 
+    # A real change: an unchanged source skips the barrier this test exercises.
+    from pathlib import Path
+    from app import config
+    Path(config.PERMISSIONS_SOURCE).write_text('{"doc_id": "hr-salaries", "acl": []}\n')
     original = sync.permission_transaction
     calls = 0
 
