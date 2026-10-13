@@ -18,3 +18,4 @@ docs/COMPETITOR_SCAN-*.md
 /marketing/
 platform/embed_cache.sqlite
 AGENTS.local.md
+evals/enronqa/data/
