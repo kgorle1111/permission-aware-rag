@@ -134,6 +134,65 @@ CREATE POLICY chunks_read ON chunks FOR SELECT
        AND acl_section && (SELECT rag_principals())
        AND acl_para && (SELECT rag_principals()));
 DROP POLICY IF EXISTS chunks_ingest ON chunks;
+-- denied_chunks (audit only): chunks per distinct ACL triple, kept by statement triggers on chunks.
+-- rag_search sums the groups the caller cannot read instead of scanning every chunk row (the old
+-- count(*) was about half of each query). h = sha256 of the triple: btree keys on arrays are size-limited.
+-- kn: one row per distinct ACL triple; a corpus with one triple per chunk gets no pruning, only a
+-- narrower scan (measured: still faster than count(*) over chunks at 100k). Ceiling is ROADMAP B21.
+CREATE TABLE IF NOT EXISTS acl_groups (
+    h text PRIMARY KEY,
+    acl_doc text[] NOT NULL,
+    acl_section text[] NOT NULL,
+    acl_para text[] NOT NULL,
+    n integer NOT NULL CHECK (n >= 0)  -- same type as corpus_stats.chunk_count
+);
+CREATE OR REPLACE FUNCTION rag_acl_key(a text[], b text[], c text[]) RETURNS text
+LANGUAGE sql IMMUTABLE PARALLEL SAFE SET search_path = pg_catalog, public AS $fn$
+    SELECT encode(sha256(convert_to(a::text || '|' || b::text || '|' || c::text, 'UTF8')), 'hex')
+$fn$;
+-- Runs as the schema owner so the ingest role needs no grant on acl_groups. It reads only the
+-- transition tables of the statement that fired it and writes only acl_groups.
+CREATE OR REPLACE FUNCTION rag_acl_groups_maintain() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public AS $fn$
+BEGIN
+    IF TG_OP = 'TRUNCATE' THEN
+        DELETE FROM acl_groups;
+        RETURN NULL;
+    END IF;
+    IF TG_OP IN ('DELETE', 'UPDATE') THEN
+        UPDATE acl_groups g SET n = g.n - o.c::integer
+          FROM (SELECT rag_acl_key(acl_doc, acl_section, acl_para) AS h, count(*) AS c
+                  FROM old_rows GROUP BY 1) o
+         WHERE g.h = o.h;
+        DELETE FROM acl_groups WHERE n = 0;
+    END IF;
+    IF TG_OP IN ('INSERT', 'UPDATE') THEN
+        INSERT INTO acl_groups (h, acl_doc, acl_section, acl_para, n)
+            SELECT rag_acl_key(acl_doc, acl_section, acl_para), acl_doc, acl_section, acl_para, count(*)::integer
+              FROM new_rows GROUP BY 1, 2, 3, 4
+            ON CONFLICT (h) DO UPDATE SET n = acl_groups.n + EXCLUDED.n;
+    END IF;
+    RETURN NULL;
+END
+$fn$;
+REVOKE ALL ON FUNCTION rag_acl_groups_maintain() FROM PUBLIC;
+DROP TRIGGER IF EXISTS acl_groups_ins ON chunks;
+DROP TRIGGER IF EXISTS acl_groups_del ON chunks;
+DROP TRIGGER IF EXISTS acl_groups_upd ON chunks;
+DROP TRIGGER IF EXISTS acl_groups_trunc ON chunks;
+CREATE TRIGGER acl_groups_ins AFTER INSERT ON chunks REFERENCING NEW TABLE AS new_rows
+    FOR EACH STATEMENT EXECUTE FUNCTION rag_acl_groups_maintain();
+CREATE TRIGGER acl_groups_del AFTER DELETE ON chunks REFERENCING OLD TABLE AS old_rows
+    FOR EACH STATEMENT EXECUTE FUNCTION rag_acl_groups_maintain();
+CREATE TRIGGER acl_groups_upd AFTER UPDATE ON chunks REFERENCING OLD TABLE AS old_rows NEW TABLE AS new_rows
+    FOR EACH STATEMENT EXECUTE FUNCTION rag_acl_groups_maintain();
+CREATE TRIGGER acl_groups_trunc AFTER TRUNCATE ON chunks
+    FOR EACH STATEMENT EXECUTE FUNCTION rag_acl_groups_maintain();
+-- Existing databases: seed once. Needs a role that bypasses RLS (the setup role, like the doc_meta
+-- backfill); if it cannot see the rows it inserts nothing and rag_search falls back to count(*).
+INSERT INTO acl_groups (h, acl_doc, acl_section, acl_para, n)
+    SELECT rag_acl_key(acl_doc, acl_section, acl_para), acl_doc, acl_section, acl_para, count(*)::integer
+      FROM chunks WHERE NOT EXISTS (SELECT 1 FROM acl_groups) GROUP BY 1, 2, 3, 4;
 -- T19: the app role can't read chunks or write audit rows directly. rag_search (owned by a
 -- non-superuser, so RLS still applies inside it) verifies the token, searches, and writes the
 -- audit row itself, recording exactly the ids it returns.
@@ -145,25 +204,37 @@ DECLARE
     t0 timestamptz := clock_timestamp();
     uid text;
     ids text[];
+    p text[];
     visible bigint;
+    denied bigint;
+    grouped bigint;
     total integer;
     prev text;
     entry text;
 BEGIN
     PERFORM set_config('rag.token', coalesce(token, ''), true);
-    SELECT substr(x, 6) INTO uid FROM unnest(rag_principals()) AS x WHERE x LIKE 'user:%' LIMIT 1;
+    p := rag_principals();
+    SELECT substr(x, 6) INTO uid FROM unnest(p) AS x WHERE x LIKE 'user:%' LIMIT 1;
     -- top-k by distance, then drop non-positive scores (same semantics as the old client path)
     SELECT coalesce(array_agg(t.cid ORDER BY t.d), ARRAY[]::text[]) INTO ids
       FROM (SELECT c.id AS cid, c.embedding <=> qvec AS d FROM chunks c
             ORDER BY c.embedding <=> qvec LIMIT greatest(least(k, 50), 1)) t
      WHERE 1 - t.d > 0;
-    SELECT count(*) INTO visible FROM chunks;
+    -- denied_chunks = every chunk the caller cannot read (same meaning as PermissionRAG). Same predicate
+    -- as the chunks_read policy, applied to the per-triple counts; written to audit, never returned.
+    SELECT coalesce(sum(g.n) FILTER (WHERE NOT (g.acl_doc && p AND g.acl_section && p AND g.acl_para && p)), 0),
+           coalesce(sum(g.n), 0) INTO denied, grouped FROM acl_groups g;
     SELECT s.chunk_count INTO total FROM corpus_stats s;
+    IF grouped <> total THEN  -- groups drifted from the table: take the slow exact path, never a wrong count
+        RAISE LOG 'acl_groups (%) disagrees with corpus_stats (%); counting chunks directly', grouped, total;
+        SELECT count(*) INTO visible FROM chunks;
+        denied := total - visible;
+    END IF;
     PERFORM pg_advisory_xact_lock(hashtext('rag_audit'));  -- serialise the chain
     SELECT a.line_sha256 INTO prev FROM audit a ORDER BY a.id DESC LIMIT 1;
     entry := json_build_object(
         'ts', extract(epoch FROM clock_timestamp()), 'user', uid, 'query', '[redacted]',
-        'returned', to_json(ids), 'denied_chunks', total - visible,
+        'returned', to_json(ids), 'denied_chunks', denied,
         'elapsed_ms', round((extract(epoch FROM clock_timestamp() - t0) * 1000)::numeric, 2),
         'prev_sha256', coalesce(prev, ''))::text;
     INSERT INTO audit (line, line_sha256) VALUES (entry, encode(sha256(convert_to(entry, 'UTF8')), 'hex'));
@@ -280,6 +351,8 @@ REVOKE INSERT ON audit FROM {app};
 REVOKE USAGE ON SEQUENCE audit_id_seq FROM {app};
 GRANT SELECT ON audit TO {app};
 GRANT SELECT ON chunks, corpus_stats TO {definer};
+REVOKE ALL ON acl_groups FROM {app}, {ingest}, {sql};
+GRANT SELECT ON acl_groups TO {definer};
 GRANT SELECT, INSERT ON audit TO {definer};
 GRANT USAGE ON SEQUENCE audit_id_seq TO {definer};
 GRANT EXECUTE ON FUNCTION rag_principals() TO {ingest}, {definer};
