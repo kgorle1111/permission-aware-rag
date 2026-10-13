@@ -52,7 +52,11 @@ def test_tenant_partition_is_deterministic_seeded_and_balanced():
 
 
 def test_query_tenant_majority_ties_and_restrict():
-    t = {"a": 2, "b": 2, "c": 1, "d": 1, "e": 3}.get
+    tenants = {"a": 2, "b": 2, "c": 1, "d": 1, "e": 3}
+
+    def t(doc: str) -> int:
+        return tenants[doc]
+
     assert query_tenant({"a": 1, "b": 1, "c": 1}, t) == 2
     assert query_tenant({"c": 1, "a": 1}, t) == 1  # tie -> lowest tenant id
     assert query_tenant({"a": 0}, t) is None

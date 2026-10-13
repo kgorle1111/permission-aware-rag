@@ -1,0 +1,446 @@
+{
+  "meta": {
+    "date": "2026-10-10",
+    "fastembed": "0.9.0",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "python": "3.12.13",
+    "qdrant": "1.19.1"
+  },
+  "rungs": [
+    {
+      "chunks": 37,
+      "config": {
+        "embed_backend": "hash",
+        "min_score": 0.1,
+        "rerank_min_score": -10.0,
+        "reranker": "none",
+        "sparse_backend": "none"
+      },
+      "existing_suites": {
+        "failed": 0,
+        "failed_tests": [],
+        "passed": 13
+      },
+      "fail_closed_events": 0,
+      "ingest_s": 0.05,
+      "invariance": {
+        "checks": 321,
+        "diffs": 0,
+        "users": [
+          "guest",
+          "alice",
+          "bob"
+        ]
+      },
+      "leaks": {
+        "checks": 535,
+        "leaks": 0
+      },
+      "out_of_corpus": {
+        "false_positive_rate": 0.5,
+        "mean_results": 0.8,
+        "queries": 50
+      },
+      "quality": {
+        "lexical": {
+          "answered": 1.0,
+          "hit@1": 1.0,
+          "hit@4": 1.0,
+          "latency_ms": {
+            "n": 15,
+            "p50": 3.35,
+            "p95": 11.79
+          },
+          "max_shared_stems": 8,
+          "mrr": 1.0,
+          "n": 15
+        },
+        "paraphrase": {
+          "answered": 0.457,
+          "hit@1": 0.0,
+          "hit@4": 0.0,
+          "latency_ms": {
+            "n": 35,
+            "p50": 2.45,
+            "p95": 6.42
+          },
+          "max_shared_stems": 0,
+          "mrr": 0.0,
+          "n": 35
+        }
+      },
+      "rung": "baseline"
+    },
+    {
+      "chunks": 37,
+      "config": {
+        "embed_backend": "fastembed",
+        "min_score": 0.1,
+        "rerank_min_score": -10.0,
+        "reranker": "none",
+        "sparse_backend": "none"
+      },
+      "existing_suites": {
+        "failed": 5,
+        "failed_tests": [
+          "tests/test_revocation.py::test_doc_revocation_propagates_under_bound",
+          "tests/test_revocation.py::test_group_change_loses_all_group_content",
+          "tests/test_revocation.py::test_revocation_also_kills_cached_answers",
+          "tests/test_side_channels.py::test_denied_count_in_audit",
+          "tests/test_side_channels.py::test_forbidden_topic_indistinguishable_from_nonexistent"
+        ],
+        "passed": 8
+      },
+      "fail_closed_events": 0,
+      "ingest_s": 0.31,
+      "invariance": {
+        "checks": 321,
+        "diffs": 0,
+        "users": [
+          "guest",
+          "alice",
+          "bob"
+        ]
+      },
+      "leaks": {
+        "checks": 535,
+        "leaks": 0
+      },
+      "out_of_corpus": {
+        "false_positive_rate": 1.0,
+        "mean_results": 4.0,
+        "queries": 50
+      },
+      "quality": {
+        "lexical": {
+          "answered": 1.0,
+          "hit@1": 1.0,
+          "hit@4": 1.0,
+          "latency_ms": {
+            "n": 15,
+            "p50": 5.87,
+            "p95": 9.51
+          },
+          "max_shared_stems": 8,
+          "mrr": 1.0,
+          "n": 15
+        },
+        "paraphrase": {
+          "answered": 1.0,
+          "hit@1": 0.771,
+          "hit@4": 0.943,
+          "latency_ms": {
+            "n": 35,
+            "p50": 5.69,
+            "p95": 12.4
+          },
+          "max_shared_stems": 0,
+          "mrr": 0.84,
+          "n": 35
+        }
+      },
+      "rung": "dense_floor_0.1"
+    },
+    {
+      "chunks": 37,
+      "config": {
+        "embed_backend": "fastembed",
+        "min_score": 0.55,
+        "rerank_min_score": -10.0,
+        "reranker": "none",
+        "sparse_backend": "none"
+      },
+      "existing_suites": {
+        "failed": 3,
+        "failed_tests": [
+          "tests/test_revocation.py::test_doc_revocation_propagates_under_bound",
+          "tests/test_revocation.py::test_group_change_loses_all_group_content",
+          "tests/test_side_channels.py::test_denied_count_in_audit"
+        ],
+        "passed": 10
+      },
+      "fail_closed_events": 0,
+      "ingest_s": 0.28,
+      "invariance": {
+        "checks": 321,
+        "diffs": 0,
+        "users": [
+          "guest",
+          "alice",
+          "bob"
+        ]
+      },
+      "leaks": {
+        "checks": 535,
+        "leaks": 0
+      },
+      "out_of_corpus": {
+        "false_positive_rate": 0.0,
+        "mean_results": 0.0,
+        "queries": 50
+      },
+      "quality": {
+        "lexical": {
+          "answered": 1.0,
+          "hit@1": 1.0,
+          "hit@4": 1.0,
+          "latency_ms": {
+            "n": 15,
+            "p50": 4.42,
+            "p95": 4.77
+          },
+          "max_shared_stems": 8,
+          "mrr": 1.0,
+          "n": 15
+        },
+        "paraphrase": {
+          "answered": 0.971,
+          "hit@1": 0.743,
+          "hit@4": 0.914,
+          "latency_ms": {
+            "n": 35,
+            "p50": 5.45,
+            "p95": 6.96
+          },
+          "max_shared_stems": 0,
+          "mrr": 0.812,
+          "n": 35
+        }
+      },
+      "rung": "dense"
+    },
+    {
+      "chunks": 37,
+      "config": {
+        "embed_backend": "fastembed",
+        "min_score": 0.55,
+        "rerank_min_score": -10.0,
+        "reranker": "none",
+        "sparse_backend": "splade"
+      },
+      "existing_suites": {
+        "failed": 3,
+        "failed_tests": [
+          "tests/test_revocation.py::test_doc_revocation_propagates_under_bound",
+          "tests/test_revocation.py::test_group_change_loses_all_group_content",
+          "tests/test_side_channels.py::test_denied_count_in_audit"
+        ],
+        "passed": 10
+      },
+      "fail_closed_events": 0,
+      "ingest_s": 1.65,
+      "invariance": {
+        "checks": 321,
+        "diffs": 0,
+        "users": [
+          "guest",
+          "alice",
+          "bob"
+        ]
+      },
+      "leaks": {
+        "checks": 535,
+        "leaks": 0
+      },
+      "out_of_corpus": {
+        "false_positive_rate": 0.0,
+        "mean_results": 0.0,
+        "queries": 50
+      },
+      "quality": {
+        "lexical": {
+          "answered": 1.0,
+          "hit@1": 1.0,
+          "hit@4": 1.0,
+          "latency_ms": {
+            "n": 15,
+            "p50": 31.63,
+            "p95": 52.97
+          },
+          "max_shared_stems": 8,
+          "mrr": 1.0,
+          "n": 15
+        },
+        "paraphrase": {
+          "answered": 0.971,
+          "hit@1": 0.771,
+          "hit@4": 0.914,
+          "latency_ms": {
+            "n": 35,
+            "p50": 42.69,
+            "p95": 56.36
+          },
+          "max_shared_stems": 0,
+          "mrr": 0.817,
+          "n": 35
+        }
+      },
+      "rung": "hybrid"
+    },
+    {
+      "chunks": 37,
+      "config": {
+        "embed_backend": "fastembed",
+        "min_score": 0.55,
+        "rerank_min_score": -1000.0,
+        "reranker": "fastembed",
+        "sparse_backend": "splade"
+      },
+      "existing_suites": {
+        "failed": 3,
+        "failed_tests": [
+          "tests/test_revocation.py::test_doc_revocation_propagates_under_bound",
+          "tests/test_revocation.py::test_group_change_loses_all_group_content",
+          "tests/test_side_channels.py::test_denied_count_in_audit"
+        ],
+        "passed": 10
+      },
+      "fail_closed_events": 0,
+      "ingest_s": 2.99,
+      "invariance": {
+        "checks": 321,
+        "diffs": 0,
+        "users": [
+          "guest",
+          "alice",
+          "bob"
+        ]
+      },
+      "leaks": {
+        "checks": 535,
+        "leaks": 0
+      },
+      "out_of_corpus": {
+        "false_positive_rate": 0.0,
+        "mean_results": 0.0,
+        "queries": 50
+      },
+      "quality": {
+        "lexical": {
+          "answered": 1.0,
+          "hit@1": 1.0,
+          "hit@4": 1.0,
+          "latency_ms": {
+            "n": 15,
+            "p50": 135.67,
+            "p95": 333.74
+          },
+          "max_shared_stems": 8,
+          "mrr": 1.0,
+          "n": 15
+        },
+        "paraphrase": {
+          "answered": 0.971,
+          "hit@1": 0.714,
+          "hit@4": 0.886,
+          "latency_ms": {
+            "n": 35,
+            "p50": 83.06,
+            "p95": 227.67
+          },
+          "max_shared_stems": 0,
+          "mrr": 0.795,
+          "n": 35
+        }
+      },
+      "rung": "hybrid_rerank_no_floor"
+    },
+    {
+      "chunks": 37,
+      "concurrency": {
+        "callers": 20,
+        "modes": {
+          "asyncio": {
+            "latency_ms": {
+              "n": 160,
+              "p50": 970.72,
+              "p95": 2097.4
+            },
+            "round_wall_ms_p50": 2024.7,
+            "wrong_or_empty_responses": 0
+          },
+          "sequential": {
+            "latency_ms": {
+              "n": 160,
+              "p50": 97.24,
+              "p95": 401.29
+            },
+            "round_wall_ms_p50": 2824.7,
+            "wrong_or_empty_responses": 0
+          },
+          "threadpool_sync": {
+            "latency_ms": {
+              "n": 160,
+              "p50": 884.94,
+              "p95": 2093.33
+            },
+            "round_wall_ms_p50": 2021.9,
+            "wrong_or_empty_responses": 0
+          }
+        },
+        "rounds": 8
+      },
+      "config": {
+        "embed_backend": "fastembed",
+        "min_score": 0.55,
+        "rerank_min_score": -10.0,
+        "reranker": "fastembed",
+        "sparse_backend": "splade"
+      },
+      "existing_suites": {
+        "failed": 0,
+        "failed_tests": [],
+        "passed": 13
+      },
+      "fail_closed_events": 0,
+      "ingest_s": 3.0,
+      "invariance": {
+        "checks": 321,
+        "diffs": 0,
+        "users": [
+          "guest",
+          "alice",
+          "bob"
+        ]
+      },
+      "leaks": {
+        "checks": 535,
+        "leaks": 0
+      },
+      "out_of_corpus": {
+        "false_positive_rate": 0.0,
+        "mean_results": 0.0,
+        "queries": 50
+      },
+      "quality": {
+        "lexical": {
+          "answered": 1.0,
+          "hit@1": 1.0,
+          "hit@4": 1.0,
+          "latency_ms": {
+            "n": 15,
+            "p50": 53.52,
+            "p95": 88.17
+          },
+          "max_shared_stems": 8,
+          "mrr": 1.0,
+          "n": 15
+        },
+        "paraphrase": {
+          "answered": 0.714,
+          "hit@1": 0.629,
+          "hit@4": 0.686,
+          "latency_ms": {
+            "n": 35,
+            "p50": 124.4,
+            "p95": 294.48
+          },
+          "max_shared_stems": 0,
+          "mrr": 0.657,
+          "n": 35
+        }
+      },
+      "rung": "hybrid_rerank"
+    }
+  ]
+}
