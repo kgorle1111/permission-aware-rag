@@ -54,3 +54,13 @@ write (no platform code changed); `curl localhost:8093/__timings?reset=1` after 
 
 Caveats: 12-chunk synthetic corpus, one laptop, client and server share the machine, single run
 per cell. Orders of magnitude, not capacity planning.
+
+## Reading error rates
+
+A fail-closed request (for example SQLite `database is locked` after its 5 s busy timeout) returns the
+canonical empty body with HTTP 200, so the client cannot see it. The client `error rate` therefore only
+counts transport errors, non-200 and `source: unavailable`; count `"outcome": "failed_closed"` lines in
+the server log (`run.py` prints them as `srv fail-closed` when `--server-logs` is given).
+
+`inproc_bench.py` (run from `platform/` in the same environment) is the in-process A/B that separates the
+SQLite write lock from per-process CPU/GIL limits.
