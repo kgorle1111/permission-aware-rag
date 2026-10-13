@@ -245,8 +245,13 @@ over all requests). It is computed in process, so it resets on restart (ROADMAP 
 server projects a worst case (all input at ~4 chars per token plus the full 600-token output); if
 spent-so-far plus that projection would pass the cap, the call is skipped and the response is
 retrieval-only with the note "Daily LLM budget reached", outcome `llm_fallback`. The count
-resets at UTC midnight. The check is not atomic (ROADMAP B13), so concurrent calls can overshoot
-by one call each.
+resets at UTC midnight. The cap is a reservation: the projected worst case is held atomically
+before the call and swapped for the actual cost afterwards (released if the call fails or bills
+nothing), so concurrent calls cannot overshoot it. State lives in a SQLite file shared by every
+server process on the host: `OPS_DB_PATH=<file>` (default `app/ops.sqlite`, gitignored; WAL mode).
+A reservation whose process died expires after 5 minutes. Windows works for this file; several
+hosts do not share it (ROADMAP B13). If the file cannot be opened or written the server errors
+rather than spending without a cap.
 
 Red-team suite: `platform/tests/redteam/attacks.json` holds 89 attacks (prompt injection incl. encoded,
 nested and role-play variants, system-prompt extraction, `</document>` breakout, document-borne

@@ -6,8 +6,10 @@ never pass it. The workers are module-level so multiprocessing's spawn start met
 
 import datetime as dt
 import multiprocessing as mp
+import pathlib
 import sqlite3
 import threading
+from collections.abc import Callable
 
 import obs
 import pytest
@@ -46,7 +48,9 @@ def _run_threads(path: str, actual: float, workers: int = 4) -> int:
 
 
 @pytest.mark.parametrize("runner", [_run_threads, _run_processes])
-def test_concurrent_reservations_never_pass_the_cap(tmp_path, runner):
+def test_concurrent_reservations_never_pass_the_cap(
+    tmp_path: pathlib.Path, runner: Callable[[str, float], int]
+) -> None:
     path = str(tmp_path / "ops.sqlite")
     won = runner(path, PROJECTED)
     spent = obs.Ops(BUDGET, db_path=path).spent_today()
@@ -54,7 +58,9 @@ def test_concurrent_reservations_never_pass_the_cap(tmp_path, runner):
 
 
 @pytest.mark.parametrize("runner", [_run_threads, _run_processes])
-def test_cheaper_settlement_frees_capacity_but_never_passes_the_cap(tmp_path, runner):
+def test_cheaper_settlement_frees_capacity_but_never_passes_the_cap(
+    tmp_path: pathlib.Path, runner: Callable[[str, float], int]
+) -> None:
     path = str(tmp_path / "ops.sqlite")
     won = runner(path, 0.4)
     spent = obs.Ops(BUDGET, db_path=path).spent_today()
@@ -62,7 +68,7 @@ def test_cheaper_settlement_frees_capacity_but_never_passes_the_cap(tmp_path, ru
     assert spent > BUDGET - PROJECTED  # stopped only when one more projection no longer fits
 
 
-def test_release_returns_the_reservation():
+def test_release_returns_the_reservation() -> None:
     ops = obs.Ops(1.0)
     token = ops.reserve(1.0)
     assert token is not None and ops.reserve(0.01) is None  # held
@@ -70,7 +76,7 @@ def test_release_returns_the_reservation():
     assert ops.spent_today() == 0.0 and ops.reserve(1.0) is not None
 
 
-def test_a_crashed_reservation_expires():
+def test_a_crashed_reservation_expires() -> None:
     clock = [dt.datetime(2026, 10, 10, 12, 0, tzinfo=dt.UTC)]
     ops = obs.Ops(1.0, clock=lambda: clock[0])
     assert ops.reserve(1.0) is not None  # the holder dies without settling or releasing
@@ -79,7 +85,7 @@ def test_a_crashed_reservation_expires():
     assert ops.reserve(0.5) is not None
 
 
-def test_settling_an_expired_reservation_still_books_the_spend():
+def test_settling_an_expired_reservation_still_books_the_spend() -> None:
     clock = [dt.datetime(2026, 10, 10, 12, 0, tzinfo=dt.UTC)]
     ops = obs.Ops(5.0, clock=lambda: clock[0])
     token = ops.reserve(1.0)
@@ -90,7 +96,7 @@ def test_settling_an_expired_reservation_still_books_the_spend():
     assert ops.spent_today() == 0.7  # the money was spent whether or not the hold survived
 
 
-def test_spend_survives_a_new_instance_and_resets_at_utc_midnight(tmp_path):
+def test_spend_survives_a_new_instance_and_resets_at_utc_midnight(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "ops.sqlite"
     clock = [dt.datetime(2026, 10, 10, 23, 59, tzinfo=dt.UTC)]
     first = obs.Ops(5.0, clock=lambda: clock[0], db_path=path)
@@ -102,7 +108,7 @@ def test_spend_survives_a_new_instance_and_resets_at_utc_midnight(tmp_path):
     assert first.spent_today() == 0.0
 
 
-def test_store_is_wal_and_a_corrupt_file_fails_loudly(tmp_path):
+def test_store_is_wal_and_a_corrupt_file_fails_loudly(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "ops.sqlite"
     obs.Ops(1.0, db_path=path).spent_today()
     assert sqlite3.connect(path).execute("PRAGMA journal_mode").fetchone() == ("wal",)
@@ -112,6 +118,6 @@ def test_store_is_wal_and_a_corrupt_file_fails_loudly(tmp_path):
         obs.Ops(1.0, db_path=bad).reserve(0.1)  # a cap that cannot be enforced must not silently allow spend
 
 
-def test_db_path_is_configurable_with_a_gitignored_default():
+def test_db_path_is_configurable_with_a_gitignored_default() -> None:
     assert str(obs.ops_db_path({"OPS_DB_PATH": "/x/y.sqlite"})) == "/x/y.sqlite"
     assert obs.ops_db_path({}).name == "ops.sqlite"

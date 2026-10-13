@@ -266,6 +266,8 @@ def test_ops_summary_exact_values_from_seeded_records():
     def add(outcome, ms, cost):
         rec = obs.new_record("/ask")
         rec.update(outcome=outcome, total_ms=ms, est_cost_usd=cost)
+        if cost:
+            ops.settle(ops.reserve(cost), cost)  # spend is booked by the reservation, stats by record()
         ops.record(rec)
 
     for ms, cost in [(100, 0.001), (200, 0.002), (300, 0.003), (400, 0.004)]:
@@ -278,7 +280,7 @@ def test_ops_summary_exact_values_from_seeded_records():
     assert ops.summary() == {
         "requests": 8,
         "latency_ms": {"p50": 200, "p95": 1000},  # served only: 50,100,200,300,400,1000
-        "cost_per_day_usd": {"2026-10-10": 0.01, "2026-10-11": 0.0},
+        "cost_per_day_usd": {"2026-10-10": 0.01},
         "outcomes": {
             "bad_request": {"count": 1, "rate": 0.125},
             "failed_closed": {"count": 1, "rate": 0.125},
@@ -386,10 +388,8 @@ def test_spend_accumulates_then_blocks_then_resets_at_utc_midnight(api, caplog, 
 def test_non_utc_clock_still_resets_on_utc_day(api):
     ops = obs.Ops(1.0, clock=api.clock)
     ist = dt.timezone(dt.timedelta(hours=5, minutes=30))
-    rec = obs.new_record("/ask")
-    rec.update(outcome="ok", est_cost_usd=0.5)
     api.clock.now = dt.datetime(2026, 10, 11, 5, 29, tzinfo=ist)  # 23:59 UTC on the 10th
-    ops.record(rec)
+    ops.settle(ops.reserve(0.5), 0.5)
     api.clock.now = dt.datetime(2026, 10, 11, 5, 30, tzinfo=ist)  # 00:00 UTC on the 11th
     assert ops.spent_today() == 0.0 and ops.summary()["cost_per_day_usd"] == {"2026-10-10": 0.5}
 
