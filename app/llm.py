@@ -22,6 +22,7 @@ import re
 import time
 import urllib.error
 import urllib.request
+from typing import Any
 
 API_URL = "https://api.anthropic.com/v1/messages"
 # ponytail: smallest tier; grounded Q&A over supplied context needs no bigger model.
@@ -77,17 +78,19 @@ class ApiError(RuntimeError):
         self.code, self.detail = code, detail
 
 
-def _delay(attempt: int, retry_after: str | None, rng) -> float:
+def _delay(attempt: int, retry_after: str | None, rng: Any) -> float:
     """Full-jitter exponential backoff; a numeric Retry-After (seconds) wins, capped."""
     try:
         if retry_after is not None:
-            return min(max(float(retry_after), 0.0), BACKOFF_CAP_S)
+            return float(min(max(float(retry_after), 0.0), BACKOFF_CAP_S))
     except ValueError:
         pass  # HTTP-date form is not honoured; fall through to jitter
-    return rng.uniform(0, min(BACKOFF_CAP_S, BACKOFF_BASE_S * 2 ** (attempt - 1)))
+    return float(rng.uniform(0, min(BACKOFF_CAP_S, BACKOFF_BASE_S * 2 ** (attempt - 1))))
 
 
-def _send(body: dict, key: str, deadline: float, sleep, rng, clock) -> dict:
+def _send(
+    body: dict[str, Any], key: str, deadline: float, sleep: Any, rng: Any, clock: Any
+) -> dict[str, Any]:
     req = urllib.request.Request(
         API_URL,
         json.dumps(body).encode(),
@@ -97,7 +100,8 @@ def _send(body: dict, key: str, deadline: float, sleep, rng, clock) -> dict:
         retry_after = None
         try:
             with urllib.request.urlopen(req, timeout=round(deadline - clock(), 3)) as r:
-                return json.load(r)
+                result: dict[str, Any] = json.load(r)
+                return result
         except urllib.error.HTTPError as e:
             detail = e.read().decode(errors="replace")[:500]
             err: Exception = ApiError(e.code, detail)
@@ -115,7 +119,9 @@ def _send(body: dict, key: str, deadline: float, sleep, rng, clock) -> dict:
     raise AssertionError("unreachable")  # pragma: no cover
 
 
-def _post(body: dict, key: str, timeout: float, sleep=None, rng=None, *, clock=None) -> dict:
+def _post(
+    body: dict[str, Any], key: str, timeout: float, sleep: Any = None, rng: Any = None, *, clock: Any = None
+) -> dict[str, Any]:
     sleep, rng, clock = sleep or time.sleep, rng or random, clock or time.monotonic
     deadline = clock() + timeout
     try:
@@ -144,7 +150,7 @@ def uncited_claims(answer: str, doc_ids: set[str]) -> list[str]:
     return flagged
 
 
-def ask(question: str, chunks: list[dict], timeout: float = 60) -> dict | None:
+def ask(question: str, chunks: list[dict[str, Any]], timeout: float = 60) -> dict[str, Any] | None:
     """Return {"answer", "usage", "unverified_citations", "uncited_claims"} or None if no ANTHROPIC_API_KEY is set."""
     key = os.environ.get("ANTHROPIC_API_KEY")
     if not key:

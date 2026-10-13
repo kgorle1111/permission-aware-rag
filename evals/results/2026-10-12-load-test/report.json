@@ -1,0 +1,1005 @@
+{
+ "machine": {
+  "cpu": "Apple M3 Max",
+  "cores": 16,
+  "os": "macOS-26.6.2-arm64-arm-64bit",
+  "client_python": "3.12.4",
+  "host_load_average_during_runs": "8 to 39 (shared with other jobs)"
+ },
+ "config": {
+  "python_server": "3.12.13",
+  "packages": {
+   "fastapi": "0.143.0",
+   "uvicorn": "0.54.0",
+   "sqlalchemy": "2.1.4",
+   "qdrant-client": "1.19.1",
+   "pyjwt": "2.15.1",
+   "pydantic": "2.14.1",
+   "sqlite": "3.53.1"
+  },
+  "env": {
+   "EMBED_BACKEND": "hash",
+   "ANTHROPIC_API_KEY": "unset",
+   "DATABASE_URL": "sqlite file (default engine)",
+   "QDRANT_PATH": "embedded local mode",
+   "SYNC_INTERVAL_S": 10,
+   "TOP_K": 4,
+   "MIN_SCORE": 0.1,
+   "CACHE_TTL_S": 300,
+   "uvicorn": "defaults, 1 process each"
+  },
+  "corpus": "platform/corpus/docs.json, 12 chunks, 6 documents",
+  "personas": 10,
+  "queries": 10,
+  "seed": 7,
+  "warmup_s": 5,
+  "main_matrix_duration_s": 60,
+  "ab_matrix_duration_s": 30
+ },
+ "main_matrix": [
+  {
+   "label": "1worker-repeated-queries",
+   "mode": "hit",
+   "servers": 1,
+   "warmup_s": 5,
+   "seed": 7,
+   "levels": [
+    {
+     "vus": 1,
+     "requests": 9181,
+     "duration_s": 60,
+     "rps": 153.0,
+     "p50_ms": 5.459291991428472,
+     "p95_ms": 11.947834005695768,
+     "p99_ms": 30.726707991561852,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 4620,
+     "mean_results": 0.5,
+     "responses_checked": 4620,
+     "leaked_results": 0,
+     "leaks_over_results": "0/4620",
+     "leak_rate_wilson95_upper": 0.000831,
+     "client_cpu_s": 3.8,
+     "server": {
+      "n": 9181,
+      "total_p50": 1.7,
+      "total_p95": 4.0,
+      "retrieve_p50": 0.0,
+      "retrieve_p95": 0.0,
+      "outside_retrieve_p50": 1.7,
+      "outside_retrieve_p95": 4.0
+     }
+    },
+    {
+     "vus": 5,
+     "requests": 12610,
+     "duration_s": 60,
+     "rps": 210.2,
+     "p50_ms": 18.052375002298504,
+     "p95_ms": 54.35087499790825,
+     "p99_ms": 128.33787500858307,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 7009,
+     "mean_results": 0.56,
+     "responses_checked": 6520,
+     "leaked_results": 0,
+     "leaks_over_results": "0/7009",
+     "leak_rate_wilson95_upper": 0.000548,
+     "client_cpu_s": 5.1,
+     "server": {
+      "n": 12610,
+      "total_p50": 4.3,
+      "total_p95": 28.8,
+      "retrieve_p50": 0.0,
+      "retrieve_p95": 0.0,
+      "outside_retrieve_p50": 4.3,
+      "outside_retrieve_p95": 28.5
+     }
+    },
+    {
+     "vus": 10,
+     "requests": 32856,
+     "duration_s": 60,
+     "rps": 547.6,
+     "p50_ms": 4.154042006121017,
+     "p95_ms": 65.59158398886211,
+     "p99_ms": 226.46945899759885,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 19328,
+     "mean_results": 0.59,
+     "responses_checked": 17958,
+     "leaked_results": 0,
+     "leaks_over_results": "0/19328",
+     "leak_rate_wilson95_upper": 0.000199,
+     "client_cpu_s": 6.2,
+     "server": {
+      "n": 32856,
+      "total_p50": 1.6,
+      "total_p95": 61.7,
+      "retrieve_p50": 0.0,
+      "retrieve_p95": 0.0,
+      "outside_retrieve_p50": 1.6,
+      "outside_retrieve_p95": 61.7
+     }
+    },
+    {
+     "vus": 25,
+     "requests": 30783,
+     "duration_s": 60,
+     "rps": 513.0,
+     "p50_ms": 17.520374996820465,
+     "p95_ms": 155.23737500188872,
+     "p99_ms": 649.0866250096587,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 18097,
+     "mean_results": 0.59,
+     "responses_checked": 16862,
+     "leaked_results": 0,
+     "leaks_over_results": "0/18097",
+     "leak_rate_wilson95_upper": 0.000212,
+     "client_cpu_s": 7.0,
+     "server": {
+      "n": 30783,
+      "total_p50": 12.6,
+      "total_p95": 129.9,
+      "retrieve_p50": 0.0,
+      "retrieve_p95": 0.0,
+      "outside_retrieve_p50": 12.6,
+      "outside_retrieve_p95": 129.9
+     }
+    },
+    {
+     "vus": 50,
+     "requests": 13375,
+     "duration_s": 60,
+     "rps": 222.9,
+     "p50_ms": 166.3324169931002,
+     "p95_ms": 517.6042500097537,
+     "p99_ms": 1303.2377079944126,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 7844,
+     "mean_results": 0.59,
+     "responses_checked": 7316,
+     "leaked_results": 0,
+     "leaks_over_results": "0/7844",
+     "leak_rate_wilson95_upper": 0.00049,
+     "client_cpu_s": 5.6,
+     "server": {
+      "n": 13375,
+      "total_p50": 96.3,
+      "total_p95": 448.6,
+      "retrieve_p50": 0.0,
+      "retrieve_p95": 0.0,
+      "outside_retrieve_p50": 96.2,
+      "outside_retrieve_p95": 448.6
+     }
+    }
+   ],
+   "machine": {
+    "cpu": "Apple M3 Max",
+    "cores": 16,
+    "os": "macOS-26.6.2-arm64-arm-64bit",
+    "client_python": "3.12.4"
+   },
+   "notes": ""
+  },
+  {
+   "label": "1worker-unique-queries",
+   "mode": "miss",
+   "servers": 1,
+   "warmup_s": 5,
+   "seed": 7,
+   "levels": [
+    {
+     "vus": 1,
+     "requests": 22123,
+     "duration_s": 60,
+     "rps": 368.7,
+     "p50_ms": 2.6109169994015247,
+     "p95_ms": 3.315833004307933,
+     "p99_ms": 4.1874999878928065,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 13264,
+     "mean_results": 0.6,
+     "responses_checked": 11556,
+     "leaked_results": 0,
+     "leaks_over_results": "0/13264",
+     "leak_rate_wilson95_upper": 0.00029,
+     "client_cpu_s": 3.4,
+     "server": {
+      "n": 22123,
+      "total_p50": 1.7,
+      "total_p95": 2.2,
+      "retrieve_p50": 0.6,
+      "retrieve_p95": 0.8,
+      "outside_retrieve_p50": 1.1,
+      "outside_retrieve_p95": 1.5
+     }
+    },
+    {
+     "vus": 5,
+     "requests": 23715,
+     "duration_s": 60,
+     "rps": 395.2,
+     "p50_ms": 4.4611250050365925,
+     "p95_ms": 42.8089170018211,
+     "p99_ms": 153.21166699868627,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 14818,
+     "mean_results": 0.62,
+     "responses_checked": 12451,
+     "leaked_results": 0,
+     "leaks_over_results": "0/14818",
+     "leak_rate_wilson95_upper": 0.000259,
+     "client_cpu_s": 4.0,
+     "server": {
+      "n": 23715,
+      "total_p50": 2.2,
+      "total_p95": 40.4,
+      "retrieve_p50": 0.7,
+      "retrieve_p95": 1.0,
+      "outside_retrieve_p50": 1.4,
+      "outside_retrieve_p95": 39.6
+     }
+    },
+    {
+     "vus": 10,
+     "requests": 11948,
+     "duration_s": 60,
+     "rps": 199.1,
+     "p50_ms": 20.654125008150004,
+     "p95_ms": 167.56570800498594,
+     "p99_ms": 707.3311670101248,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 7994,
+     "mean_results": 0.67,
+     "responses_checked": 6728,
+     "leaked_results": 0,
+     "leaks_over_results": "0/7994",
+     "leak_rate_wilson95_upper": 0.00048,
+     "client_cpu_s": 3.7,
+     "server": {
+      "n": 11948,
+      "total_p50": 5.9,
+      "total_p95": 151.8,
+      "retrieve_p50": 1.3,
+      "retrieve_p95": 3.3,
+      "outside_retrieve_p50": 3.9,
+      "outside_retrieve_p95": 149.6
+     }
+    },
+    {
+     "vus": 25,
+     "requests": 8729,
+     "duration_s": 60,
+     "rps": 145.5,
+     "p50_ms": 80.14433400239795,
+     "p95_ms": 655.5946250009583,
+     "p99_ms": 1759.2629580030916,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 5589,
+     "mean_results": 0.64,
+     "responses_checked": 4753,
+     "leaked_results": 0,
+     "leaks_over_results": "0/5589",
+     "leak_rate_wilson95_upper": 0.000687,
+     "client_cpu_s": 3.8,
+     "server": {
+      "n": 8729,
+      "total_p50": 44.1,
+      "total_p95": 615.2,
+      "retrieve_p50": 2.0,
+      "retrieve_p95": 3.9,
+      "outside_retrieve_p50": 41.9,
+      "outside_retrieve_p95": 613.4
+     }
+    },
+    {
+     "vus": 50,
+     "requests": 8372,
+     "duration_s": 60,
+     "rps": 139.5,
+     "p50_ms": 262.0177920034621,
+     "p95_ms": 892.7200839971192,
+     "p99_ms": 2189.696833011112,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 5506,
+     "mean_results": 0.66,
+     "responses_checked": 4669,
+     "leaked_results": 0,
+     "leaks_over_results": "0/5506",
+     "leak_rate_wilson95_upper": 0.000697,
+     "client_cpu_s": 3.8,
+     "server": {
+      "n": 8372,
+      "total_p50": 166.2,
+      "total_p95": 798.5,
+      "retrieve_p50": 2.0,
+      "retrieve_p95": 4.2,
+      "outside_retrieve_p50": 163.8,
+      "outside_retrieve_p95": 796.2
+     }
+    }
+   ],
+   "machine": {
+    "cpu": "Apple M3 Max",
+    "cores": 16,
+    "os": "macOS-26.6.2-arm64-arm-64bit",
+    "client_python": "3.12.4"
+   },
+   "notes": ""
+  },
+  {
+   "label": "2workers-unique-queries",
+   "mode": "miss",
+   "servers": 2,
+   "warmup_s": 5,
+   "seed": 7,
+   "levels": [
+    {
+     "vus": 1,
+     "requests": 6387,
+     "duration_s": 60,
+     "rps": 106.5,
+     "p50_ms": 6.974250005441718,
+     "p95_ms": 23.79783299693372,
+     "p99_ms": 48.13787499733735,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 3862,
+     "mean_results": 0.6,
+     "responses_checked": 3322,
+     "leaked_results": 0,
+     "leaks_over_results": "0/3862",
+     "leak_rate_wilson95_upper": 0.000994,
+     "client_cpu_s": 2.4,
+     "server": {
+      "n": 6387,
+      "total_p50": 3.1,
+      "total_p95": 7.6,
+      "retrieve_p50": 1.0,
+      "retrieve_p95": 2.7,
+      "outside_retrieve_p50": 2.1,
+      "outside_retrieve_p95": 5.0
+     }
+    },
+    {
+     "vus": 5,
+     "requests": 15708,
+     "duration_s": 60,
+     "rps": 261.8,
+     "p50_ms": 7.603541991556995,
+     "p95_ms": 65.1935830101138,
+     "p99_ms": 195.13695799105335,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 9653,
+     "mean_results": 0.61,
+     "responses_checked": 8096,
+     "leaked_results": 0,
+     "leaks_over_results": "0/9653",
+     "leak_rate_wilson95_upper": 0.000398,
+     "client_cpu_s": 4.2,
+     "server": {
+      "n": 15708,
+      "total_p50": 3.3,
+      "total_p95": 52.2,
+      "retrieve_p50": 0.8,
+      "retrieve_p95": 2.3,
+      "outside_retrieve_p50": 2.5,
+      "outside_retrieve_p95": 49.8
+     }
+    },
+    {
+     "vus": 10,
+     "requests": 23422,
+     "duration_s": 60,
+     "rps": 390.4,
+     "p50_ms": 4.710291002993472,
+     "p95_ms": 98.1761250004638,
+     "p99_ms": 464.71508299873676,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 15614,
+     "mean_results": 0.67,
+     "responses_checked": 13153,
+     "leaked_results": 0,
+     "leaks_over_results": "0/15614",
+     "leak_rate_wilson95_upper": 0.000246,
+     "client_cpu_s": 4.1,
+     "server": {
+      "n": 23422,
+      "total_p50": 3.1,
+      "total_p95": 95.1,
+      "retrieve_p50": 0.7,
+      "retrieve_p95": 1.1,
+      "outside_retrieve_p50": 2.4,
+      "outside_retrieve_p95": 94.2
+     }
+    },
+    {
+     "vus": 25,
+     "requests": 25397,
+     "duration_s": 60,
+     "rps": 423.3,
+     "p50_ms": 5.025582999223843,
+     "p95_ms": 259.4042920100037,
+     "p99_ms": 1086.8120410013944,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 16485,
+     "mean_results": 0.65,
+     "responses_checked": 13983,
+     "leaked_results": 0,
+     "leaks_over_results": "0/16485",
+     "leak_rate_wilson95_upper": 0.000233,
+     "client_cpu_s": 4.1,
+     "server": {
+      "n": 25397,
+      "total_p50": 3.2,
+      "total_p95": 257.0,
+      "retrieve_p50": 0.7,
+      "retrieve_p95": 1.0,
+      "outside_retrieve_p50": 2.4,
+      "outside_retrieve_p95": 256.2
+     }
+    },
+    {
+     "vus": 50,
+     "requests": 25776,
+     "duration_s": 60,
+     "rps": 429.6,
+     "p50_ms": 30.90554200753104,
+     "p95_ms": 341.2220000027446,
+     "p99_ms": 1859.2898339993553,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 16863,
+     "mean_results": 0.65,
+     "responses_checked": 14315,
+     "leaked_results": 0,
+     "leaks_over_results": "0/16863",
+     "leak_rate_wilson95_upper": 0.000228,
+     "client_cpu_s": 4.6,
+     "server": {
+      "n": 25776,
+      "total_p50": 25.5,
+      "total_p95": 335.8,
+      "retrieve_p50": 0.8,
+      "retrieve_p95": 1.2,
+      "outside_retrieve_p50": 24.5,
+      "outside_retrieve_p95": 335.0
+     }
+    }
+   ],
+   "machine": {
+    "cpu": "Apple M3 Max",
+    "cores": 16,
+    "os": "macOS-26.6.2-arm64-arm-64bit",
+    "client_python": "3.12.4"
+   },
+   "notes": "2 uvicorn processes, shared SQLite file, separate Qdrant copies, client round-robin"
+  },
+  {
+   "label": "client-ceiling-healthz",
+   "mode": "health",
+   "servers": 1,
+   "warmup_s": 5,
+   "seed": 7,
+   "levels": [
+    {
+     "vus": 50,
+     "requests": 37577,
+     "duration_s": 15.0,
+     "rps": 2505.1,
+     "p50_ms": 14.948333002394065,
+     "p95_ms": 60.80854199535679,
+     "p99_ms": 88.03304200409912,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 0,
+     "mean_results": 0.0,
+     "responses_checked": 0,
+     "leaked_results": 0,
+     "leaks_over_results": "0/0",
+     "leak_rate_wilson95_upper": 1.0,
+     "client_cpu_s": 8.8
+    }
+   ],
+   "machine": {
+    "cpu": "Apple M3 Max",
+    "cores": 16,
+    "os": "macOS-26.6.2-arm64-arm-64bit",
+    "client_python": "3.12.4"
+   },
+   "notes": ""
+  }
+ ],
+ "ab_matrix": [
+  {
+   "label": "ab-1proc-again",
+   "mode": "miss",
+   "servers": 1,
+   "warmup_s": 5.0,
+   "seed": 7,
+   "levels": [
+    {
+     "vus": 10,
+     "requests": 4430,
+     "duration_s": 30.0,
+     "rps": 147.7,
+     "p50_ms": 43.75804201117717,
+     "p95_ms": 168.03762500057928,
+     "p99_ms": 507.8750829998171,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 2941,
+     "mean_results": 0.66,
+     "responses_checked": 2482,
+     "leaked_results": 0,
+     "leaks_over_results": "0/2941",
+     "leak_rate_wilson95_upper": 0.001305,
+     "client_cpu_s": 2.0,
+     "server": {
+      "n": 4430,
+      "failed_closed": 1,
+      "total_p50": 7.2,
+      "total_p95": 128.4,
+      "retrieve_p50": 1.8,
+      "retrieve_p95": 3.2,
+      "outside_retrieve_p50": 5.1,
+      "outside_retrieve_p95": 126.2
+     }
+    },
+    {
+     "vus": 25,
+     "requests": 4554,
+     "duration_s": 30.0,
+     "rps": 151.8,
+     "p50_ms": 85.44187499501277,
+     "p95_ms": 562.3710000072606,
+     "p99_ms": 1698.4648749930784,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 2974,
+     "mean_results": 0.65,
+     "responses_checked": 2526,
+     "leaked_results": 0,
+     "leaks_over_results": "0/2974",
+     "leak_rate_wilson95_upper": 0.00129,
+     "client_cpu_s": 2.0,
+     "server": {
+      "n": 4554,
+      "failed_closed": 3,
+      "total_p50": 30.3,
+      "total_p95": 501.0,
+      "retrieve_p50": 1.9,
+      "retrieve_p95": 3.4,
+      "outside_retrieve_p50": 28.3,
+      "outside_retrieve_p95": 499.2
+     }
+    },
+    {
+     "vus": 50,
+     "requests": 4848,
+     "duration_s": 30.0,
+     "rps": 161.6,
+     "p50_ms": 229.61800001212396,
+     "p95_ms": 707.8557500062743,
+     "p99_ms": 1918.2267080032034,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 3074,
+     "mean_results": 0.63,
+     "responses_checked": 2647,
+     "leaked_results": 0,
+     "leaks_over_results": "0/3074",
+     "leak_rate_wilson95_upper": 0.001248,
+     "client_cpu_s": 2.1,
+     "server": {
+      "n": 4848,
+      "failed_closed": 145,
+      "total_p50": 140.2,
+      "total_p95": 618.3,
+      "retrieve_p50": 1.8,
+      "retrieve_p95": 3.3,
+      "outside_retrieve_p50": 138.3,
+      "outside_retrieve_p95": 617.1
+     }
+    }
+   ],
+   "machine": {
+    "cpu": "Apple M3 Max",
+    "cores": 16,
+    "os": "macOS-26.6.2-arm64-arm-64bit",
+    "client_python": "3.12.4"
+   },
+   "notes": ""
+  },
+  {
+   "label": "ab-1proc",
+   "mode": "miss",
+   "servers": 1,
+   "warmup_s": 5.0,
+   "seed": 7,
+   "levels": [
+    {
+     "vus": 10,
+     "requests": 12260,
+     "duration_s": 30.0,
+     "rps": 408.7,
+     "p50_ms": 4.368499998236075,
+     "p95_ms": 96.58979099185672,
+     "p99_ms": 459.19004100142047,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 8114,
+     "mean_results": 0.66,
+     "responses_checked": 6836,
+     "leaked_results": 0,
+     "leaks_over_results": "0/8114",
+     "leak_rate_wilson95_upper": 0.000473,
+     "client_cpu_s": 2.1,
+     "server": {
+      "n": 12260,
+      "failed_closed": 0,
+      "total_p50": 2.1,
+      "total_p95": 94.1,
+      "retrieve_p50": 0.7,
+      "retrieve_p95": 1.1,
+      "outside_retrieve_p50": 1.3,
+      "outside_retrieve_p95": 93.0
+     }
+    },
+    {
+     "vus": 25,
+     "requests": 12634,
+     "duration_s": 30.0,
+     "rps": 421.1,
+     "p50_ms": 22.2694170079194,
+     "p95_ms": 111.50504200486466,
+     "p99_ms": 1108.1382499978645,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 8188,
+     "mean_results": 0.65,
+     "responses_checked": 6931,
+     "leaked_results": 0,
+     "leaks_over_results": "0/8188",
+     "leak_rate_wilson95_upper": 0.000469,
+     "client_cpu_s": 2.6,
+     "server": {
+      "n": 12634,
+      "failed_closed": 1,
+      "total_p50": 18.6,
+      "total_p95": 106.0,
+      "retrieve_p50": 0.8,
+      "retrieve_p95": 1.3,
+      "outside_retrieve_p50": 17.8,
+      "outside_retrieve_p95": 104.8
+     }
+    },
+    {
+     "vus": 50,
+     "requests": 13165,
+     "duration_s": 30.0,
+     "rps": 438.8,
+     "p50_ms": 78.0238329898566,
+     "p95_ms": 133.32987499597948,
+     "p99_ms": 1140.0113749987213,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 8692,
+     "mean_results": 0.66,
+     "responses_checked": 7382,
+     "leaked_results": 0,
+     "leaks_over_results": "0/8692",
+     "leak_rate_wilson95_upper": 0.000442,
+     "client_cpu_s": 2.3,
+     "server": {
+      "n": 13165,
+      "failed_closed": 2,
+      "total_p50": 54.5,
+      "total_p95": 107.9,
+      "retrieve_p50": 0.8,
+      "retrieve_p95": 1.2,
+      "outside_retrieve_p50": 53.6,
+      "outside_retrieve_p95": 106.8
+     }
+    }
+   ],
+   "machine": {
+    "cpu": "Apple M3 Max",
+    "cores": 16,
+    "os": "macOS-26.6.2-arm64-arm-64bit",
+    "client_python": "3.12.4"
+   },
+   "notes": ""
+  },
+  {
+   "label": "ab-2proc-separate-sqlite",
+   "mode": "miss",
+   "servers": 2,
+   "warmup_s": 5.0,
+   "seed": 7,
+   "levels": [
+    {
+     "vus": 10,
+     "requests": 8664,
+     "duration_s": 30.0,
+     "rps": 288.8,
+     "p50_ms": 24.09295800316613,
+     "p95_ms": 84.2677500040736,
+     "p99_ms": 229.6889160061255,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 5720,
+     "mean_results": 0.66,
+     "responses_checked": 4801,
+     "leaked_results": 0,
+     "leaks_over_results": "0/5720",
+     "leak_rate_wilson95_upper": 0.000671,
+     "client_cpu_s": 3.5,
+     "server": {
+      "n": 8664,
+      "failed_closed": 3,
+      "total_p50": 6.7,
+      "total_p95": 67.6,
+      "retrieve_p50": 1.8,
+      "retrieve_p95": 3.5,
+      "outside_retrieve_p50": 4.5,
+      "outside_retrieve_p95": 65.5
+     }
+    },
+    {
+     "vus": 25,
+     "requests": 8618,
+     "duration_s": 30.0,
+     "rps": 287.3,
+     "p50_ms": 41.333000001031905,
+     "p95_ms": 279.530458006775,
+     "p99_ms": 931.2919579970185,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 5592,
+     "mean_results": 0.65,
+     "responses_checked": 4759,
+     "leaked_results": 0,
+     "leaks_over_results": "0/5592",
+     "leak_rate_wilson95_upper": 0.000687,
+     "client_cpu_s": 3.5,
+     "server": {
+      "n": 8618,
+      "failed_closed": 28,
+      "total_p50": 9.5,
+      "total_p95": 258.3,
+      "retrieve_p50": 1.8,
+      "retrieve_p95": 3.8,
+      "outside_retrieve_p50": 7.3,
+      "outside_retrieve_p95": 256.4
+     }
+    },
+    {
+     "vus": 50,
+     "requests": 8819,
+     "duration_s": 30.0,
+     "rps": 294.0,
+     "p50_ms": 86.6027089941781,
+     "p95_ms": 645.465541005251,
+     "p99_ms": 1586.9967090111459,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 5713,
+     "mean_results": 0.65,
+     "responses_checked": 4853,
+     "leaked_results": 0,
+     "leaks_over_results": "0/5713",
+     "leak_rate_wilson95_upper": 0.000672,
+     "client_cpu_s": 3.7,
+     "server": {
+      "n": 8819,
+      "failed_closed": 9,
+      "total_p50": 34.7,
+      "total_p95": 592.7,
+      "retrieve_p50": 1.9,
+      "retrieve_p95": 3.8,
+      "outside_retrieve_p50": 32.6,
+      "outside_retrieve_p95": 590.6
+     }
+    }
+   ],
+   "machine": {
+    "cpu": "Apple M3 Max",
+    "cores": 16,
+    "os": "macOS-26.6.2-arm64-arm-64bit",
+    "client_python": "3.12.4"
+   },
+   "notes": ""
+  },
+  {
+   "label": "ab-2proc-shared-sqlite",
+   "mode": "miss",
+   "servers": 2,
+   "warmup_s": 5.0,
+   "seed": 7,
+   "levels": [
+    {
+     "vus": 10,
+     "requests": 11677,
+     "duration_s": 30.0,
+     "rps": 389.2,
+     "p50_ms": 4.574791993945837,
+     "p95_ms": 99.23487500054762,
+     "p99_ms": 463.3835410058964,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 7759,
+     "mean_results": 0.66,
+     "responses_checked": 6525,
+     "leaked_results": 0,
+     "leaks_over_results": "0/7759",
+     "leak_rate_wilson95_upper": 0.000495,
+     "client_cpu_s": 2.2,
+     "server": {
+      "n": 11677,
+      "failed_closed": 6,
+      "total_p50": 3.2,
+      "total_p95": 96.6,
+      "retrieve_p50": 0.7,
+      "retrieve_p95": 1.1,
+      "outside_retrieve_p50": 2.4,
+      "outside_retrieve_p95": 95.7
+     }
+    },
+    {
+     "vus": 25,
+     "requests": 9588,
+     "duration_s": 30.0,
+     "rps": 319.6,
+     "p50_ms": 8.045540991588496,
+     "p95_ms": 365.98087499442045,
+     "p99_ms": 1394.958791002864,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 6019,
+     "mean_results": 0.63,
+     "responses_checked": 5125,
+     "leaked_results": 0,
+     "leaks_over_results": "0/6019",
+     "leak_rate_wilson95_upper": 0.000638,
+     "client_cpu_s": 2.8,
+     "server": {
+      "n": 9588,
+      "failed_closed": 374,
+      "total_p50": 4.7,
+      "total_p95": 362.8,
+      "retrieve_p50": 0.9,
+      "retrieve_p95": 1.5,
+      "outside_retrieve_p50": 3.7,
+      "outside_retrieve_p95": 361.9
+     }
+    },
+    {
+     "vus": 50,
+     "requests": 5043,
+     "duration_s": 30.0,
+     "rps": 168.1,
+     "p50_ms": 140.0834579981165,
+     "p95_ms": 1313.576667002053,
+     "p99_ms": 2764.613625011407,
+     "errors": 0,
+     "error_rate": 0.0,
+     "results_returned": 3281,
+     "mean_results": 0.65,
+     "responses_checked": 2801,
+     "leaked_results": 0,
+     "leaks_over_results": "0/3281",
+     "leak_rate_wilson95_upper": 0.001169,
+     "client_cpu_s": 2.3,
+     "server": {
+      "n": 5043,
+      "failed_closed": 9,
+      "total_p50": 103.9,
+      "total_p95": 1289.0,
+      "retrieve_p50": 1.9,
+      "retrieve_p95": 3.6,
+      "outside_retrieve_p50": 101.8,
+      "outside_retrieve_p95": 1287.0
+     }
+    }
+   ],
+   "machine": {
+    "cpu": "Apple M3 Max",
+    "cores": 16,
+    "os": "macOS-26.6.2-arm64-arm-64bit",
+    "client_python": "3.12.4"
+   },
+   "notes": ""
+  }
+ ],
+ "fail_closed_by_server_log": {
+  "s1": [
+   251568,
+   213
+  ],
+  "s2": [
+   46077,
+   66
+  ],
+  "c1": [
+   93092,
+   411
+  ],
+  "c2": [
+   14946,
+   200
+  ],
+  "c3": [
+   14664,
+   19
+  ],
+  "prof": [
+   45757,
+   3
+  ]
+ },
+ "stage_timings_ms": {
+  "c1": {
+   "tx_enter_wait": 0.308,
+   "tx_body": 1.082,
+   "embed_one": 0.046,
+   "search": 0.358,
+   "search_unfiltered_count": 0.229,
+   "write_audit": 0.345,
+   "tx_commit": 0.3
+  },
+  "c25": {
+   "tx_enter_wait": 55.151,
+   "tx_enter_wait_p99": 1192.389,
+   "tx_body": 1.533,
+   "embed_one": 0.051,
+   "search": 0.541,
+   "search_unfiltered_count": 0.349,
+   "write_audit": 0.449,
+   "tx_commit": 0.459,
+   "tx_enter_failed_count": 2,
+   "tx_enter_failed_mean": 5175.8
+  }
+ },
+ "server_cpu_percent": {
+  "c1": [
+   84.8,
+   88.0,
+   86.4,
+   85.9
+  ],
+  "c25": [
+   116.0,
+   108.4,
+   110.7,
+   115.3
+  ]
+ },
+ "inproc_bench_req_per_s_median": {
+  "A": {
+   "1": 405.0,
+   "8": 464.0,
+   "25": 245.0
+  },
+  "B": {
+   "1": 653.0,
+   "8": 346.8,
+   "25": 332.6
+  }
+ }
+}
