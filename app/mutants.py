@@ -7,6 +7,7 @@ a mutant that survives means the gate is too weak, not that the mutant is harmle
 from collections import Counter
 
 from permission_rag import PermissionRAG, tokenize
+from rungs import SemanticCacheRAG
 
 
 def _rank(rag, query, candidates, stats_over, k):
@@ -105,3 +106,17 @@ class FlattenIntersection(PermissionRAG):
 
 
 MUTANTS += [AnyLevelGrants, FlattenIntersection]
+
+
+class SemanticCacheNoScope(SemanticCacheRAG):
+    """Semantic cache whose key forgot the principal and which never re-checks readability."""
+
+    @staticmethod
+    def _scope(user):
+        return ()
+
+    def _revalidate(self, user, entry):
+        return True
+
+
+MUTANTS += [SemanticCacheNoScope]

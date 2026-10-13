@@ -42,7 +42,9 @@ MIN_SCORE = float(os.getenv("MIN_SCORE", "0.55" if EMBED_BACKEND in {"st", "fast
 # Optional LLM generation (extractive answers when unset — demo runs keyless)
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com")
-GENERATION_MODEL = os.getenv("GENERATION_MODEL", "claude-haiku-4-5")
+GENERATION_MODEL = os.getenv("GENERATION_MODEL", "claude-haiku-4-5-20251001")
+# used once, only when the primary id returns 404 not_found_error (retired model)
+GENERATION_FALLBACK_MODEL = os.getenv("GENERATION_FALLBACK_MODEL", "claude-haiku-4-5")
 
 # Permission source of truth for the sync loop (synthetic stand-in for
 # Drive/Confluence; swap in the Drive connector for the real thing)
@@ -82,3 +84,5 @@ RERANK_MIN_SCORE = float(os.getenv("RERANK_MIN_SCORE", "-10.0"))
 EMBED_CACHE_PATH = os.getenv("EMBED_CACHE_PATH", str(ROOT / "embed_cache.sqlite"))
 # Where fastembed stores downloaded ONNX models ("" = fastembed's default temp dir)
 MODEL_CACHE_DIR = os.getenv("MODEL_CACHE_DIR", "")
+# UTC-day estimated LLM spend cap; once reached, answers fall back to retrieval-only (0 disables the LLM)
+DAILY_BUDGET_USD = float(os.getenv("DAILY_BUDGET_USD", "5.0"))

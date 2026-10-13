@@ -63,6 +63,12 @@ def _build(cls, docs):
     return rag
 
 
+def _oracle(cls):
+    """Baseline PermissionRAG, unless the rung scores differently by design (SCORES_DIFFER):
+    then the same class over the role's readable docs, so ids and scores still must match exactly."""
+    return cls if getattr(cls, "SCORES_DIFFER", False) else PermissionRAG
+
+
 def isolation_gate(cls, verbose=True):
     """Count (role, query) probes whose results differ from the role's isolated corpus.
 
@@ -73,7 +79,7 @@ def isolation_gate(cls, verbose=True):
     rag = _build(cls, docs)
     diffs = 0
     for role, user in srv.USERS.items():
-        ref = _build(PermissionRAG, [d for d in docs if PermissionRAG.can_read(user, d[2])])
+        ref = _build(_oracle(cls), [d for d in docs if PermissionRAG.can_read(user, d[2])])
         for q in probes:
             got = [(r["id"], r["score"]) for r in rag.retrieve(q, user, k=K)]
             want = [(r["id"], r["score"]) for r in ref.retrieve(q, user, k=K)]
@@ -124,7 +130,7 @@ def hierarchy_isolation_gate(cls, verbose=True):
     diffs = 0
     probes = ["salary policy", "secret compensation private forecast"]
     for user, allowed in cases:
-        ref = build(PermissionRAG)
+        ref = build(_oracle(cls))
         ref.chunks = [c for c in ref.chunks if c["id"] in allowed]
         for query in probes:
             got = [(r["id"], r["score"]) for r in rag.retrieve(query, user, k=20)]

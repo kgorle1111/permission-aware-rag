@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add one JSON request log line per `/query` (ids, counts, timings; no text), an `X-Request-ID` header, an in-process `ops` summary in `/audit`, and a `DAILY_BUDGET_USD` spend cap that falls back to retrieval-only.
+- Make provider failures visible to the LLM circuit breaker without changing `generation.answer`'s string result; 422 responses no longer echo rejected input.
+- Add a red-team suite driven by `platform/tests/redteam/attacks.json` (mocked model; structural claims only).
 - Add opt-in local models: `EMBED_BACKEND=fastembed` (bge-small, ingest-side embedding cache), `SPARSE_BACKEND=splade` (hybrid RRF with the ACL filter on both prefetches and no IDF modifier), `RERANKER=fastembed` (cross-encoder over ACL-filtered candidates, vector-order fallback). Defaults unchanged; `scripts/rung_benchmark.py` measures each rung against the leak gates. Add `retrieval.aretrieve` (not wired into `/query`: no p95 gain).
 
 - Preserve section restrictions during permission updates and persist reconciliation barriers across failures.

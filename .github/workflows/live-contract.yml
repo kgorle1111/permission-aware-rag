@@ -1,0 +1,55 @@
+name: live-contract
+
+# Weekly check that our two real-model call sites (app/llm.py, platform/app/generation.py) still
+# match the live Anthropic Messages API. schedule + workflow_dispatch only: never push or
+# pull_request, so fork PRs cannot reach the secret.
+# Cost: 2 calls/run, ~450 input + <=64 output tokens each at Haiku 4.5 prices ($1/M in, $5/M out)
+# = about $0.0016/run, about $0.008/month. Needs the repo secret ANTHROPIC_API_KEY.
+on:
+  schedule:
+    - cron: "0 6 * * 1"   # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Skip when the secret is not configured
+        id: gate
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::notice::ANTHROPIC_API_KEY repo secret is not set; skipping live contract test."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.gate.outputs.run == 'true'
+        uses: actions/checkout@v4
+      - if: steps.gate.outputs.run == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: platform/requirements-dev.txt
+      - if: steps.gate.outputs.run == 'true'
+        run: python -m pip install -r platform/requirements-dev.txt
+      - if: steps.gate.outputs.run == 'true'
+        name: Reference app (urllib client)
+        working-directory: app
+        run: python -m pytest test_live_contract.py -q -s
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RUN_LIVE_CONTRACT: "1"
+      - if: steps.gate.outputs.run == 'true'
+        name: Platform (httpx client)
+        working-directory: platform
+        run: python -m pytest tests/test_live_contract.py -q -s
+        env:
+          LIVE_ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}  # conftest blanks ANTHROPIC_API_KEY
+          RUN_LIVE_CONTRACT: "1"

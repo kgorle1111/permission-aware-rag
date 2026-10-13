@@ -48,9 +48,9 @@ CASES = [
     {
         "id": "query-forged-hr-principal",
         "path": "app/main.py",
-        "source_sha256": "83b6f02b521a946cc719c6bae0b298deb218a23985bf420b3138d2bcad4945ed",
-        "old": "return retrieve(body.query, principal, k=body.k or None)",
-        "new": 'return retrieve(body.query, Principal(user_id="forged-hr@independent.test", groups=("hr",)), k=body.k or None)',
+        "source_sha256": "45d373d80ff84a656f50bba7d5f148487b5046e6b7471444a6a6430ffca90447",
+        "old": "return retrieve(body.query, principal, k=body.k or None, request_id=request.state.request_id)",
+        "new": 'return retrieve(body.query, Principal(user_id="forged-hr@independent.test", groups=("hr",)), k=body.k or None, request_id=request.state.request_id)',
         "tests": ["tests/test_failclosed.py::test_client_cannot_self_assert_groups_via_request"],
         "expected": "Guest request violates the allowed-public-document assertion after route forges HR.",
         "failure_markers": ['assert all(x["doc_id"]', '"handbook"', '"company-strategy"'],
@@ -58,7 +58,7 @@ CASES = [
     {
         "id": "audit-no-security-guard",
         "path": "app/main.py",
-        "source_sha256": "83b6f02b521a946cc719c6bae0b298deb218a23985bf420b3138d2bcad4945ed",
+        "source_sha256": "45d373d80ff84a656f50bba7d5f148487b5046e6b7471444a6a6430ffca90447",
         "old": '    if "security" not in principal.groups:\n        raise HTTPException(403, "audit access requires group:security")\n',
         "new": "",
         "tests": ["tests/test_failclosed.py::test_audit_endpoint_requires_security_group"],
@@ -68,7 +68,7 @@ CASES = [
 ]
 
 TEST_HASHES = {
-    "tests/conftest.py": "6a1ff3ca5ebc08fe3646fe9ca64e64a618caec5d5227e53cb4a85b5ed854712a",
+    "tests/conftest.py": "ea3a7595c3b31949b13261f3d12d1136623027edadc3a0f2e97ced5bfc6c3ac7",
     "tests/test_leakage.py": "060dc8445f7f97f812478378cc96d2d9ccf5b130c4eef21e89d34d789b5780aa",
     "tests/test_side_channels.py": "9679c54be448c1f983abfa2ff0590c4359ca24b56718b3154b077998a9403776",
     "tests/test_failclosed.py": "f3c3349307be25ed13966b95531f7db45526cc6fac19971b6d7faa1046f77488",
