@@ -1,0 +1,367 @@
+{
+ "date": "2026-10-13",
+ "git_commit": "edbfc9a27bce69b4a7ccfc47049a7c6802c5c05b",
+ "versions": {
+  "pgvector": "0.8.7",
+  "postgres": "16.15 (Debian 16.15-1.pgdg12+2)",
+  "python": "3.13.14",
+  "machine": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "image": "pgvector/pgvector:pg16 (docker, colima)"
+ },
+ "index": {
+  "type": "hnsw",
+  "opclass": "vector_cosine_ops",
+  "m": 16,
+  "ef_construction": 64,
+  "build_seconds": 19.5,
+  "shipped_schema_has_ann_index": false
+ },
+ "corpus": {
+  "rows": 100000,
+  "dims": 256,
+  "clusters": 200,
+  "noise_norm": 0.6,
+  "seed": 20261013,
+  "query_seed": 20261014,
+  "visible_fraction": {
+   "1%": 0.0097,
+   "10%": 0.1011,
+   "60%": 0.6006
+  },
+  "acl": "document-level group per level, independent draws; section/paragraph '*'"
+ },
+ "queries": 200,
+ "k": 10,
+ "configs": {
+  "shipped (no ANN index)": {
+   "index": false
+  },
+  "exact (index present, indexscan off)": {
+   "enable_indexscan": "off",
+   "index": true
+  },
+  "HNSW ef_search=40 (default), planner's choice": {
+   "index": true
+  },
+  "HNSW ef_search=40, forced": {
+   "enable_seqscan": "off",
+   "index": true
+  },
+  "HNSW ef_search=200, forced": {
+   "enable_seqscan": "off",
+   "hnsw.ef_search": "200",
+   "index": true
+  },
+  "HNSW ef_search=1000, forced": {
+   "enable_seqscan": "off",
+   "hnsw.ef_search": "1000",
+   "index": true
+  },
+  "HNSW iterative strict_order, forced": {
+   "enable_seqscan": "off",
+   "hnsw.iterative_scan": "strict_order",
+   "index": true
+  },
+  "HNSW iterative relaxed_order, forced": {
+   "enable_seqscan": "off",
+   "hnsw.iterative_scan": "relaxed_order",
+   "index": true
+  }
+ },
+ "plans": {
+  "shipped (no ANN index)": "->  Seq Scan on chunks c  (cost=0.00..18470.00 rows=1 width=14)",
+  "exact (index present, indexscan off)": "->  Seq Scan on chunks c  (cost=0.00..18470.00 rows=1 width=14)",
+  "HNSW ef_search=40 (default), planner's choice": "->  Seq Scan on chunks c  (cost=0.00..18470.00 rows=1 width=14)",
+  "HNSW ef_search=40, forced": "->  Index Scan using chunks_embedding_hnsw on chunks c  (cost=463.63..136072.00 rows=1 width=14)",
+  "HNSW ef_search=200, forced": "->  Index Scan using chunks_embedding_hnsw on chunks c  (cost=1608.29..136072.00 rows=1 width=14)",
+  "HNSW ef_search=1000, forced": "->  Index Scan using chunks_embedding_hnsw on chunks c  (cost=6276.06..136072.00 rows=1 width=14)",
+  "HNSW iterative strict_order, forced": "->  Index Scan using chunks_embedding_hnsw on chunks c  (cost=463.63..136072.00 rows=1 width=14)",
+  "HNSW iterative relaxed_order, forced": "->  Index Scan using chunks_embedding_hnsw on chunks c  (cost=463.63..136072.00 rows=1 width=14)"
+ },
+ "shipped_cost_split": {
+  "1%": {
+   "count_star_p50_ms": 26.38,
+   "order_by_limit_p50_ms": 27.09
+  },
+  "10%": {
+   "count_star_p50_ms": 28.33,
+   "order_by_limit_p50_ms": 29.42
+  },
+  "60%": {
+   "count_star_p50_ms": 34.57,
+   "order_by_limit_p50_ms": 35.45
+  }
+ },
+ "results": {
+  "1%": {
+   "shipped (no ANN index)": {
+    "recall_at_k": 1.0,
+    "min_recall": 1.0,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 55.1,
+    "p95_ms": 62.4,
+    "leaks": 0
+   },
+   "exact (index present, indexscan off)": {
+    "recall_at_k": 1.0,
+    "min_recall": 1.0,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 58.51,
+    "p95_ms": 66.42,
+    "leaks": 0
+   },
+   "HNSW ef_search=40 (default), planner's choice": {
+    "recall_at_k": 1.0,
+    "min_recall": 1.0,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 54.77,
+    "p95_ms": 59.44,
+    "leaks": 0
+   },
+   "HNSW ef_search=40, forced": {
+    "recall_at_k": 0.0425,
+    "min_recall": 0.0,
+    "mean_returned": 0.44,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 124,
+    "k": 10,
+    "p50_ms": 54.61,
+    "p95_ms": 60.2,
+    "leaks": 0
+   },
+   "HNSW ef_search=200, forced": {
+    "recall_at_k": 0.1915,
+    "min_recall": 0.0,
+    "mean_returned": 1.93,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 29,
+    "k": 10,
+    "p50_ms": 54.99,
+    "p95_ms": 59.77,
+    "leaks": 0
+   },
+   "HNSW ef_search=1000, forced": {
+    "recall_at_k": 0.826,
+    "min_recall": 0.1,
+    "mean_returned": 8.65,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 63.87,
+    "p95_ms": 71.57,
+    "leaks": 0
+   },
+   "HNSW iterative strict_order, forced": {
+    "recall_at_k": 0.771,
+    "min_recall": 0.0,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 64.84,
+    "p95_ms": 81.82,
+    "leaks": 0
+   },
+   "HNSW iterative relaxed_order, forced": {
+    "recall_at_k": 0.893,
+    "min_recall": 0.5,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 63.37,
+    "p95_ms": 72.99,
+    "leaks": 0
+   }
+  },
+  "10%": {
+   "shipped (no ANN index)": {
+    "recall_at_k": 1.0,
+    "min_recall": 1.0,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 56.89,
+    "p95_ms": 61.9,
+    "leaks": 0
+   },
+   "exact (index present, indexscan off)": {
+    "recall_at_k": 1.0,
+    "min_recall": 1.0,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 59.04,
+    "p95_ms": 65.32,
+    "leaks": 0
+   },
+   "HNSW ef_search=40 (default), planner's choice": {
+    "recall_at_k": 1.0,
+    "min_recall": 1.0,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 60.32,
+    "p95_ms": 66.17,
+    "leaks": 0
+   },
+   "HNSW ef_search=40, forced": {
+    "recall_at_k": 0.381,
+    "min_recall": 0.0,
+    "mean_returned": 3.89,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 5,
+    "k": 10,
+    "p50_ms": 56.25,
+    "p95_ms": 61.78,
+    "leaks": 0
+   },
+   "HNSW ef_search=200, forced": {
+    "recall_at_k": 0.9895,
+    "min_recall": 0.0,
+    "mean_returned": 9.99,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 57.03,
+    "p95_ms": 64.13,
+    "leaks": 0
+   },
+   "HNSW ef_search=1000, forced": {
+    "recall_at_k": 0.995,
+    "min_recall": 0.9,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 63.69,
+    "p95_ms": 71.88,
+    "leaks": 0
+   },
+   "HNSW iterative strict_order, forced": {
+    "recall_at_k": 0.9555,
+    "min_recall": 0.0,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 57.27,
+    "p95_ms": 65.5,
+    "leaks": 0
+   },
+   "HNSW iterative relaxed_order, forced": {
+    "recall_at_k": 0.973,
+    "min_recall": 0.0,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 57.46,
+    "p95_ms": 62.6,
+    "leaks": 0
+   }
+  },
+  "60%": {
+   "shipped (no ANN index)": {
+    "recall_at_k": 1.0,
+    "min_recall": 1.0,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 73.19,
+    "p95_ms": 76.37,
+    "leaks": 0
+   },
+   "exact (index present, indexscan off)": {
+    "recall_at_k": 1.0,
+    "min_recall": 1.0,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 71.16,
+    "p95_ms": 77.46,
+    "leaks": 0
+   },
+   "HNSW ef_search=40 (default), planner's choice": {
+    "recall_at_k": 1.0,
+    "min_recall": 1.0,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 71.72,
+    "p95_ms": 77.93,
+    "leaks": 0
+   },
+   "HNSW ef_search=40, forced": {
+    "recall_at_k": 0.9605,
+    "min_recall": 0.0,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 61.88,
+    "p95_ms": 68.45,
+    "leaks": 0
+   },
+   "HNSW ef_search=200, forced": {
+    "recall_at_k": 0.99,
+    "min_recall": 0.1,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 63.06,
+    "p95_ms": 68.96,
+    "leaks": 0
+   },
+   "HNSW ef_search=1000, forced": {
+    "recall_at_k": 0.9955,
+    "min_recall": 0.8,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 68.56,
+    "p95_ms": 73.69,
+    "leaks": 0
+   },
+   "HNSW iterative strict_order, forced": {
+    "recall_at_k": 0.9605,
+    "min_recall": 0.0,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 62.58,
+    "p95_ms": 70.04,
+    "leaks": 0
+   },
+   "HNSW iterative relaxed_order, forced": {
+    "recall_at_k": 0.9605,
+    "min_recall": 0.0,
+    "mean_returned": 10.0,
+    "mean_exact_returned": 10.0,
+    "empty_queries": 0,
+    "k": 10,
+    "p50_ms": 62.72,
+    "p95_ms": 70.18,
+    "leaks": 0
+   }
+  }
+ }
+}
