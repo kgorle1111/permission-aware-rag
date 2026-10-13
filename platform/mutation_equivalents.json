@@ -16,15 +16,45 @@
       "source_sha256": "6bbf490c02f1126e72bcfd0d95f173765c6267aa66630a086686193e3abf9d01",
       "mutant_sha256": "9bd8a34d397edf2179576afb0eecf1bf17307f8697b6f194d205152fd07c77dc"
     },
+    "app.embeddings.x__cached__mutmut_18": {
+      "reason": "SQLite keywords and unquoted identifiers are case-insensitive, so upper-casing this cache SQL statement changes no row read or written.",
+      "source_sha256": "76ecc61bdf8b479f91c1af7d018879598e37c852d11f4ec64a25f502553d4f35",
+      "mutant_sha256": "48ae6fc8451ca37970e53009b73642ecf14d58742016017e405fa2780da78bd7"
+    },
+    "app.embeddings.x__cached__mutmut_43": {
+      "reason": "SQLite keywords and unquoted identifiers are case-insensitive, so upper-casing this cache SQL statement changes no row read or written.",
+      "source_sha256": "76ecc61bdf8b479f91c1af7d018879598e37c852d11f4ec64a25f502553d4f35",
+      "mutant_sha256": "f9d7f7f4ee2c51824741a383a0bca6d6f73c57893a1e2ae1312b90eda86a1b7d"
+    },
+    "app.embeddings.x__cached__mutmut_7": {
+      "reason": "SQLite keywords and unquoted identifiers are case-insensitive, so upper-casing this cache SQL statement changes no row read or written.",
+      "source_sha256": "76ecc61bdf8b479f91c1af7d018879598e37c852d11f4ec64a25f502553d4f35",
+      "mutant_sha256": "aeaa51683ef9dc3798a9215291c6ef8bc63c1114c6095152fae99e00f2556da0"
+    },
+    "app.embeddings.x__cached__mutmut_9": {
+      "reason": "SQLite keywords and unquoted identifiers are case-insensitive, so upper-casing this cache SQL statement changes no row read or written.",
+      "source_sha256": "76ecc61bdf8b479f91c1af7d018879598e37c852d11f4ec64a25f502553d4f35",
+      "mutant_sha256": "98d8d3e29a1394b71b651ade655a87fb9f42d1a8c76e17bc4d5e7db26f28c49d"
+    },
     "app.embeddings.x__hash_embed__mutmut_36": {
-      "source_sha256": "7a9dc8f15b5dc88551a1e80b3a7f8595b5a020984c43f10976abe98ad05a56c0",
+      "source_sha256": "76ecc61bdf8b479f91c1af7d018879598e37c852d11f4ec64a25f502553d4f35",
       "mutant_sha256": "01fcef7db2ea33ae87d8e1dc1a6d9d954dde9696a63477cd77e278af8b11d707",
       "reason": "int.from_bytes byteorder defaults to 'big' on Python >= 3.11; CI, Docker and mutmut run only 3.11/3.12."
     },
     "app.embeddings.x__hash_embed__mutmut_57": {
-      "source_sha256": "7a9dc8f15b5dc88551a1e80b3a7f8595b5a020984c43f10976abe98ad05a56c0",
+      "source_sha256": "76ecc61bdf8b479f91c1af7d018879598e37c852d11f4ec64a25f502553d4f35",
       "mutant_sha256": "f0daf2866180eb6d082aaf90beba821b81b71576f7352a6f316b3685339872dc",
       "reason": "The `or` fallback only applies when the norm is 0, i.e. every component is 0.0, and 0.0/1.0 == 0.0/2.0."
+    },
+    "app.embeddings.x_prune_cache__mutmut_12": {
+      "reason": "SQLite keywords and unquoted identifiers are case-insensitive, so upper-casing this cache SQL statement changes no row read or written.",
+      "source_sha256": "76ecc61bdf8b479f91c1af7d018879598e37c852d11f4ec64a25f502553d4f35",
+      "mutant_sha256": "ff22a47ba05e1d1386971a95ff7ce0dbc3643d43832a78e7c35a842cc16053ef"
+    },
+    "app.embeddings.x_prune_cache__mutmut_19": {
+      "reason": "SQLite keywords and unquoted identifiers are case-insensitive, so upper-casing this cache SQL statement changes no row read or written.",
+      "source_sha256": "76ecc61bdf8b479f91c1af7d018879598e37c852d11f4ec64a25f502553d4f35",
+      "mutant_sha256": "142b88571f479fbcd2ad230ebcdf71e948ea5252e11bc9fed24bfe4ecaf5db43"
     },
     "app.generation.x__send__mutmut_38": {
       "source_sha256": "6be64f9a335733d0798412a681e728a3a8a449ce93aed946d0785e378e64db2a",
@@ -82,12 +112,12 @@
       "mutant_sha256": "3bb890fde30db9f71dcb172e1f1c9f8e57a5911616714d0f903b7ee9e2200913"
     },
     "app.ingest.x_chunk_document__mutmut_4": {
-      "source_sha256": "200f6cd669a5a119373f0fa49117ca65225b8718fec2f6ec5a55e1f8549f62ad",
+      "source_sha256": "96f5f5c6dd9f2025f65f090c21d6baa171e969a4794a6aaeb59ae3901b928b03",
       "mutant_sha256": "64e5e1588c917cc4717744bda5b9827daa2ab59e4d9f5ee9e0a7cfac72eb82d4",
       "reason": "validate_acl(None) returns [] (non-list) and validate_acl([]) returns [] (empty clean list): identical doc ACL."
     },
     "app.ingest.x_chunk_document__mutmut_6": {
-      "source_sha256": "200f6cd669a5a119373f0fa49117ca65225b8718fec2f6ec5a55e1f8549f62ad",
+      "source_sha256": "96f5f5c6dd9f2025f65f090c21d6baa171e969a4794a6aaeb59ae3901b928b03",
       "mutant_sha256": "842ffd9c242c51d9eb5dbb3aafa33c95fde692efd3433f3d51bb5c6d5d4e5de6",
       "reason": "doc.get('acl') defaults to None; validate_acl(None) and validate_acl([]) both return [], so the doc ACL is identical."
     },
@@ -118,7 +148,7 @@
     },
     "app.retrieval.x__retrieve__mutmut_77": {
       "reason": "OrderedDict.popitem(last=None): None is falsy, so it pops in FIFO order exactly like last=False; eviction still drops the oldest entry.",
-      "source_sha256": "2162b968612453e7f4d86c35c9244ad0fc1285ffbfde5c96321e818114be320e",
+      "source_sha256": "396941280a965211b219186ef0079906ea6a46777d6d359f6e5dd050a77a4d19",
       "mutant_sha256": "e34c68994dff1d7178386825466750a126ee32ddac38f1c7f542db6735b705c5"
     },
     "app.store.x_init_db__mutmut_15": {
@@ -150,6 +180,11 @@
       "source_sha256": "9fe691f59464e713206b397590bba781c440bd615de0dcf95c41710d086d0d65",
       "mutant_sha256": "0e96779915dfaa0806bee7222a0aca1fb11df212f38e9c3ca7a137dd9085b7ce",
       "reason": "Omitting pending uses Column(default=True); probed on SQLite: persisted row identical to pending=True."
+    },
+    "app.vectorstore.x_search__mutmut_34": {
+      "reason": "query_points defaults with_payload=True in both QdrantClient and the local engine, so dropping the explicit argument returns identical payloads.",
+      "source_sha256": "d0673c6ee9b47f928670daf215935caf9e6d6430420933a694ca14a98b7431cb",
+      "mutant_sha256": "2874f5829af2c8c26d9d6e471f239b0d3fefbc483e3a99fd9a241cc1bac033e2"
     }
   }
 }
