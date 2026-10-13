@@ -148,3 +148,15 @@ def test_generate_failure_message(monkeypatch):
 def test_ms_exact(monkeypatch):
     monkeypatch.setattr(retrieval, "perf_counter", lambda: 1.23456)
     assert retrieval._ms(1.0) == 234.6
+
+
+# retrieval.retrieve 4, 8: the public wrapper must forward the caller's request_id to the log line
+def test_retrieve_forwards_the_request_id_to_its_log_line(client, caplog):
+    from app.identity import Principal
+
+    rid = "ab" * 16
+    with caplog.at_level(logging.INFO, logger="permrag"):
+        retrieval.retrieve("vacation policy", Principal("alice", ("group:eng",)), request_id=rid)
+    got = [json.loads(r.getMessage()) for r in caplog.records
+           if r.name == "permrag" and r.getMessage().startswith("{")]
+    assert [g["request_id"] for g in got] == [rid]
