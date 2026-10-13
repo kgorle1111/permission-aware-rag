@@ -62,11 +62,22 @@ class Config:
 CONFIGS = [
     Config("shipped (no ANN index)", False),
     Config("exact (index present, indexscan off)", True, (("enable_indexscan", "off"),)),
-    Config("HNSW ef_search=40 (default)", True),
-    Config("HNSW ef_search=200", True, (("hnsw.ef_search", "200"),)),
-    Config("HNSW ef_search=1000", True, (("hnsw.ef_search", "1000"),)),
-    Config("HNSW iterative strict_order", True, (("hnsw.iterative_scan", "strict_order"),)),
-    Config("HNSW iterative relaxed_order", True, (("hnsw.iterative_scan", "relaxed_order"),)),
+    # The planner never chooses the HNSW index under this RLS policy (it estimates rows=1 and seq-scans),
+    # so the forced rows show what HNSW would return if it were used.
+    Config("HNSW ef_search=40 (default), planner's choice", True),
+    Config("HNSW ef_search=40, forced", True, (("enable_seqscan", "off"),)),
+    Config("HNSW ef_search=200, forced", True, (("enable_seqscan", "off"), ("hnsw.ef_search", "200"))),
+    Config("HNSW ef_search=1000, forced", True, (("enable_seqscan", "off"), ("hnsw.ef_search", "1000"))),
+    Config(
+        "HNSW iterative strict_order, forced",
+        True,
+        (("enable_seqscan", "off"), ("hnsw.iterative_scan", "strict_order")),
+    ),
+    Config(
+        "HNSW iterative relaxed_order, forced",
+        True,
+        (("enable_seqscan", "off"), ("hnsw.iterative_scan", "relaxed_order")),
+    ),
 ]
 EXACT = CONFIGS[1].name
 SHIPPED = CONFIGS[0].name
@@ -202,6 +213,36 @@ def plan_head(admin_dsn: str, rag: PgVectorRAG, user: dict[str, Any], qvec: str,
     return str(next(r[0] for r in rows if "Scan" in r[0])).strip()
 
 
+def cost_split(admin_dsn: str, rag: PgVectorRAG, corpus: Corpus, k: int) -> dict[str, dict[str, float]]:
+    """Median ms of rag_search's two table scans, run as its owner role under each user's RLS (no index):
+    the `count(*)` behind `denied_chunks` versus the ORDER BY ... LIMIT k scan."""
+    out: dict[str, dict[str, float]] = {}
+    qv = to_vec(corpus.queries[0])
+    with psycopg.connect(admin_dsn, autocommit=True) as conn:
+        for label, (user, _) in LEVELS.items():
+            token = rag.sign_principals(rag.principals(user))
+            t_count: list[float] = []
+            t_topk: list[float] = []
+            for _ in range(15):
+                with conn.transaction():
+                    conn.execute("SET LOCAL ROLE rag_definer")
+                    conn.execute("SELECT set_config('rag.token', %s, true)", (token,))
+                    t0 = time.perf_counter()
+                    conn.execute("SELECT count(*) FROM chunks").fetchall()
+                    t1 = time.perf_counter()
+                    conn.execute(
+                        "SELECT c.id FROM chunks c ORDER BY c.embedding <=> %s::vector LIMIT %s", (qv, k)
+                    ).fetchall()
+                    t2 = time.perf_counter()
+                t_count.append((t1 - t0) * 1000)
+                t_topk.append((t2 - t1) * 1000)
+            out[label] = {
+                "count_star_p50_ms": round(percentile(t_count, 0.5), 2),
+                "order_by_limit_p50_ms": round(percentile(t_topk, 0.5), 2),
+            }
+    return out
+
+
 def run_config(
     app_dsn: str, rag: PgVectorRAG, cfg: Config, corpus: Corpus, k: int
 ) -> dict[str, tuple[list[list[str]], list[float]]]:
@@ -268,6 +309,15 @@ def render_table(report: dict[str, Any]) -> str:
                 f"| {cell['mean_returned']:.2f} ({cell['mean_exact_returned']:.2f}) | {cell['empty_queries']} "
                 f"| {cell['p50_ms']:.1f} | {cell['p95_ms']:.1f} | {cell['leaks']} |"
             )
+    lines += [
+        "",
+        "Shipped path cost split (median ms, no index, as `rag_definer` under each user's RLS):",
+        "",
+    ]
+    lines += [
+        f"- {lv}: `count(*)` for denied_chunks {c['count_star_p50_ms']} ms; ORDER BY ... LIMIT k {c['order_by_limit_p50_ms']} ms"
+        for lv, c in report["shipped_cost_split"].items()
+    ]
     lines += ["", "Planner choice for the inner top-k query (as `rag_definer`, user u1, first query):", ""]
     lines += [f"- {cfg}: `{plan}`" for cfg, plan in report["plans"].items()]
     return "\n".join(lines) + "\n"
@@ -310,6 +360,8 @@ def main() -> int:
             print(f"HNSW built in {build_s}s", flush=True)
         t0 = time.perf_counter()
         raw[cfg.name] = run_config(app_dsn, rag, cfg, corpus, a.k)
+        if not cfg.index:
+            split = cost_split(admin, rag, corpus, a.k)
         plans[cfg.name] = plan_head(admin, rag, LEVELS["1%"][0], qv0, cfg)
         print(f"{cfg.name}: {time.perf_counter() - t0:.0f}s", flush=True)
 
@@ -362,6 +414,7 @@ def main() -> int:
         "k": a.k,
         "configs": {c.name: dict(c.settings) | {"index": c.index} for c in CONFIGS},
         "plans": plans,
+        "shipped_cost_split": split,
         "results": results,
     }
     a.out.mkdir(parents=True, exist_ok=True)
