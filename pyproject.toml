@@ -33,7 +33,7 @@ python_version = "3.12"
 strict = true
 files = ["app", "evals"]
 mypy_path = ".:app"
-exclude = ["evals/verify_qdrant_storage.py", "evals/results/"]  # platform-only imports / archived result scripts
+exclude = ["evals/verify_qdrant_storage.py", "evals/verify_qdrant_nested_filter.py", "evals/results/"]  # platform-only imports / archived result scripts
 explicit_package_bases = true
 
 [[tool.mypy.overrides]]
