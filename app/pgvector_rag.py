@@ -37,9 +37,11 @@ import hashlib
 import hmac
 import json
 import pathlib
+import re
 import secrets
 import threading
 import time
+from dataclasses import dataclass, field
 
 import psycopg
 from embedding import DIMS, embed, to_pgvector
@@ -85,7 +87,18 @@ ALTER TABLE chunks FORCE ROW LEVEL SECURITY;
 -- T18: principals reach RLS only as an HMAC-signed, fresh token, verified with a key the
 -- app and ingest roles cannot read. A raw rag.principals setting is ignored.
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
-CREATE TABLE IF NOT EXISTS rag_secret (id integer PRIMARY KEY CHECK (id = 1), key bytea NOT NULL);
+-- Slot 1 is the current key; slot 2 is the previous key, accepted only until expires_at (key
+-- rotation). A token names its key by kid. The ALTERs migrate the pre-rotation single-key table.
+CREATE TABLE IF NOT EXISTS rag_secret (id integer PRIMARY KEY, key bytea NOT NULL);
+ALTER TABLE rag_secret DROP CONSTRAINT IF EXISTS rag_secret_id_check;
+ALTER TABLE rag_secret ADD COLUMN IF NOT EXISTS kid text;
+ALTER TABLE rag_secret ADD COLUMN IF NOT EXISTS expires_at timestamptz;
+UPDATE rag_secret SET kid = 'k1' WHERE kid IS NULL;
+ALTER TABLE rag_secret ALTER COLUMN kid SET NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS rag_secret_kid ON rag_secret (kid);
+ALTER TABLE rag_secret DROP CONSTRAINT IF EXISTS rag_secret_slot;
+ALTER TABLE rag_secret ADD CONSTRAINT rag_secret_slot
+    CHECK ((id = 1 AND expires_at IS NULL) OR (id = 2 AND expires_at IS NOT NULL));
 REVOKE ALL ON rag_secret FROM PUBLIC;
 CREATE OR REPLACE FUNCTION rag_principals() RETURNS text[]
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog, public AS $fn$
@@ -93,13 +106,15 @@ DECLARE
     parts text[] := string_to_array(coalesce(current_setting('rag.token', true), ''), '|');
     k bytea;
 BEGIN
-    IF coalesce(array_length(parts, 1), 0) <> 3 OR parts[2] !~ '^[0-9]{{1,12}}$'
+    IF coalesce(array_length(parts, 1), 0) <> 4 OR parts[2] !~ '^[0-9]{{1,12}}$'
        OR abs(extract(epoch FROM now()) - parts[2]::bigint) > 60 THEN
         RETURN ARRAY[]::text[];
     END IF;
-    SELECT key INTO k FROM rag_secret WHERE id = 1;
-    IF k IS NULL OR encode(hmac(convert_to(parts[1] || '|' || parts[2], 'UTF8'), k, 'sha256'), 'hex')
-                    IS DISTINCT FROM parts[3] THEN
+    -- the current key, or the previous key only while its grace window is open; the kid is inside the MAC
+    SELECT key INTO k FROM rag_secret WHERE kid = parts[3] AND (id = 1 OR expires_at > now());
+    IF k IS NULL
+       OR encode(hmac(convert_to(parts[1] || '|' || parts[2] || '|' || parts[3], 'UTF8'), k, 'sha256'), 'hex')
+          IS DISTINCT FROM parts[4] THEN
         RETURN ARRAY[]::text[];
     END IF;
     RETURN string_to_array(parts[1], ',');
@@ -333,16 +348,64 @@ def setup_schema(
             principal_key = bytes(row[0]) if row else secrets.token_bytes(32)
         if len(principal_key) < 32:
             raise ValueError("principal_key must be at least 32 random bytes")
-        conn.execute(
-            "INSERT INTO rag_secret (id, key) VALUES (1, %s) ON CONFLICT (id) DO UPDATE SET key = EXCLUDED.key",
+        conn.execute(  # an existing current key keeps its kid; rotate_principal_key is how kids advance
+            "INSERT INTO rag_secret (id, kid, key) VALUES (1, 'k1', %s) "
+            "ON CONFLICT (id) DO UPDATE SET key = EXCLUDED.key",
             (principal_key,),
         )
         return principal_key
 
 
-def sign_principals(key: bytes, principals: list[str], now: float | None = None) -> str:
-    """'p1,p2|unix_ts|hmac_sha256_hex': the only principal channel RLS accepts (60 s window)."""
-    body = f"{','.join(principals)}|{int(time.time() if now is None else now)}"
+MAX_GRACE_SECONDS = 24 * 3600
+_KID = re.compile(r"k[0-9]{1,9}")
+
+
+@dataclass(frozen=True)
+class PrincipalKey:
+    """A signing key and its id. The key is out of repr() so it cannot reach a log by accident."""
+
+    kid: str
+    key: bytes = field(repr=False)
+
+
+def rotate_principal_key(admin_dsn: str, grace_seconds: int = 3600) -> PrincipalKey:
+    """Make a new current key; the old one stays valid as the previous key for grace_seconds.
+
+    Run as the schema owner. The returned key is the only place it ever appears: put it in the app's
+    secret store (RAG_PRINCIPAL_KEY / RAG_PRINCIPAL_KEY_ID) and restart the app processes inside the
+    grace window, then call retire_previous_key. Refuses while a previous key is still in its window,
+    so a second rotation can't silently cut off processes that haven't picked up the first.
+    """
+    if not 1 <= grace_seconds <= MAX_GRACE_SECONDS:
+        raise ValueError(f"grace_seconds must be between 1 and {MAX_GRACE_SECONDS}")
+    with psycopg.connect(admin_dsn) as conn:  # one transaction: commits on exit, rolls back on error
+        conn.execute("LOCK TABLE rag_secret IN EXCLUSIVE MODE")  # readers continue; rotations serialise
+        conn.execute("DELETE FROM rag_secret WHERE id = 2 AND expires_at <= now()")
+        current = conn.execute("SELECT kid FROM rag_secret WHERE id = 1").fetchone()
+        if current is None:
+            raise ValueError("no principal key yet: run setup_schema first")
+        if conn.execute("SELECT 1 FROM rag_secret WHERE id = 2").fetchone():
+            raise ValueError("a previous key is still in its grace window: call retire_previous_key first")
+        new = PrincipalKey(f"k{int(current[0][1:]) + 1}", secrets.token_bytes(32))  # kids only ever grow
+        conn.execute(
+            "UPDATE rag_secret SET id = 2, expires_at = now() + make_interval(secs => %s) WHERE id = 1",
+            (grace_seconds,),
+        )
+        conn.execute("INSERT INTO rag_secret (id, kid, key) VALUES (1, %s, %s)", (new.kid, new.key))
+    return new
+
+
+def retire_previous_key(admin_dsn: str) -> bool:
+    """Drop the previous key now (end the grace window early). True if there was one."""
+    with psycopg.connect(admin_dsn) as conn:
+        return conn.execute("DELETE FROM rag_secret WHERE id = 2").rowcount > 0
+
+
+def sign_principals(key: bytes, principals: list[str], now: float | None = None, kid: str = "k1") -> str:
+    """'p1,p2|unix_ts|kid|hmac_sha256_hex': the only principal channel RLS accepts (60 s window)."""
+    if not _KID.fullmatch(kid):
+        raise ValueError("key id must look like k1, k2, ...")
+    body = f"{','.join(principals)}|{int(time.time() if now is None else now)}|{kid}"
     return f"{body}|{hmac.new(key, body.encode(), hashlib.sha256).hexdigest()}"
 
 
@@ -352,16 +415,25 @@ class PgVectorRAG:
     audit_path = None  # interface compat with the JSONL backend
 
     def __init__(
-        self, dsn: str, ingest_dsn: str | None = None, *, principal_key: bytes, audit_checkpoint_path=None
+        self,
+        dsn: str,
+        ingest_dsn: str | None = None,
+        *,
+        principal_key: bytes,
+        principal_key_id: str = "k1",
+        audit_checkpoint_path=None,
     ):
         """dsn connects as the app role (retrieval); ingest_dsn as the ingest role.
-        principal_key signs principals for RLS (T18); it must match setup_schema's key.
+        principal_key signs principals for RLS (T18); it must be the key named by principal_key_id
+        (setup_schema's key is k1; rotate_principal_key returns the next).
         audit_checkpoint_path (T12): a file OUTSIDE the database holding "<id> <sha256>" of the newest
         audit row, rewritten after every audited call. verify_audit_chain() then fails if the tail was
         deleted or the file is missing. None = unanchored (tail deletion goes undetected).
         Per-process anchor: several app processes each need one shared anchor (see ROADMAP B17),
         else the chain head moves past a stale checkpoint and verify fails."""
-        self._principal_key = principal_key
+        if not _KID.fullmatch(principal_key_id):
+            raise ValueError("principal_key_id must look like k1, k2, ...")
+        self._principal_key, self._principal_key_id = principal_key, principal_key_id
         self._checkpoint = pathlib.Path(audit_checkpoint_path) if audit_checkpoint_path else None
         # kn: per-process audit anchor; add a shared anchor store when running more than one app process
         # serialises call + read head + write file, so threads can't regress the file
@@ -459,7 +531,7 @@ class PgVectorRAG:
         return ["*", f"user:{user['id']}"] + [f"group:{g}" for g in user.get("groups", ())]
 
     def sign_principals(self, principals: list[str], now: float | None = None) -> str:
-        return sign_principals(self._principal_key, principals, now)
+        return sign_principals(self._principal_key, principals, now, self._principal_key_id)
 
     def _anchor(self) -> None:
         """Record the newest audit row in the external checkpoint (no-op if none configured)."""

@@ -133,6 +133,26 @@ RLS logic doesn't change. Run against the server with
 `RAG_BACKEND=pgvector DATABASE_URL=postgres://<app-role>... RAG_PRINCIPAL_KEY=<hex key returned by setup_schema> python3 underwriter_server.py`
 (add `INGEST_DATABASE_URL=postgres://<ingest-role>...` to let it ingest; without it the server is read-only). `AUDIT_CHECKPOINT_PATH=<file>` (default `app/pgvector_audit.head`, gitignored) is the audit head checkpoint (T12); store it where the database admin cannot write, or tail deletion in the audit table goes undetected.
 
+### Rotating the principal-signing key (T18)
+
+Tokens carry a key id (`k1`, `k2`, ...). `setup_schema` creates `k1`. To rotate, as the schema owner:
+
+```python
+from pgvector_rag import rotate_principal_key, retire_previous_key
+
+new = rotate_principal_key(admin_dsn, grace_seconds=3600)  # new.kid, new.key; 1 s .. 24 h
+# store new.key (hex) and new.kid in the secret store: never print or log them
+# set RAG_PRINCIPAL_KEY=<hex> and RAG_PRINCIPAL_KEY_ID=<kid>, restart every app process within the window
+retire_previous_key(admin_dsn)  # end the grace window; the old key stops working
+```
+
+During the grace window processes still on the old key keep working; after it (or after retire) they get
+empty results and an audit row with no user, i.e. they fail closed rather than erroring loudly, so watch
+for empty answers on a process you forgot to restart. A second rotation is refused while a previous key is
+still in its window. Upgrading a database from before key ids migrates the existing key to `k1`, but
+tokens are now four-part: deploy the schema and the app together (in-flight tokens last 60 s).
+`setup_schema` re-run keeps the current key and never rotates.
+
 ## The production platform ([`platform/`](platform/))
 
 The root of this repo is the zero-dependency reference: small enough to read in one sitting.
