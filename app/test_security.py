@@ -138,7 +138,21 @@ def test_audit_checkpoint_failure_denies_results(tmp_path):
 def test_retrieval_error_is_503(server):
     with mock.patch.object(srv.rag, "retrieve", side_effect=OSError("disk unavailable")):
         code, response = _post(server, "/ask", {"user": "junior", "q": "policy"})
-    assert code == 503 and response == {"error": "retrieval unavailable"}
+    assert code == 503
+    assert {k: v for k, v in response.items() if k != "request_id"} == {"error": "retrieval unavailable"}
+
+
+def test_audit_csv_exports_agent_chunk_reads(server):
+    """read_chunk entries carry `op` and no query/denied count; the export must not KeyError on them."""
+    assert _post(server, "/query", {"user": "junior", "q": "policy"})[0] == 200
+    chunk_id = srv.rag.chunks[0]["id"]
+    assert srv.rag.read_chunk(chunk_id, srv.USERS["junior"]) is not None
+    with urllib.request.urlopen(server + "/audit?user=junior&format=csv") as response:
+        assert response.status == 200
+        rows = list(csv.reader(io.StringIO(response.read().decode())))
+    assert rows[0] == ["ts", "user", "query", "returned", "denied_chunks", "elapsed_ms", "op"]
+    assert [r[6] for r in rows[1:]] == ["search", "get_chunk"]
+    assert rows[2][1:6] == ["junior", "", chunk_id, "", ""]
 
 
 def test_audit_query_redaction(server):

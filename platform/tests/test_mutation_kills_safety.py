@@ -7,6 +7,7 @@ import pytest
 from sqlalchemy import event
 
 from app import config, resilience, retrieval, store, sync
+from app import observability as obs
 from app.identity import Principal
 from app.ingest import ingest_corpus
 from app.resilience import BreakerOpen, CircuitBreaker
@@ -118,7 +119,7 @@ def test_fallback_logs_exception_type_and_forwards_k_and_zero_denied(client, mon
     monkeypatch.setattr(retrieval, "keyword_search", kw)
     p = Principal("u", ("g",))
     with caplog.at_level(logging.WARNING, logger="permrag"), store.SessionLocal() as s:
-        resp, chunks, docs, denied = retrieval._compute(s, "q", p, 7)
+        resp, chunks, docs, denied = retrieval._compute(s, "q", p, 7, obs.new_record())
     kw.assert_called_once_with(s, "q", p.principals, 7)
     assert denied == 0 and resp["source"] == "keyword_fallback" and resp["degraded"] is True
     assert [r.getMessage() for r in caplog.records] == [
@@ -130,7 +131,7 @@ def test_unavailable_when_fallback_fails(client, monkeypatch, caplog):
     monkeypatch.setattr(retrieval, "embed_one", Mock(side_effect=Boom("x")))
     monkeypatch.setattr(retrieval, "keyword_search", Mock(side_effect=Boom("y")))
     with caplog.at_level(logging.WARNING, logger="permrag"), store.SessionLocal() as s:
-        resp, chunks, docs, denied = retrieval._compute(s, "q", Principal("u"), 4)
+        resp, chunks, docs, denied = retrieval._compute(s, "q", Principal("u"), 4, obs.new_record())
     assert resp["source"] == "unavailable" and denied == 0 and chunks == [] and docs == []
     errs = [r for r in caplog.records if r.levelno == logging.ERROR]
     assert [r.getMessage() for r in errs] == ["keyword fallback failed"]
@@ -145,7 +146,7 @@ def test_keyword_fallback_never_calls_llm(client, monkeypatch):
     llm = Mock(return_value="LLM-TEXT")
     monkeypatch.setattr(retrieval, "answer", llm)
     with store.SessionLocal() as s:
-        resp = retrieval._compute(s, "alpha", Principal("u"), 4)[0]
+        resp = retrieval._compute(s, "alpha", Principal("u"), 4, obs.new_record())[0]
     llm.assert_not_called()
     assert resp["answer"] == "alpha beta [d]"
 
@@ -155,7 +156,7 @@ def test_generation_failure_logs_exception_type(client, monkeypatch, caplog):
     _healthy(monkeypatch)
     monkeypatch.setattr(retrieval, "answer", Mock(side_effect=Boom("x")))
     with caplog.at_level(logging.WARNING, logger="permrag"), store.SessionLocal() as s:
-        resp = retrieval._compute(s, "q", Principal("u"), 4)[0]
+        resp = retrieval._compute(s, "q", Principal("u"), 4, obs.new_record())[0]
     assert resp["source"] == "retrieval_only" and resp["degraded"] is True
     assert [r.getMessage() for r in caplog.records] == [
         "generation unavailable (Boom); retrieval-only answer"]

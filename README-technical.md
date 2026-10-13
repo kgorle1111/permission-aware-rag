@@ -166,7 +166,7 @@ its generated catalog, which is not exhaustive security coverage.
 | Hallucinated citations | ✅ Detected — post-hoc verification, surfaced in UI |
 | Audit log tampering (edit/remove) | ✅ JSONL chain plus local head; pgvector checks stored line hashes |
 | Audit log truncation from the tail | ✅ JSONL-only truncation detected against local head; ⚠️ pgvector truncation or rewriting both JSONL files needs external anchoring |
-| Cross-doc aggregation (LLM synthesizes a conclusion no single doc supports) | ⚠️ Mitigated by citation-required prompting; needs answer-level evals |
+| Cross-doc aggregation (LLM synthesizes a conclusion no single doc supports) | ⚠️ Partly controlled (T15): every sentence without a citation to a retrieved document comes back as `uncited_claims` for the reviewer. This checks citation coverage, not truth; needs answer-level evals |
 | Denied-count side channel | ⚙️ Deliberate demo feature; `SHOW_DENIED=0` disables it |
 
 ## API
@@ -193,6 +193,41 @@ curl -s -X POST http://127.0.0.1:8421/ask -H 'content-type: application/json' \
 
 Full surface: `POST /query` (retrieval only), `POST /ask` (adds the drafted answer,
 rate-limited), `GET /audit` (own audit metadata; audit group sees others’ ids/counts; all query text is redacted; `&format=csv` neutralizes formula cells), `GET /presets`.
+### Request logs, ops summary and the spend cap
+
+Every `/query` and `/ask` request, rejected ones included, writes exactly one JSON line on the
+`permrag` logger and returns the same `request_id` in the body and the `X-Request-ID` header.
+Fields: `request_id`, `route`, `status`, `outcome`, `retrieve_ms`, `llm_ms`, `total_ms`,
+`tokens_in`, `tokens_out`, `tokens_cached`, `est_cost_usd`, `returned`, `denied`,
+`unverified_citations`, `uncited_claims`, `error` (an exception class name, never its message).
+Records hold ids, counts and timings only, never query, answer or document text.
+
+`outcome` is one of `ok`, `no_results`, `failed_closed` (retrieval raised, 503), `llm_fallback`
+(retrieval-only because the model was skipped, failed or unconfigured), `rate_limited`,
+`bad_request`. The reference app has no `degraded` outcome (the platform does).
+
+`GET /audit` adds an `ops` object next to `entries` and `llm_summary`: `latency_ms` p50/p95
+(nearest-rank, over requests that reached retrieval), `cost_per_day_usd` (UTC days),
+`outcomes` with count and rate each, and `failure_rate` (`failed_closed` + `llm_fallback`
+over all requests). It is computed in process, so it resets on restart (ROADMAP B12).
+
+`DAILY_BUDGET_USD` (default `5.0`) caps estimated LLM spend per UTC day. Before each call the
+server projects a worst case (all input at ~4 chars per token plus the full 600-token output); if
+spent-so-far plus that projection would pass the cap, the call is skipped and the response is
+retrieval-only with the note "Daily LLM budget reached", outcome `llm_fallback`. The count
+resets at UTC midnight. The check is not atomic (ROADMAP B13), so concurrent calls can overshoot
+by one call each.
+
+Red-team suite: `platform/tests/redteam/attacks.json` holds 89 attacks (prompt injection incl. encoded,
+nested and role-play variants, system-prompt extraction, `</document>` breakout, document-borne
+payloads, CSV formulas, identity smuggling through bodies, headers, query strings and JWT claims,
+oversized and malformed input, cross-role exact-content probes). `app/test_redteam.py` runs them
+against the real HTTP server with a mocked model and asserts no restricted text, no system prompt,
+escaping intact (the prompt must equal an independent reference serialisation) and the documented
+status code. **A mocked model cannot prove semantic jailbreak resistance**: it never "obeys" an
+injected instruction, so these tests show the structure around the model holds, not that a live
+model behaves.
+
 ACL entries are `user:<id>`, `group:<name>`, or `"*"`; empty ACLs and duplicate ingests
 are rejected at write time.
 
@@ -232,6 +267,10 @@ Honest limits:
 - Metadata only: it does not run SQL over customer data tables, and `platform/` does not have it.
 - Audit rows hold hashes, so a reviewer can match a retained statement to its row but cannot read it from the log.
 
+## Live model contract test
+
+`app/test_live_contract.py` and `platform/tests/test_live_contract.py` each make one real Messages API call (max 64 output tokens, one fake document) and assert structure only: the pinned `claude-haiku-4-5-20251001` resolves without the alias fallback, the response parses, `usage` token counts are ints, and the `[doc-id]` citation is found by our parser. They skip unless `RUN_LIVE_CONTRACT=1` and `ANTHROPIC_API_KEY` are set, so normal CI and local runs never touch the network. `.github/workflows/live-contract.yml` runs them weekly (Mondays 06:00 UTC) and on manual dispatch only, with read-only permissions; it skips cleanly when the `ANTHROPIC_API_KEY` repo secret is unset. Cost: 2 calls of about 450 input and at most 64 output tokens at Haiku 4.5 prices ($1/M in, $5/M out), roughly $0.0016 per run. The 404-to-alias fallback is not tested live because it would need a deliberately bad model id.
+
 ## Scope and honest limitations
 
 - **Ranking is BM25, on purpose.** The contribution is the permission model; `_score()` is
@@ -241,7 +280,7 @@ Honest limits:
   and test every property. In the reference app, the production path (ACLs from systems of
   record, IdP-issued JWTs, TLS) is designed and documented, not built. `platform/` builds
   part of it: RS256/JWKS identity and Google Drive permission sync.
-- **Single-process.** Rate limits and cost totals are in-memory; the audit log is a local
+- **Single-process.** Rate limits, cost totals, the ops summary and the daily spend count are in-memory; the audit log is a local
   JSONL. Appropriate for the pilot scale this targets.
 
 ## Development process
