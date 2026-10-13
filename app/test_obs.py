@@ -8,6 +8,7 @@ import datetime as dt
 import json
 import logging
 import threading
+import time
 import urllib.error
 import urllib.request
 from http.server import ThreadingHTTPServer
@@ -391,6 +392,44 @@ def test_non_utc_clock_still_resets_on_utc_day(api):
     ops.record(rec)
     api.clock.now = dt.datetime(2026, 10, 11, 5, 30, tzinfo=ist)  # 00:00 UTC on the 11th
     assert ops.spent_today() == 0.0 and ops.summary()["cost_per_day_usd"] == {"2026-10-10": 0.5}
+
+
+def test_concurrent_asks_cannot_overshoot_the_cap(api, monkeypatch):
+    """Cap fits two worst-case projections; eight simultaneous /ask calls must not all reach the model."""
+    cap = projected() * 2.5
+    monkeypatch.setattr(srv, "OPS", obs.Ops(cap, clock=api.clock))
+    started, gate = [], threading.Event()
+
+    def slow_llm(question, chunks, timeout=60):
+        started.append(1)
+        gate.wait(5)
+        return _llm_ok(question, chunks)
+
+    monkeypatch.setattr(srv.llm, "ask", slow_llm)
+    threads = [threading.Thread(target=ask, args=(api,)) for _ in range(8)]
+    for t in threads:
+        t.start()
+    time.sleep(0.5)  # every request has long since passed the budget check
+    in_flight = len(started)
+    gate.set()
+    for t in threads:
+        t.join()
+    assert in_flight <= 2
+    assert srv.OPS.spent_today() <= cap
+
+
+def test_llm_failure_releases_the_reservation(api, monkeypatch):
+    cap = projected() * 1.5  # room for one reservation at a time
+    monkeypatch.setattr(srv, "OPS", obs.Ops(cap, clock=api.clock))
+
+    def boom(*a, **k):
+        raise RuntimeError("upstream down")
+
+    monkeypatch.setattr(srv.llm, "ask", boom)
+    assert ask(api)[1]["note"] == "LLM call failed; showing retrieval only."
+    monkeypatch.setattr(srv.llm, "ask", _llm_ok)
+    assert "answer" in ask(api)[1]  # would be the budget note if the failed call still held its reservation
+    assert srv.OPS.spent_today() == 3.5e-05
 
 
 def test_negative_budget_is_rejected():
