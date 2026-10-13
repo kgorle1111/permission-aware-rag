@@ -349,3 +349,117 @@ def test_app_role_can_only_search_through_the_audited_function():
     ).fetchall()
     assert forged == [] and rag.audit[-1]["user"] is None and rag.audit[-1]["returned"] == []
     assert rag.verify_audit_chain()
+
+
+def _app_env(cp):
+    app_dsn = psycopg.conninfo.make_conninfo(ADMIN, user="rag_app", password="rag_app")
+    return {
+        "RAG_BACKEND": "pgvector",
+        "DATABASE_URL": app_dsn,
+        "RAG_PRINCIPAL_KEY": KEY.hex(),
+        "AUDIT_CHECKPOINT_PATH": str(cp),
+    }
+
+
+def _run_py(args, env_extra):
+    import subprocess
+    import sys
+
+    env = {k: v for k, v in os.environ.items() if k not in ("RAG_BACKEND", "DATABASE_URL")}
+    env.update(env_extra)
+    return subprocess.run(
+        [sys.executable, *args],
+        cwd=pathlib.Path(__file__).parent,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+
+def test_audit_failure_names_each_kind_of_tamper(tmp_path):
+    """F5.2: verify_audit_chain stays a bool; audit_failure says which check failed (ids only)."""
+    cp = tmp_path / "audit.head"
+    rag = _fresh(cp)
+    for q in ("vacation", "policy", "payments"):
+        rag.retrieve(q, GUEST)
+    assert rag.audit_failure() is None
+    with psycopg.connect(ADMIN, autocommit=True) as c:
+        c.execute("UPDATE audit SET line = replace(line, 'elapsed_ms', 'elapsed_mx') WHERE id = 2")
+    assert "audit row 2 does not match its recorded hash" in rag.audit_failure()
+    rag = _fresh(cp)
+    for q in ("vacation", "policy", "payments"):
+        rag.retrieve(q, GUEST)
+    with psycopg.connect(ADMIN, autocommit=True) as c:
+        c.execute("DELETE FROM audit WHERE id = (SELECT max(id) FROM audit)")
+    assert "tail rows deleted" in rag.audit_failure()
+    cp.unlink()
+    assert "checkpoint missing" in rag.audit_failure()
+
+
+def test_cli_verifies_the_pgvector_backend(tmp_path):
+    cp = tmp_path / "audit.head"
+    _fresh(cp)
+    rag = _open[-1]
+    rag.retrieve("vacation", GUEST)
+    rag.retrieve("policy", GUEST)
+    env = _app_env(cp)
+    ok = _run_py(["-m", "audit_verify"], env)
+    assert ok.returncode == 0, ok.stderr
+    with psycopg.connect(ADMIN, autocommit=True) as c:
+        c.execute("DELETE FROM audit WHERE id = (SELECT max(id) FROM audit)")
+    bad = _run_py(["-m", "audit_verify"], env)
+    assert bad.returncode == 1 and "tail rows deleted" in bad.stderr
+    assert KEY.hex() not in bad.stderr + bad.stdout
+    cp.unlink()
+    assert "checkpoint missing" in _run_py(["-m", "audit_verify"], env).stderr
+
+
+def test_server_refuses_to_start_when_the_pgvector_audit_is_tampered(tmp_path):
+    cp = tmp_path / "audit.head"
+    rag = _fresh(cp)
+    rag.retrieve("vacation", GUEST)
+    rag.retrieve("policy", GUEST)
+    with psycopg.connect(ADMIN, autocommit=True) as c:
+        c.execute("DELETE FROM audit WHERE id = (SELECT max(id) FROM audit)")
+    r = _run_py(["underwriter_server.py", "0"], _app_env(cp))
+    assert r.returncode == 2 and "refusing to serve: audit verification failed" in r.stderr
+    assert KEY.hex() not in r.stderr
+
+
+def test_monitor_flips_health_on_pgvector_tamper(tmp_path):
+    import audit_verify
+
+    rag = _fresh(tmp_path / "audit.head")
+    rag.retrieve("vacation", GUEST)
+    monitor = audit_verify.AuditMonitor(rag, 60)
+    monitor.run_once()
+    assert monitor.status()["healthy"]
+    with psycopg.connect(ADMIN, autocommit=True) as c:
+        c.execute("DELETE FROM audit")
+    monitor.run_once()
+    assert not monitor.status()["healthy"]
+
+
+def test_verify_never_races_a_concurrent_audited_read(tmp_path):
+    """retrieve() commits an audit row, then rewrites the checkpoint; a verify between the two
+    would report tampering on a healthy system."""
+    import threading
+
+    rag = _fresh(tmp_path / "audit.head")
+    stop, bad = threading.Event(), []
+
+    def reader():
+        while not stop.is_set():
+            rag.retrieve("vacation", GUEST)
+
+    t = threading.Thread(target=reader)
+    t.start()
+    try:
+        for _ in range(60):
+            if (msg := rag.audit_failure()) is not None:
+                bad.append(msg)
+    finally:
+        stop.set()
+        t.join()
+    assert not bad, bad[:1]
