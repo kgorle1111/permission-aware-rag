@@ -170,18 +170,6 @@ PRICE = {
     "cache_creation_input_tokens": 1.25,
 }
 
-# Running value-receipt totals for /audit — per-process, resets on restart.
-TOTALS = {
-    "asks": 0,
-    "input_tokens": 0,
-    "output_tokens": 0,
-    "cache_read_input_tokens": 0,
-    "est_cost_usd": 0.0,
-    "llm_ms": 0.0,
-}
-_totals_lock = threading.Lock()
-
-
 # Daily spend cap (UTC day): a reservation held before the call and settled after it, shared by every
 # server process on this host through the SQLite file at OPS_DB_PATH (see obs.Ops).
 OPS = obs.Ops(float(os.environ.get("DAILY_BUDGET_USD", "5.0")), db_path=obs.ops_db_path())
@@ -195,15 +183,6 @@ def projected_cost(question, chunks):
 
 def est_cost(usage):
     return round(sum(usage.get(k, 0) * p for k, p in PRICE.items()) / 1e6, 6)
-
-
-def record_ask(usage, llm_ms):
-    with _totals_lock:
-        TOTALS["asks"] += 1
-        for k in ("input_tokens", "output_tokens", "cache_read_input_tokens"):
-            TOTALS[k] += usage.get(k, 0)
-        TOTALS["est_cost_usd"] = round(TOTALS["est_cost_usd"] + est_cost(usage), 6)
-        TOTALS["llm_ms"] = round(TOTALS["llm_ms"] + llm_ms, 1)
 
 
 def rate_limited(ip):
@@ -307,12 +286,13 @@ class Handler(BaseHTTPRequestHandler):
                     out["note"] = "LLM call failed; showing retrieval only."
                 rec["llm_ms"] = round((time.perf_counter() - t0) * 1000, 1)
                 if llm_out:
-                    OPS.settle(hold, est_cost(llm_out["usage"]))
+                    cost = est_cost(llm_out["usage"])
+                    OPS.settle(hold, cost)
+                    OPS.add_llm_totals(llm_out["usage"], rec["llm_ms"], cost)
                 else:
                     OPS.release(hold)  # no billable usage: free the hold for the next caller
             if llm_out:
                 usage = llm_out["usage"]
-                record_ask(usage, rec["llm_ms"])
                 out["answer"] = llm_out["answer"]
                 out["usage"] = usage
                 out["llm_ms"] = rec["llm_ms"]
@@ -407,9 +387,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(body)
                 return
-            with _totals_lock:
-                summary = dict(TOTALS)
-            self._json(200, {"entries": entries, "llm_summary": summary, "ops": OPS.summary()})
+            self._json(200, {"entries": entries, "llm_summary": OPS.totals(), "ops": OPS.summary()})
         else:
             self.send_response(200)
             self.send_header("Content-Type", "text/html")

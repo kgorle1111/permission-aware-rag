@@ -15,7 +15,6 @@ import sqlite3
 import threading
 import time
 import uuid
-from collections import deque
 from collections.abc import Callable, Iterator, Mapping
 from typing import Any
 
@@ -77,20 +76,29 @@ _SCHEMA = """
 CREATE TABLE IF NOT EXISTS spend (day TEXT PRIMARY KEY, usd REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS reservation (
     id INTEGER PRIMARY KEY AUTOINCREMENT, day TEXT NOT NULL, usd REAL NOT NULL, expires REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS request (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, outcome TEXT NOT NULL, total_ms REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS llm_totals (
+    id INTEGER PRIMARY KEY CHECK (id = 1), asks INTEGER NOT NULL, input_tokens INTEGER NOT NULL,
+    output_tokens INTEGER NOT NULL, cache_read_input_tokens INTEGER NOT NULL,
+    est_cost_usd REAL NOT NULL, llm_ms REAL NOT NULL);
+INSERT OR IGNORE INTO llm_totals VALUES (1, 0, 0, 0, 0, 0.0, 0.0);
 """
+
+TOTAL_KEYS = ("input_tokens", "output_tokens", "cache_read_input_tokens")
 
 
 class Ops:
-    """Ops stats plus the daily spend cap.
+    """Ops stats, LLM totals and the daily spend cap.
 
     The cap is a reservation: reserve() atomically holds the projected worst case (or refuses),
     settle() swaps the hold for the actual cost, release() drops it. State lives in a SQLite file
-    (WAL, BEGIN IMMEDIATE) so every server process on one host shares one budget. Without db_path
-    the store is private to this object, which is what tests and library callers want.
+    (WAL, BEGIN IMMEDIATE) so every server process on one host shares one budget and one set of
+    stats. The request window keeps the newest `keep` rows. Without db_path the store is private to
+    this object, which is what tests and library callers want.
     """
 
     # kn: one host only (SQLite file locking); a shared DB or Redis once the server runs on several hosts
-    # kn: per-process memory, resets on restart; a persistent store if /audit must survive restarts or span workers
     def __init__(
         self,
         budget_usd: float,
@@ -101,7 +109,7 @@ class Ops:
         if budget_usd < 0:
             raise ValueError("DAILY_BUDGET_USD must be >= 0")
         self.budget_usd, self.clock = budget_usd, clock
-        self._recent: deque[dict[str, Any]] = deque(maxlen=keep)
+        self._keep = keep
         self._lock = threading.Lock()
         self._path = str(db_path) if db_path is not None else None
         self._mem = self._connect(":memory:") if self._path is None else None
@@ -199,13 +207,35 @@ class Ops:
 
     def record(self, rec: dict[str, Any]) -> None:
         """Stats only; spend is booked by settle() so the cap and the books cannot drift apart."""
-        with self._lock:
-            self._recent.append({"outcome": rec["outcome"], "total_ms": rec["total_ms"]})
+        with self._tx() as con:
+            con.execute(
+                "INSERT INTO request (outcome, total_ms) VALUES (?, ?)", (rec["outcome"], rec["total_ms"])
+            )
+            con.execute("DELETE FROM request WHERE id <= (SELECT MAX(id) FROM request) - ?", (self._keep,))
+
+    def add_llm_totals(self, usage: Mapping[str, int], llm_ms: float, cost_usd: float) -> None:
+        """Running value-receipt totals for /audit: one answered LLM call."""
+        with self._tx() as con:
+            con.execute(
+                "UPDATE llm_totals SET asks = asks + 1, input_tokens = input_tokens + ?, "
+                "output_tokens = output_tokens + ?, cache_read_input_tokens = cache_read_input_tokens + ?, "
+                "est_cost_usd = round(est_cost_usd + ?, 6), llm_ms = round(llm_ms + ?, 1)",
+                (*(usage.get(k, 0) for k in TOTAL_KEYS), cost_usd, llm_ms),
+            )
+
+    def totals(self) -> dict[str, Any]:
+        with self._tx() as con:
+            cur = con.execute(
+                "SELECT asks, input_tokens, output_tokens, cache_read_input_tokens, est_cost_usd, llm_ms FROM llm_totals"
+            )
+            return dict(zip(("asks", *TOTAL_KEYS, "est_cost_usd", "llm_ms"), cur.fetchone(), strict=True))
 
     def summary(self) -> dict[str, Any]:
-        with self._lock:
-            recent = list(self._recent)
         with self._tx() as con:
+            recent = [
+                {"outcome": o, "total_ms": ms}
+                for o, ms in con.execute("SELECT outcome, total_ms FROM request")
+            ]
             spend = {day: usd for day, usd in con.execute("SELECT day, usd FROM spend")}
         n = len(recent)
         counts: dict[str, int] = {}
