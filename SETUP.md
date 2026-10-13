@@ -96,6 +96,16 @@ python scripts/check_mutations.py mutants/mutmut-cicd-stats.json --mutants-dir m
 - **Never run a formatter over `platform/`.** Root ruff excludes it, but naming platform paths on
   the command line still reformats them and breaks every pin.
 
+## Dependency audit
+
+CI's `audit` job fails on any known vulnerability in the locked root dependencies or any
+`platform/requirements*.txt`, and uploads a CycloneDX SBOM (`sbom.cdx.json`). Locally:
+
+```bash
+uv export --locked --group dev --extra pg --no-hashes > /tmp/root-requirements.txt
+uvx pip-audit==2.10.1 -r /tmp/root-requirements.txt -r platform/requirements.txt -r platform/requirements-dev.txt
+```
+
 ## Conventions
 
 - **Ledgers:** every threat (`docs/THREAT_MODEL.md`, `T<n>`) and backlog item (`ROADMAP.md`,
