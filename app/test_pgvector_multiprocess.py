@@ -30,7 +30,7 @@ READS, WORKERS = 150, 3
 
 def _app_dsn() -> str:
     assert ADMIN
-    return psycopg.conninfo.make_conninfo(ADMIN, user="rag_app", password="rag_app")
+    return str(psycopg.conninfo.make_conninfo(ADMIN, user="rag_app", password="rag_app"))
 
 
 def reader_process(key_hex: str, checkpoint: str, reads: int) -> None:
@@ -40,10 +40,10 @@ def reader_process(key_hex: str, checkpoint: str, reads: int) -> None:
         rag.retrieve("vacation", GUEST)
 
 
-def _spawn_readers(checkpoint: pathlib.Path) -> list[mp.process.BaseProcess]:
+def _spawn_readers(rag: PgVectorRAG, checkpoint: pathlib.Path) -> list[mp.process.BaseProcess]:
     ctx = mp.get_context("spawn")
-    procs = [
-        ctx.Process(target=reader_process, args=(base.KEY.hex(), str(checkpoint), READS))
+    procs: list[mp.process.BaseProcess] = [
+        ctx.Process(target=reader_process, args=(rag._principal_key.hex(), str(checkpoint), READS))
         for _ in range(WORKERS)
     ]
     for p in procs:
@@ -61,7 +61,7 @@ def test_processes_interleaving_retrieves_leave_a_verifying_checkpoint(tmp_path)
     cp = tmp_path / "audit.head"
     rag = base._fresh(cp)
     rag.retrieve("vacation", GUEST)
-    _join(_spawn_readers(cp))
+    _join(_spawn_readers(rag, cp))
     assert rag.audit_failure() is None
     assert cp.read_text().split()[0] == str(WORKERS * READS + 1)  # the file holds the true newest row
 
@@ -70,7 +70,7 @@ def test_verify_never_reports_tampering_while_other_processes_write(tmp_path):
     cp = tmp_path / "audit.head"
     rag = base._fresh(cp)
     rag.retrieve("vacation", GUEST)
-    procs = _spawn_readers(cp)
+    procs = _spawn_readers(rag, cp)
     bad = []
     while any(p.is_alive() for p in procs):
         if (msg := rag.audit_failure()) is not None:
@@ -83,7 +83,7 @@ def test_deleting_the_newest_row_still_fails_after_multi_process_traffic(tmp_pat
     cp = tmp_path / "audit.head"
     rag = base._fresh(cp)
     rag.retrieve("vacation", GUEST)
-    _join(_spawn_readers(cp))
+    _join(_spawn_readers(rag, cp))
     assert rag.audit_failure() is None
     with psycopg.connect(ADMIN, autocommit=True) as c:
         c.execute("DELETE FROM audit WHERE id = (SELECT max(id) FROM audit)")
@@ -120,7 +120,7 @@ def test_two_threads_and_two_instances_share_the_lock(tmp_path):
     """Two PgVectorRAG objects in one process (as in tests or a pool) exclude each other too."""
     cp = tmp_path / "audit.head"
     a = base._fresh(cp)
-    b = PgVectorRAG(_app_dsn(), principal_key=base.KEY, audit_checkpoint_path=cp)
+    b = PgVectorRAG(_app_dsn(), principal_key=a._principal_key, audit_checkpoint_path=cp)
     try:
         threads = [
             threading.Thread(target=lambda r=r: [r.retrieve("vacation", GUEST) for _ in range(40)])

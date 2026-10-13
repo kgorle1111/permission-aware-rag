@@ -32,6 +32,7 @@ Same public surface as PermissionRAG: add_document / remove_document / retrieve 
 audit / verify_audit_chain. Requires `psycopg` (the project's only optional dep).
 """
 
+import contextlib
 import datetime
 import hashlib
 import hmac
@@ -39,9 +40,14 @@ import json
 import pathlib
 import re
 import secrets
+import sys
 import threading
 import time
+from collections.abc import Iterator
 from dataclasses import dataclass, field
+
+if sys.platform != "win32":
+    import fcntl
 
 import psycopg
 from embedding import DIMS, embed, to_pgvector
@@ -429,14 +435,15 @@ class PgVectorRAG:
         audit_checkpoint_path (T12): a file OUTSIDE the database holding "<id> <sha256>" of the newest
         audit row, rewritten after every audited call. verify_audit_chain() then fails if the tail was
         deleted or the file is missing. None = unanchored (tail deletion goes undetected).
-        Per-process anchor: several app processes each need one shared anchor (see ROADMAP B17),
-        else the chain head moves past a stale checkpoint and verify fails."""
+        Several app processes on one host may share the same path: every audited call and every
+        verification holds an exclusive flock on "<path>.lock" (POSIX only; ROADMAP B17), and the file
+        only ever moves forward. Several hosts need a shared anchor store instead."""
         if not _KID.fullmatch(principal_key_id):
             raise ValueError("principal_key_id must look like k1, k2, ...")
         self._principal_key, self._principal_key_id = principal_key, principal_key_id
         self._checkpoint = pathlib.Path(audit_checkpoint_path) if audit_checkpoint_path else None
-        # kn: per-process audit anchor; add a shared anchor store when running more than one app process
-        # serialises call + read head + write file, so threads can't regress the file
+        # kn: one host only (flock on a sibling file); a shared anchor store once app processes span hosts
+        # serialises call + read head + write file across threads here and, via the flock, across processes
         self._anchor_lock = threading.Lock()
         # autocommit: single reads commit immediately (no idle-in-transaction locks);
         # multi-statement work still uses explicit conn.transaction() blocks, which
@@ -533,18 +540,71 @@ class PgVectorRAG:
     def sign_principals(self, principals: list[str], now: float | None = None) -> str:
         return sign_principals(self._principal_key, principals, now, self._principal_key_id)
 
+    LOCK_TIMEOUT_S = 30.0  # a wedged lock holder must fail audited calls closed, not hang every worker
+
+    @contextlib.contextmanager
+    def _anchored(self) -> Iterator[None]:
+        """Exclusive section for "audited call + checkpoint write" and for verification.
+
+        The row is committed by the call and the checkpoint written after, so anything reading
+        between the two (another thread or process) would see a head that is not tampering. The
+        flock covers the whole span; it is a no-op without a checkpoint and on Windows, where
+        several processes sharing one checkpoint are unsupported.
+        """
+        with self._anchor_lock:
+            if self._checkpoint is None or sys.platform == "win32":
+                yield
+                return
+            deadline = time.monotonic() + self.LOCK_TIMEOUT_S
+            with open(f"{self._checkpoint}.lock", "a") as lock:
+                while True:
+                    try:
+                        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                        break
+                    except BlockingIOError:
+                        if time.monotonic() > deadline:
+                            raise TimeoutError(
+                                f"timed out waiting for the audit anchor lock {lock.name}"
+                            ) from None
+                        time.sleep(0.005)
+                try:
+                    yield
+                finally:
+                    fcntl.flock(lock, fcntl.LOCK_UN)
+
     def _anchor(self) -> None:
-        """Record the newest audit row in the external checkpoint (no-op if none configured)."""
-        if self._checkpoint:
-            row = self.conn.execute("SELECT id, line_sha256 FROM audit ORDER BY id DESC LIMIT 1").fetchone()
-            if row:
-                PermissionRAG.atomic_write(self._checkpoint, f"{row[0]} {row[1]}")
+        """Record the newest audit row in the external checkpoint (no-op if none configured).
+
+        Call inside _anchored(), so the row read here is the true newest one. The file only moves
+        forward, and only from a head that is still in the table: if it names a row that is
+        missing, replaced or at/past the newest, it is left alone. Rewriting it then would turn a
+        tail deletion or a replaced row into a chain that verifies.
+        """
+        if not self._checkpoint:
+            return
+        row = self.conn.execute("SELECT id, line_sha256 FROM audit ORDER BY id DESC LIMIT 1").fetchone()
+        if row and self._may_advance(row[0]):
+            PermissionRAG.atomic_write(self._checkpoint, f"{row[0]} {row[1]}")
+
+    def _may_advance(self, newest_id: int) -> bool:
+        assert self._checkpoint
+        try:
+            anchored_id, anchored_hash = self._checkpoint.read_text().split(" ", 1)
+            anchored = int(anchored_id)
+        except (OSError, ValueError):  # missing or garbled: write it; verification reports garbage
+            return True
+        if anchored >= newest_id:
+            return False
+        found = self.conn.execute(
+            "SELECT 1 FROM audit WHERE id = %s AND line_sha256 = %s", (anchored, anchored_hash)
+        ).fetchone()
+        return found is not None
 
     def retrieve(self, query: str, user: dict, k: int = 3) -> list[dict]:
         qvec = to_pgvector(embed(query))
         token = self.sign_principals(self.principals(user))
         # rag_search verifies the token, applies RLS and writes the audit row server-side (T19)
-        with self._anchor_lock:
+        with self._anchored():
             rows = self.conn.execute(
                 "SELECT id, doc_id, text, score FROM rag_search(%s, %s::vector, %s)", (token, qvec, k)
             ).fetchall()
@@ -563,7 +623,7 @@ class PgVectorRAG:
         "sqlstate": ...}. Every call is audited by the database (hashes, status, row count).
         """
         token = self.sign_principals(self.principals(user))
-        with self._anchor_lock:
+        with self._anchored():
             with self.conn.transaction():
                 # the timer arms when the rag_sql_run statement starts, so it must be set before it
                 self.conn.execute(f"SET LOCAL statement_timeout = {int(self.SQL_TIMEOUT_MS)}")
@@ -591,7 +651,7 @@ class PgVectorRAG:
         reader between the two would see a mismatch that is not tampering.
         """
         # kn: full scan under the anchor lock; verify incrementally from a saved (id, hash) if audit grows large
-        with self._anchor_lock:
+        with self._anchored():
             prev, last_id = "", None
             for row_id, line, recorded_hash in self.conn.execute(
                 "SELECT id, line, line_sha256 FROM audit ORDER BY id ASC"
