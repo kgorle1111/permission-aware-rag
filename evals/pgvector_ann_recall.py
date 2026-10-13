@@ -178,8 +178,8 @@ def load(admin_dsn: str, rows: int, nq: int) -> Corpus:
 def build_index(admin_dsn: str, m: int, efc: int) -> float:
     t0 = time.perf_counter()
     with psycopg.connect(admin_dsn, autocommit=True) as conn:
-        conn.execute("SET maintenance_work_mem = '1GB'")
-        conn.execute("SET max_parallel_maintenance_workers = 3")
+        conn.execute("SET maintenance_work_mem = '512MB'")
+        conn.execute("SET max_parallel_maintenance_workers = 0")
         conn.execute(
             f"CREATE INDEX chunks_embedding_hnsw ON chunks USING hnsw (embedding vector_cosine_ops) "
             f"WITH (m = {int(m)}, ef_construction = {int(efc)})"
