@@ -4,6 +4,7 @@ Threads and separate processes hammer one file with a tiny budget; the sum of se
 never pass it. The workers are module-level so multiprocessing's spawn start method can import them.
 """
 
+import contextlib
 import datetime as dt
 import multiprocessing as mp
 import pathlib
@@ -111,7 +112,8 @@ def test_spend_survives_a_new_instance_and_resets_at_utc_midnight(tmp_path: path
 def test_store_is_wal_and_a_corrupt_file_fails_loudly(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "ops.sqlite"
     obs.Ops(1.0, db_path=path).spent_today()
-    assert sqlite3.connect(path).execute("PRAGMA journal_mode").fetchone() == ("wal",)
+    with contextlib.closing(sqlite3.connect(path)) as db:
+        assert db.execute("PRAGMA journal_mode").fetchone() == ("wal",)
     bad = tmp_path / "bad.sqlite"
     bad.write_bytes(b"not a database" * 100)
     with pytest.raises(sqlite3.DatabaseError):

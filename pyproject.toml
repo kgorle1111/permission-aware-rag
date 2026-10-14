@@ -27,6 +27,7 @@ ignore = ["E501"]  # long lines are synthetic corpus text and inline HTML, not c
 
 [tool.pytest.ini_options]
 testpaths = ["app"]
+filterwarnings = ["error::ResourceWarning", "error::pytest.PytestUnraisableExceptionWarning"]
 
 [tool.mypy]
 python_version = "3.12"

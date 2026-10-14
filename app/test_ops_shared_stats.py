@@ -1,5 +1,6 @@
 """Ops stats and LLM totals are shared by every process on the host (ROADMAP B12)."""
 
+import contextlib
 import datetime as dt
 import json
 import multiprocessing as mp
@@ -80,7 +81,8 @@ def test_the_request_window_is_bounded_in_the_file(tmp_path: pathlib.Path) -> No
         rec.update(outcome="ok", total_ms=float(i))
         ops.record(rec)
     assert ops.summary()["requests"] == 5
-    assert sqlite3.connect(path).execute("SELECT COUNT(*) FROM request").fetchone() == (5,)
+    with contextlib.closing(sqlite3.connect(path)) as db:
+        assert db.execute("SELECT COUNT(*) FROM request").fetchone() == (5,)
     assert ops.summary()["latency_ms"]["p50"] == 9.0  # the newest five survive: 7..11
 
 
@@ -92,7 +94,8 @@ def test_the_audit_endpoint_reflects_requests_recorded_by_another_process(
     monkeypatch.setattr(srv, "OPS", obs.Ops(5.0, clock=lambda: clock, db_path=path))
     monkeypatch.setattr(srv, "JWT_SECRET", None)
     server = ThreadingHTTPServer(("127.0.0.1", 0), srv.Handler)
-    threading.Thread(target=server.serve_forever, daemon=True).start()
+    t = threading.Thread(target=server.serve_forever, daemon=True)
+    t.start()
     try:
         _run_children(path)  # five requests and two LLM calls, none of them from this process
         url = f"http://127.0.0.1:{server.server_address[1]}/audit?user=junior"
@@ -100,5 +103,7 @@ def test_the_audit_endpoint_reflects_requests_recorded_by_another_process(
             body = json.load(r)
     finally:
         server.shutdown()
+        server.server_close()
+        t.join()
     assert body["ops"]["requests"] == 5
     assert body["llm_summary"]["asks"] == 2
