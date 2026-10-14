@@ -157,6 +157,8 @@ def test_disagreement_found_after_global_integrity_check_keeps_barrier_and_repai
         with monkeypatch.context() as patch:
             patch.setattr(sync, 'permission_transaction', expose_source_transaction)
             patch.setattr(sync, 'read_source', altered_source)
+            # the pre-barrier peek must see a change, or the barrier path never runs
+            patch.setattr(sync, '_peek_source', lambda _: {'company-strategy': ['group:eng']})
             with pytest.raises(RuntimeError) as error:
                 sync.sync_once()
             assert str(error.value) == 'inconsistent document policy; full reingestion required'
