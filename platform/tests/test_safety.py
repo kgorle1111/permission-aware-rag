@@ -1,5 +1,6 @@
 """Platform safety: embedding fingerprint, PII redaction, ACL-safe degradation."""
 import json
+from pathlib import Path
 import logging
 from unittest.mock import Mock
 
@@ -326,7 +327,7 @@ def test_keyword_fallback_honors_revocation_after_sync(client, monkeypatch):
     monkeypatch.setattr(retrieval, "embed_one", Mock(side_effect=RuntimeError("x")))
     alice = _principal("alice")
     assert retrieval.retrieve("on-call rotation pager", alice)["results"]
-    rows = [json.loads(line) for line in open(config.PERMISSIONS_SOURCE)]
+    rows = [json.loads(line) for line in Path(config.PERMISSIONS_SOURCE).read_text().splitlines()]
     with open(config.PERMISSIONS_SOURCE, "w") as f:
         for r in rows:
             if r["doc_id"] == "eng-oncall":
@@ -372,7 +373,7 @@ def test_keyword_fallback_with_only_stopwords_returns_nothing(client, monkeypatc
 
 def test_deleted_document_text_is_removed_from_sql_mirror(client):
     from app.sync import sync_once
-    rows = [json.loads(line) for line in open(config.PERMISSIONS_SOURCE)]
+    rows = [json.loads(line) for line in Path(config.PERMISSIONS_SOURCE).read_text().splitlines()]
     rows.append({"doc_id": "handbook", "deleted": True})
     rows = [r for r in rows if not (r["doc_id"] == "handbook" and not r.get("deleted"))]
     with open(config.PERMISSIONS_SOURCE, "w") as f:
