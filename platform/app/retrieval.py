@@ -1,4 +1,4 @@
-"""Filtered retrieval; serialized permission check, generation, and durable audit."""
+"""Filtered retrieval; lock-free permission read and generation, then a short revalidated audit commit."""
 from __future__ import annotations
 
 import asyncio
@@ -18,7 +18,7 @@ from .identity import Principal
 from .redact import redact
 from .rerank import rerank
 from .resilience import BREAKERS, keyword_search
-from .store import fingerprint_problem, permission_transaction
+from .store import PermissionState, SessionLocal, fingerprint_problem, permission_transaction
 from .vectorstore import search, search_unfiltered_count
 
 log = logging.getLogger("permrag")
@@ -172,10 +172,16 @@ def _retrieve(query: str, principal: Principal, k: int, rec: dict):
     try:
         if not 1 <= k <= 20:
             raise ValueError("k must be between 1 and 20")
-        with permission_transaction() as (session, state):
+        # Phase 1 takes no write lock, so queries run concurrently. It reads the permission state,
+        # then retrieves and generates against it.
+        with SessionLocal() as session:
+            state = session.get(PermissionState, 1)
+            if state is None:
+                raise RuntimeError("permission state missing; initialize and ingest")
             if state.pending or state.rebuild_required:
                 raise RuntimeError("permission reconciliation required")
-            key = (state.revision, principal.scope_key, query, k)
+            revision = state.revision
+            key = (revision, principal.scope_key, query, k)
             with _cache_lock:
                 cached = _cache.get(key)
             if cached and time.monotonic() - cached[0] <= config.CACHE_TTL_S:
@@ -186,9 +192,17 @@ def _retrieve(query: str, principal: Principal, k: int, rec: dict):
                 if problem:
                     raise RuntimeError(problem)
                 response, chunk_ids, doc_ids, denied = _compute(session, query, principal, k, rec)
+        # Phase 2 is the old critical section, now only the audit insert. Every permission mutation
+        # sets a barrier (pending, revision + 1) before it touches either store and commits it
+        # first, so an unchanged revision here means no mutation began after phase 1 read the state:
+        # the result is ordered before any later revocation. A moved revision or a standing barrier
+        # fails the query closed; nothing computed is returned or cached.
+        with permission_transaction() as (audit_session, state):
+            if state.revision != revision or state.pending or state.rebuild_required:
+                raise RuntimeError("permission state changed during retrieval")
             rec["denied"] = denied
             write_audit(principal, query, chunk_ids, doc_ids, denied,
-                        response["source"] == "unavailable", session=session)
+                        response["source"] == "unavailable", session=audit_session)
         # Reaching here confirms the audit transaction committed. Copies keep
         # callers from modifying cached results. Revisions invalidate all workers.
         if response["degraded"]:
