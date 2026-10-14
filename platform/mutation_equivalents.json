@@ -146,38 +146,38 @@
       "mutant_sha256": "a570ef5e432152c533f545c887edcb64de052b97424d4c01096e407f9145db61",
       "reason": "total -= d instead of += d: (-x) % 10 == 0 exactly when x % 10 == 0, so the validity result never changes."
     },
-    "app.retrieval.x__retrieve__mutmut_77": {
+    "app.retrieval.x__retrieve__mutmut_94": {
       "reason": "OrderedDict.popitem(last=None): None is falsy, so it pops in FIFO order exactly like last=False; eviction still drops the oldest entry.",
-      "source_sha256": "a4c8d0eccf6b8161f419360be33dfe47e6cc471772920f5f2e75c2c02fa8ed02",
-      "mutant_sha256": "e34c68994dff1d7178386825466750a126ee32ddac38f1c7f542db6735b705c5"
+      "source_sha256": "ed6803527bf7b2f3f7634a4e5819b38540be52de83c114a636e99569df6431c0",
+      "mutant_sha256": "490ddf2cb78fcc982930d49fb5eda5db7e323072967332921fecddee50e68a0c"
     },
     "app.store.x_init_db__mutmut_15": {
-      "source_sha256": "9fe691f59464e713206b397590bba781c440bd615de0dcf95c41710d086d0d65",
+      "source_sha256": "6e77af82b4d4aae1614d88d98cb5eab2183c145afc4d540cd3ad634c7a8e5748",
       "mutant_sha256": "3035c586835b53ea2f26dcc8143b4e541e18c1fb628a04696742d929a129e5a1",
       "reason": "The upgrade UPDATE is constrained by pending IS TRUE; omitting pending=True leaves exactly the same True value on every matched row in the supported schema, while rebuild_required and revision updates are unchanged."
     },
     "app.store.x_init_db__mutmut_52": {
-      "source_sha256": "9fe691f59464e713206b397590bba781c440bd615de0dcf95c41710d086d0d65",
+      "source_sha256": "6e77af82b4d4aae1614d88d98cb5eab2183c145afc4d540cd3ad634c7a8e5748",
       "mutant_sha256": "8da944f3ef0529801cf1b5e753cc3daf92df04f6a43bcd7b4e4924da32d2e1f3",
       "reason": "SQL keywords and unquoted lowercase table/column identifiers and JSON type are case-insensitive in supported SQLite and PostgreSQL; changing this statement to lowercase preserves the same migration and durable barrier."
     },
     "app.store.x_init_db__mutmut_74": {
-      "source_sha256": "9fe691f59464e713206b397590bba781c440bd615de0dcf95c41710d086d0d65",
+      "source_sha256": "6e77af82b4d4aae1614d88d98cb5eab2183c145afc4d540cd3ad634c7a8e5748",
       "mutant_sha256": "2299ff0611f3f926ee3c0e5dbb7fef9d52b975e6f72d03e0f0db84b46d4ac9e5",
       "reason": "SQLAlchemy applies the column default (0) when revision=None is passed; probed: row persists revision 0, pending True."
     },
     "app.store.x_init_db__mutmut_75": {
-      "source_sha256": "9fe691f59464e713206b397590bba781c440bd615de0dcf95c41710d086d0d65",
+      "source_sha256": "6e77af82b4d4aae1614d88d98cb5eab2183c145afc4d540cd3ad634c7a8e5748",
       "mutant_sha256": "382f4c7ced6f6c49d75d49d4fec28067c739b29a800de0944473a3bf81d15e4a",
       "reason": "SQLAlchemy applies the column default (True) when pending=None is passed; probed: row persists revision 0, pending True."
     },
     "app.store.x_init_db__mutmut_77": {
-      "source_sha256": "9fe691f59464e713206b397590bba781c440bd615de0dcf95c41710d086d0d65",
+      "source_sha256": "6e77af82b4d4aae1614d88d98cb5eab2183c145afc4d540cd3ad634c7a8e5748",
       "mutant_sha256": "be45839d0f2f51e5ceaf4ae8c1d8e8ab9491839d4b57d19d3c26d7cf1ca3253c",
       "reason": "Omitting revision uses Column(default=0); probed on SQLite: persisted row identical to revision=0."
     },
     "app.store.x_init_db__mutmut_78": {
-      "source_sha256": "9fe691f59464e713206b397590bba781c440bd615de0dcf95c41710d086d0d65",
+      "source_sha256": "6e77af82b4d4aae1614d88d98cb5eab2183c145afc4d540cd3ad634c7a8e5748",
       "mutant_sha256": "0e96779915dfaa0806bee7222a0aca1fb11df212f38e9c3ca7a137dd9085b7ce",
       "reason": "Omitting pending uses Column(default=True); probed on SQLite: persisted row identical to pending=True."
     },
