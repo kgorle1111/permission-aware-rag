@@ -69,7 +69,7 @@ So we built evidence that can fail:
 | The same probes against Postgres with row-level security | **0 of 1,350** |
 | Planted leak bugs caught by the original hand-written check | 1 of 6 |
 | Original planted leak bugs caught with the isolation check | **6 of 6** |
-| Expanded gate, including OR-across-levels and flat-intersection faults | **8 of 8** |
+| Expanded gate, including OR-across-levels, flat-intersection and unscoped-cache faults | **9 of 9** |
 | Real documents we didn't write: 600 EnronQA questions over 14,542 Enron emails, readers from sender/recipient headers | **0 of 4,300** unreadable chunks returned |
 | Public benchmark (BEIR SciFact, NFCorpus, FiQA): retrieval matches published numbers; synthetic 4-tenant permission filter | bge-small within **0.001** of MTEB nDCG@10; **0 of 113,573** out-of-tenant results |
 
@@ -108,7 +108,7 @@ flowchart LR
 |---|---|
 | 🔒 **Permission first, not filter after** | Forbidden text never enters ranking, so it can't shape the answer, the order or the citations. |
 | 🐘 **The database enforces it too** | In the Postgres backend, row-level security returns only permitted rows, even if a query forgets its filter. |
-| 🧪 **Tests that are proven to fail** | Planted leak bugs, a 1,708-mutant mutation gate, and docs that break the build when they drift from the code. |
+| 🧪 **Tests that are proven to fail** | Planted leak bugs, a 3,054-mutant mutation gate, and docs that break the build when they drift from the code. |
 | 🧾 **Receipts on every answer** | Latency and estimated cost per answer (about $0.002 on Claude Haiku 4.5), plus an audit log that detects edits. |
 
 ## 🧑‍💼 What this shows, if you're hiring
@@ -123,7 +123,7 @@ flowchart LR
 - **Two layers.** A reference core in Python stdlib only (~600 readable lines, no dependencies), plus [`platform/`](platform/README.md), the same design as a deployable service on FastAPI, Qdrant, SQLAlchemy and PyJWT.
 - **Two search backends.** BM25 in memory, or pgvector on Postgres with row-level security. Both run the leak gates in CI.
 - **387 platform tests at 98.97% branch coverage**, with a 96% floor enforced in CI.
-- **A blocking mutation gate.** 1,708 mutants: every survivor is either killed by a test or pinned as a reviewed equivalent with a written reason.
+- **A blocking mutation gate.** 3,054 mutants: every survivor is either killed by a test or pinned as a reviewed equivalent with a written reason.
 - **Fresh independent tests and review** caught audit privacy and prompt-boundary gaps;
   [repairs, preregistration and mutation limits](docs/INDEPENDENT_VERIFICATION.md) are documented.
   Four manual faults cover selected decorated code omitted by mutmut; coverage is finite.
