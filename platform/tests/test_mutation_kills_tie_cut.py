@@ -73,3 +73,23 @@ def test_all_tied_set_over_the_cap_is_dropped_whole_for_every_ingest_order(hybri
     monkeypatch.setattr(vectorstore, "MAX_TIE_FETCH", 8)
     spec = [(1, 0.95)] + [(100 + n, 0.70) for n in range(14)]
     _assert_stable(hybrid_store, _pts(spec), 4, [1])
+
+
+# _dense_pool 34 (`limit >= MAX_TIE_FETCH` -> `>`): at the cap the loop never returns. Bound the
+# number of fetches so an unbounded loop fails fast instead of hanging the suite (and mutmut).
+def test_widening_stops_at_the_cap_within_a_bounded_number_of_fetches(hybrid_store, monkeypatch):
+    monkeypatch.setattr(vectorstore, "MAX_TIE_FETCH", 8)
+    spec = [(1, 0.95)] + [(100 + n, 0.70) for n in range(14)]
+    hybrid_store(_pts(spec))
+    real, calls = vectorstore.client(), []
+
+    class Bounded:
+        def query_points(self, *args, **kwargs):
+            calls.append(kwargs.get("limit"))
+            if len(calls) > 6:
+                raise AssertionError(f"tie widening did not stop at the cap: limits {calls}")
+            return real.query_points(*args, **kwargs)
+
+    monkeypatch.setattr(vectorstore, "client", Bounded)
+    ids = [h.id for h in vectorstore._dense_pool(QUERY, vectorstore._acl_filter(ACL), 4)]
+    assert ids == [1] and calls == [5, 8]
