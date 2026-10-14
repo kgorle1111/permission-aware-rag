@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app import config, ingest, retrieval, sync, vectorstore
 from app.store import ChunkACL, ChunkPolicy, PermissionState, SessionLocal, SourceCheckpoint
 from conftest import CORPUS, auth, reingest
+from failclosed_assert import assert_failed_closed
 
 
 def _source(tmp_path, rows):
@@ -18,7 +19,7 @@ def _source(tmp_path, rows):
 def _blocked(client):
     assert client.get("/readyz").status_code == 503
     response = client.post("/query", json={"query": "salary bands"}, headers=auth("bob"))
-    assert response.json() == retrieval.EMPTY_RESPONSE
+    assert_failed_closed(response)
     with SessionLocal() as session:
         assert session.get(PermissionState, 1).pending is True
 
@@ -88,7 +89,7 @@ def test_retry_with_different_patch_keeps_prior_durable_revoke(client, tmp_path,
 
 def test_explicit_new_same_document_patch_supersedes_failed_grant(client, tmp_path, monkeypatch):
     """Latest explicit intent wins, while section/paragraph restrictions survive."""
-    source = _source(tmp_path, [{"doc_id": "company-strategy", "acl": ["*"]}])
+    source = _source(tmp_path, [{"doc_id": "company-strategy", "acl": ["group:eng"]}])
     real_update = vectorstore.update_doc_acls
 
     def grant_then_fail(acls):

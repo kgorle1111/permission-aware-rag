@@ -6,6 +6,7 @@ import json
 import pytest
 
 from conftest import CORPUS, _key, auth
+from failclosed_assert import assert_failed_closed
 
 
 def _signed_token(claims):
@@ -66,9 +67,7 @@ def test_pending_permission_state_bypasses_previously_cached_answer(client):
             session.commit()
 
         blocked = client.post("/query", json={"query": query}, headers=auth("bob"))
-        assert blocked.status_code == 200
-        from app import retrieval
-        assert blocked.json() == retrieval.EMPTY_RESPONSE
+        assert_failed_closed(blocked)
     finally:
         # Restore the durable state so this fixture does not leak into later tests.
         with SessionLocal() as session:

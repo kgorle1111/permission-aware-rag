@@ -3,14 +3,17 @@ name: platform
 on:
   # only what the platform job reads: root-only PRs shouldn't wait ~75 min for its mutation gate
   push:
+    branches: [main]  # feature branches are covered by pull_request; a merge from main mustn't retrigger
     paths:
       - "platform/**"
       - "evals/verify_decorated_mutations.py"
+      - "evals/enronqa/run.py"  # imported by platform/scripts/rung_enronqa.py and its tests
       - ".github/workflows/platform.yml"
   pull_request:
     paths:
       - "platform/**"
       - "evals/verify_decorated_mutations.py"
+      - "evals/enronqa/run.py"  # imported by platform/scripts/rung_enronqa.py and its tests
       - ".github/workflows/platform.yml"
 
 # the platform/ subproject (FastAPI + Qdrant + Drive sync) keeps its own gates

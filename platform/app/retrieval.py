@@ -1,4 +1,4 @@
-"""Filtered retrieval; serialized permission check, generation, and durable audit."""
+"""Filtered retrieval; lock-free permission read and generation, then a short revalidated audit commit."""
 from __future__ import annotations
 
 import asyncio
@@ -18,12 +18,13 @@ from .identity import Principal
 from .redact import redact
 from .rerank import rerank
 from .resilience import BREAKERS, keyword_search
-from .store import fingerprint_problem, permission_transaction
+from .store import PermissionState, SessionLocal, fingerprint_problem, permission_transaction
 from .vectorstore import search, search_unfiltered_count
 
 log = logging.getLogger("permrag")
-# Fail-closed and no-match responses are deliberately identical: a denied or broken
-# request must not be distinguishable from a query about nothing.
+# Denied and no-match responses are deliberately identical: a hidden document must not be
+# distinguishable from a nonexistent one. A failed-closed request is NOT a no-match: the HTTP route
+# answers it with a 503 (see retrieve_checked); this body is what library callers get.
 EMPTY_RESPONSE = {"results": [], "answer": "No results found.", "degraded": False, "source": "full_rag"}
 _cache = OrderedDict()
 _cache_lock = RLock()
@@ -142,6 +143,16 @@ def _outcome(response: dict) -> str:
 
 
 def retrieve(query: str, principal: Principal, k: int = None, request_id: str = None) -> dict:
+    """Library entry point: a failed-closed request returns EMPTY_RESPONSE."""
+    return retrieve_checked(query, principal, k, request_id)[0]
+
+
+def retrieve_checked(query: str, principal: Principal, k: int = None,
+                     request_id: str = None) -> tuple[dict, bool]:
+    """(response, failed_closed). The HTTP route turns the flag into a 503, so an outage is not
+    mistaken for "nothing matched". Every cause is global state (permission barrier, index
+    fingerprint, SQL, audit) or the caller's own request; none reads a document the caller cannot
+    see, so the flag reveals nothing about hidden content."""
     rec, started = obs.new_record(request_id), perf_counter()
     response, failed = _retrieve(query, principal, k, rec)
     rec.update(source=response["source"], degraded=response["degraded"],
@@ -153,7 +164,7 @@ def retrieve(query: str, principal: Principal, k: int = None, request_id: str = 
     rec["total_ms"] = _ms(started)
     obs.OPS.record(rec)
     obs.emit(rec)
-    return response
+    return response, failed or response["source"] == "unavailable"
 
 
 def _retrieve(query: str, principal: Principal, k: int, rec: dict):
@@ -161,10 +172,16 @@ def _retrieve(query: str, principal: Principal, k: int, rec: dict):
     try:
         if not 1 <= k <= 20:
             raise ValueError("k must be between 1 and 20")
-        with permission_transaction() as (session, state):
+        # Phase 1 takes no write lock, so queries run concurrently. It reads the permission state,
+        # then retrieves and generates against it.
+        with SessionLocal() as session:
+            state = session.get(PermissionState, 1)
+            if state is None:
+                raise RuntimeError("permission state missing; initialize and ingest")
             if state.pending or state.rebuild_required:
                 raise RuntimeError("permission reconciliation required")
-            key = (state.revision, principal.scope_key, query, k)
+            revision = state.revision
+            key = (revision, principal.scope_key, query, k)
             with _cache_lock:
                 cached = _cache.get(key)
             if cached and time.monotonic() - cached[0] <= config.CACHE_TTL_S:
@@ -175,9 +192,17 @@ def _retrieve(query: str, principal: Principal, k: int, rec: dict):
                 if problem:
                     raise RuntimeError(problem)
                 response, chunk_ids, doc_ids, denied = _compute(session, query, principal, k, rec)
+        # Phase 2 is the old critical section, now only the audit insert. Every permission mutation
+        # sets a barrier (pending, revision + 1) before it touches either store and commits it
+        # first, so an unchanged revision here means no mutation began after phase 1 read the state:
+        # the result is ordered before any later revocation. A moved revision or a standing barrier
+        # fails the query closed; nothing computed is returned or cached.
+        with permission_transaction() as (audit_session, state):
+            if state.revision != revision or state.pending or state.rebuild_required:
+                raise RuntimeError("permission state changed during retrieval")
             rec["denied"] = denied
             write_audit(principal, query, chunk_ids, doc_ids, denied,
-                        response["source"] == "unavailable", session=session)
+                        response["source"] == "unavailable", session=audit_session)
         # Reaching here confirms the audit transaction committed. Copies keep
         # callers from modifying cached results. Revisions invalidate all workers.
         if response["degraded"]:

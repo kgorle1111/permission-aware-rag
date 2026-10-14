@@ -169,9 +169,11 @@ def init_db():
 
 @contextmanager
 def permission_transaction():
-    # UPDATE takes a write lock in SQLite and a row lock in Postgres. All
-    # permission mutations and complete query/generation/audit operations use
-    # this same row, including across workers sharing the SQL database.
+    # UPDATE takes a write lock in SQLite and a row lock in Postgres. Permission
+    # mutations (sync, ingest) and each query's closing audit commit use this same
+    # row, including across workers sharing the SQL database. Queries do NOT hold
+    # it while they retrieve or generate: they re-check revision and the barrier
+    # flags here before auditing (see retrieval._retrieve).
     with SessionLocal() as s:
         result = s.execute(update(PermissionState).where(PermissionState.id == 1)
                            .values(revision=PermissionState.revision))

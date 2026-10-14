@@ -95,7 +95,8 @@ def api(monkeypatch):
     monkeypatch.setattr(llm, "_post", model)
     monkeypatch.setenv("ANTHROPIC_API_KEY", "redteam-key")
     server = ThreadingHTTPServer(("127.0.0.1", 0), srv.Handler)
-    threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.02}, daemon=True).start()
+    t = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.02}, daemon=True)
+    t.start()
     port = server.server_address[1]
 
     def send(method, path, body=None, headers=None):
@@ -110,6 +111,8 @@ def api(monkeypatch):
     send.model, send.rag = model, rag
     yield send
     server.shutdown()
+    server.server_close()
+    t.join()
 
 
 def token(secret=SECRET, **claims):

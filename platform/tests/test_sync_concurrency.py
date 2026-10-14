@@ -1,9 +1,10 @@
 from contextlib import contextmanager
+from pathlib import Path
 from threading import Event, Thread, current_thread, local
 
 import pytest
 
-from app import sync
+from app import config, sync
 from app.store import PermissionState, SessionLocal
 from conftest import reset_permission_source, reingest
 
@@ -11,6 +12,8 @@ from conftest import reset_permission_source, reingest
 def test_older_sync_intent_cannot_clear_newer_pending_barrier(ingested, monkeypatch):
     """A superseded pass must leave the newer pass's durable barrier in place."""
     reset_permission_source()
+    # A real change: an unchanged source skips the barrier this test exercises.
+    Path(config.PERMISSIONS_SOURCE).write_text('{"doc_id": "hr-salaries", "acl": []}\n')
     real_transaction = sync.permission_transaction
     thread_state = local()
     older_barrier_committed = Event()

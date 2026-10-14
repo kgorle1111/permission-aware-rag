@@ -43,6 +43,10 @@ def test_sync_advances_revision_by_exactly_one_per_phase(client, tmp_path, monke
 
 
 def test_superseded_sync_reports_reason(client, monkeypatch):
+    # A real change: an unchanged source skips the barrier this test exercises.
+    from pathlib import Path
+    from app import config
+    Path(config.PERMISSIONS_SOURCE).write_text('{"doc_id": "hr-salaries", "acl": []}\n')
     real = sync.permission_transaction
     calls = []
 

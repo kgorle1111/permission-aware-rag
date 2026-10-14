@@ -59,11 +59,11 @@ then the actual `run_evals.py --mutants` output.
 leaky retrievers. A forbidden document can affect visible scores even when its
 ID never appears. I added an isolation oracle: compare IDs and scores against a
 corpus containing only readable documents. That caught the original six; the
-combined gate now catches eight of eight. The frozen document-ID leak evaluation
+combined gate now catches nine of nine. The frozen document-ID leak evaluation
 caught four of the original six, so I kept both checks and published the misses.”
 
 Explain the distinction between planted retrieval faults and the service's
-separate mutation campaign: 1,688 of 1,708 mutants killed, with 20 reviewed equivalents.
+separate mutation campaign: 3,017 of 3,054 mutants killed, with 37 reviewed equivalents.
 
 ## 2:20–3:10 — Explain hierarchy with one example
 
@@ -90,7 +90,7 @@ deletion requires reingestion. The current local service suite has 387 passing
 tests at 98.97% branch-aware coverage. A pending index from a pre-journal release
 requires reingestion on upgrade; startup commits that barrier before creating the
 journal tables. Mutation testing adds evidence beyond coverage: the latest complete mutation report killed
-1,688 of 1,708 mutants, and 20 were reviewed as behaviorally equivalent and hash-pinned.
+3,017 of 3,054 mutants, and 37 were reviewed as behaviorally equivalent and hash-pinned.
 They remain survivors in that score; new unexplained survivors fail CI. The strict validator found no unexplained survivors or incomplete outcomes.”
 
 **Show the baseline scale gap:** “The streamed benchmark loaded 100,000 documents and
@@ -135,7 +135,7 @@ commands you can rerun.”
 ## Rehearsal checklist
 
 - Time one complete run; record actual duration and trim repetition to five minutes.
-- Explain **one of six**, **eight of eight**, and **1,688 of 1,708** without mixing
+- Explain **one of six**, **nine of nine**, and **3,017 of 3,054** without mixing
   their different denominators or purposes.
 - Keep the pre-hierarchy live-demo distinction and synthetic-data caveat audible.
 - Keep benchmark HTTP-search timings separate from full application reconciliation.

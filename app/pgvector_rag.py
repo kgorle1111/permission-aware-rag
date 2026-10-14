@@ -32,14 +32,22 @@ Same public surface as PermissionRAG: add_document / remove_document / retrieve 
 audit / verify_audit_chain. Requires `psycopg` (the project's only optional dep).
 """
 
+import contextlib
 import datetime
 import hashlib
 import hmac
 import json
 import pathlib
+import re
 import secrets
+import sys
 import threading
 import time
+from collections.abc import Iterator
+from dataclasses import dataclass, field
+
+if sys.platform != "win32":
+    import fcntl
 
 import psycopg
 from embedding import DIMS, embed, to_pgvector
@@ -85,7 +93,18 @@ ALTER TABLE chunks FORCE ROW LEVEL SECURITY;
 -- T18: principals reach RLS only as an HMAC-signed, fresh token, verified with a key the
 -- app and ingest roles cannot read. A raw rag.principals setting is ignored.
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
-CREATE TABLE IF NOT EXISTS rag_secret (id integer PRIMARY KEY CHECK (id = 1), key bytea NOT NULL);
+-- Slot 1 is the current key; slot 2 is the previous key, accepted only until expires_at (key
+-- rotation). A token names its key by kid. The ALTERs migrate the pre-rotation single-key table.
+CREATE TABLE IF NOT EXISTS rag_secret (id integer PRIMARY KEY, key bytea NOT NULL);
+ALTER TABLE rag_secret DROP CONSTRAINT IF EXISTS rag_secret_id_check;
+ALTER TABLE rag_secret ADD COLUMN IF NOT EXISTS kid text;
+ALTER TABLE rag_secret ADD COLUMN IF NOT EXISTS expires_at timestamptz;
+UPDATE rag_secret SET kid = 'k1' WHERE kid IS NULL;
+ALTER TABLE rag_secret ALTER COLUMN kid SET NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS rag_secret_kid ON rag_secret (kid);
+ALTER TABLE rag_secret DROP CONSTRAINT IF EXISTS rag_secret_slot;
+ALTER TABLE rag_secret ADD CONSTRAINT rag_secret_slot
+    CHECK ((id = 1 AND expires_at IS NULL) OR (id = 2 AND expires_at IS NOT NULL));
 REVOKE ALL ON rag_secret FROM PUBLIC;
 CREATE OR REPLACE FUNCTION rag_principals() RETURNS text[]
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog, public AS $fn$
@@ -93,13 +112,15 @@ DECLARE
     parts text[] := string_to_array(coalesce(current_setting('rag.token', true), ''), '|');
     k bytea;
 BEGIN
-    IF coalesce(array_length(parts, 1), 0) <> 3 OR parts[2] !~ '^[0-9]{{1,12}}$'
+    IF coalesce(array_length(parts, 1), 0) <> 4 OR parts[2] !~ '^[0-9]{{1,12}}$'
        OR abs(extract(epoch FROM now()) - parts[2]::bigint) > 60 THEN
         RETURN ARRAY[]::text[];
     END IF;
-    SELECT key INTO k FROM rag_secret WHERE id = 1;
-    IF k IS NULL OR encode(hmac(convert_to(parts[1] || '|' || parts[2], 'UTF8'), k, 'sha256'), 'hex')
-                    IS DISTINCT FROM parts[3] THEN
+    -- the current key, or the previous key only while its grace window is open; the kid is inside the MAC
+    SELECT key INTO k FROM rag_secret WHERE kid = parts[3] AND (id = 1 OR expires_at > now());
+    IF k IS NULL
+       OR encode(hmac(convert_to(parts[1] || '|' || parts[2] || '|' || parts[3], 'UTF8'), k, 'sha256'), 'hex')
+          IS DISTINCT FROM parts[4] THEN
         RETURN ARRAY[]::text[];
     END IF;
     RETURN string_to_array(parts[1], ',');
@@ -113,6 +134,65 @@ CREATE POLICY chunks_read ON chunks FOR SELECT
        AND acl_section && (SELECT rag_principals())
        AND acl_para && (SELECT rag_principals()));
 DROP POLICY IF EXISTS chunks_ingest ON chunks;
+-- denied_chunks (audit only): chunks per distinct ACL triple, kept by statement triggers on chunks.
+-- rag_search sums the groups the caller cannot read instead of scanning every chunk row (the old
+-- count(*) was about half of each query). h = sha256 of the triple: btree keys on arrays are size-limited.
+-- kn: one row per distinct ACL triple; a corpus with one triple per chunk gets no pruning, only a
+-- narrower scan (measured: still faster than count(*) over chunks at 100k). Ceiling is ROADMAP B21.
+CREATE TABLE IF NOT EXISTS acl_groups (
+    h text PRIMARY KEY,
+    acl_doc text[] NOT NULL,
+    acl_section text[] NOT NULL,
+    acl_para text[] NOT NULL,
+    n integer NOT NULL CHECK (n >= 0)  -- same type as corpus_stats.chunk_count
+);
+CREATE OR REPLACE FUNCTION rag_acl_key(a text[], b text[], c text[]) RETURNS text
+LANGUAGE sql IMMUTABLE PARALLEL SAFE SET search_path = pg_catalog, public AS $fn$
+    SELECT encode(sha256(convert_to(a::text || '|' || b::text || '|' || c::text, 'UTF8')), 'hex')
+$fn$;
+-- Runs as the schema owner so the ingest role needs no grant on acl_groups. It reads only the
+-- transition tables of the statement that fired it and writes only acl_groups.
+CREATE OR REPLACE FUNCTION rag_acl_groups_maintain() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public AS $fn$
+BEGIN
+    IF TG_OP = 'TRUNCATE' THEN
+        DELETE FROM acl_groups;
+        RETURN NULL;
+    END IF;
+    IF TG_OP IN ('DELETE', 'UPDATE') THEN
+        UPDATE acl_groups g SET n = g.n - o.c::integer
+          FROM (SELECT rag_acl_key(acl_doc, acl_section, acl_para) AS h, count(*) AS c
+                  FROM old_rows GROUP BY 1) o
+         WHERE g.h = o.h;
+        DELETE FROM acl_groups WHERE n = 0;
+    END IF;
+    IF TG_OP IN ('INSERT', 'UPDATE') THEN
+        INSERT INTO acl_groups (h, acl_doc, acl_section, acl_para, n)
+            SELECT rag_acl_key(acl_doc, acl_section, acl_para), acl_doc, acl_section, acl_para, count(*)::integer
+              FROM new_rows GROUP BY 1, 2, 3, 4
+            ON CONFLICT (h) DO UPDATE SET n = acl_groups.n + EXCLUDED.n;
+    END IF;
+    RETURN NULL;
+END
+$fn$;
+REVOKE ALL ON FUNCTION rag_acl_groups_maintain() FROM PUBLIC;
+DROP TRIGGER IF EXISTS acl_groups_ins ON chunks;
+DROP TRIGGER IF EXISTS acl_groups_del ON chunks;
+DROP TRIGGER IF EXISTS acl_groups_upd ON chunks;
+DROP TRIGGER IF EXISTS acl_groups_trunc ON chunks;
+CREATE TRIGGER acl_groups_ins AFTER INSERT ON chunks REFERENCING NEW TABLE AS new_rows
+    FOR EACH STATEMENT EXECUTE FUNCTION rag_acl_groups_maintain();
+CREATE TRIGGER acl_groups_del AFTER DELETE ON chunks REFERENCING OLD TABLE AS old_rows
+    FOR EACH STATEMENT EXECUTE FUNCTION rag_acl_groups_maintain();
+CREATE TRIGGER acl_groups_upd AFTER UPDATE ON chunks REFERENCING OLD TABLE AS old_rows NEW TABLE AS new_rows
+    FOR EACH STATEMENT EXECUTE FUNCTION rag_acl_groups_maintain();
+CREATE TRIGGER acl_groups_trunc AFTER TRUNCATE ON chunks
+    FOR EACH STATEMENT EXECUTE FUNCTION rag_acl_groups_maintain();
+-- Existing databases: seed once. Needs a role that bypasses RLS (the setup role, like the doc_meta
+-- backfill); if it cannot see the rows it inserts nothing and rag_search falls back to count(*).
+INSERT INTO acl_groups (h, acl_doc, acl_section, acl_para, n)
+    SELECT rag_acl_key(acl_doc, acl_section, acl_para), acl_doc, acl_section, acl_para, count(*)::integer
+      FROM chunks WHERE NOT EXISTS (SELECT 1 FROM acl_groups) GROUP BY 1, 2, 3, 4;
 -- T19: the app role can't read chunks or write audit rows directly. rag_search (owned by a
 -- non-superuser, so RLS still applies inside it) verifies the token, searches, and writes the
 -- audit row itself, recording exactly the ids it returns.
@@ -124,25 +204,37 @@ DECLARE
     t0 timestamptz := clock_timestamp();
     uid text;
     ids text[];
+    p text[];
     visible bigint;
+    denied bigint;
+    grouped bigint;
     total integer;
     prev text;
     entry text;
 BEGIN
     PERFORM set_config('rag.token', coalesce(token, ''), true);
-    SELECT substr(x, 6) INTO uid FROM unnest(rag_principals()) AS x WHERE x LIKE 'user:%' LIMIT 1;
+    p := rag_principals();
+    SELECT substr(x, 6) INTO uid FROM unnest(p) AS x WHERE x LIKE 'user:%' LIMIT 1;
     -- top-k by distance, then drop non-positive scores (same semantics as the old client path)
     SELECT coalesce(array_agg(t.cid ORDER BY t.d), ARRAY[]::text[]) INTO ids
       FROM (SELECT c.id AS cid, c.embedding <=> qvec AS d FROM chunks c
             ORDER BY c.embedding <=> qvec LIMIT greatest(least(k, 50), 1)) t
      WHERE 1 - t.d > 0;
-    SELECT count(*) INTO visible FROM chunks;
+    -- denied_chunks = every chunk the caller cannot read (same meaning as PermissionRAG). Same predicate
+    -- as the chunks_read policy, applied to the per-triple counts; written to audit, never returned.
+    SELECT coalesce(sum(g.n) FILTER (WHERE NOT (g.acl_doc && p AND g.acl_section && p AND g.acl_para && p)), 0),
+           coalesce(sum(g.n), 0) INTO denied, grouped FROM acl_groups g;
     SELECT s.chunk_count INTO total FROM corpus_stats s;
+    IF grouped <> total THEN  -- groups drifted from the table: take the slow exact path, never a wrong count
+        RAISE LOG 'acl_groups (%) disagrees with corpus_stats (%); counting chunks directly', grouped, total;
+        SELECT count(*) INTO visible FROM chunks;
+        denied := total - visible;
+    END IF;
     PERFORM pg_advisory_xact_lock(hashtext('rag_audit'));  -- serialise the chain
     SELECT a.line_sha256 INTO prev FROM audit a ORDER BY a.id DESC LIMIT 1;
     entry := json_build_object(
         'ts', extract(epoch FROM clock_timestamp()), 'user', uid, 'query', '[redacted]',
-        'returned', to_json(ids), 'denied_chunks', total - visible,
+        'returned', to_json(ids), 'denied_chunks', denied,
         'elapsed_ms', round((extract(epoch FROM clock_timestamp() - t0) * 1000)::numeric, 2),
         'prev_sha256', coalesce(prev, ''))::text;
     INSERT INTO audit (line, line_sha256) VALUES (entry, encode(sha256(convert_to(entry, 'UTF8')), 'hex'));
@@ -259,6 +351,8 @@ REVOKE INSERT ON audit FROM {app};
 REVOKE USAGE ON SEQUENCE audit_id_seq FROM {app};
 GRANT SELECT ON audit TO {app};
 GRANT SELECT ON chunks, corpus_stats TO {definer};
+REVOKE ALL ON acl_groups FROM {app}, {ingest}, {sql};
+GRANT SELECT ON acl_groups TO {definer};
 GRANT SELECT, INSERT ON audit TO {definer};
 GRANT USAGE ON SEQUENCE audit_id_seq TO {definer};
 GRANT EXECUTE ON FUNCTION rag_principals() TO {ingest}, {definer};
@@ -333,16 +427,64 @@ def setup_schema(
             principal_key = bytes(row[0]) if row else secrets.token_bytes(32)
         if len(principal_key) < 32:
             raise ValueError("principal_key must be at least 32 random bytes")
-        conn.execute(
-            "INSERT INTO rag_secret (id, key) VALUES (1, %s) ON CONFLICT (id) DO UPDATE SET key = EXCLUDED.key",
+        conn.execute(  # an existing current key keeps its kid; rotate_principal_key is how kids advance
+            "INSERT INTO rag_secret (id, kid, key) VALUES (1, 'k1', %s) "
+            "ON CONFLICT (id) DO UPDATE SET key = EXCLUDED.key",
             (principal_key,),
         )
         return principal_key
 
 
-def sign_principals(key: bytes, principals: list[str], now: float | None = None) -> str:
-    """'p1,p2|unix_ts|hmac_sha256_hex': the only principal channel RLS accepts (60 s window)."""
-    body = f"{','.join(principals)}|{int(time.time() if now is None else now)}"
+MAX_GRACE_SECONDS = 24 * 3600
+_KID = re.compile(r"k[0-9]{1,9}")
+
+
+@dataclass(frozen=True)
+class PrincipalKey:
+    """A signing key and its id. The key is out of repr() so it cannot reach a log by accident."""
+
+    kid: str
+    key: bytes = field(repr=False)
+
+
+def rotate_principal_key(admin_dsn: str, grace_seconds: int = 3600) -> PrincipalKey:
+    """Make a new current key; the old one stays valid as the previous key for grace_seconds.
+
+    Run as the schema owner. The returned key is the only place it ever appears: put it in the app's
+    secret store (RAG_PRINCIPAL_KEY / RAG_PRINCIPAL_KEY_ID) and restart the app processes inside the
+    grace window, then call retire_previous_key. Refuses while a previous key is still in its window,
+    so a second rotation can't silently cut off processes that haven't picked up the first.
+    """
+    if not 1 <= grace_seconds <= MAX_GRACE_SECONDS:
+        raise ValueError(f"grace_seconds must be between 1 and {MAX_GRACE_SECONDS}")
+    with psycopg.connect(admin_dsn) as conn:  # one transaction: commits on exit, rolls back on error
+        conn.execute("LOCK TABLE rag_secret IN EXCLUSIVE MODE")  # readers continue; rotations serialise
+        conn.execute("DELETE FROM rag_secret WHERE id = 2 AND expires_at <= now()")
+        current = conn.execute("SELECT kid FROM rag_secret WHERE id = 1").fetchone()
+        if current is None:
+            raise ValueError("no principal key yet: run setup_schema first")
+        if conn.execute("SELECT 1 FROM rag_secret WHERE id = 2").fetchone():
+            raise ValueError("a previous key is still in its grace window: call retire_previous_key first")
+        new = PrincipalKey(f"k{int(current[0][1:]) + 1}", secrets.token_bytes(32))  # kids only ever grow
+        conn.execute(
+            "UPDATE rag_secret SET id = 2, expires_at = now() + make_interval(secs => %s) WHERE id = 1",
+            (grace_seconds,),
+        )
+        conn.execute("INSERT INTO rag_secret (id, kid, key) VALUES (1, %s, %s)", (new.kid, new.key))
+    return new
+
+
+def retire_previous_key(admin_dsn: str) -> bool:
+    """Drop the previous key now (end the grace window early). True if there was one."""
+    with psycopg.connect(admin_dsn) as conn:
+        return conn.execute("DELETE FROM rag_secret WHERE id = 2").rowcount > 0
+
+
+def sign_principals(key: bytes, principals: list[str], now: float | None = None, kid: str = "k1") -> str:
+    """'p1,p2|unix_ts|kid|hmac_sha256_hex': the only principal channel RLS accepts (60 s window)."""
+    if not _KID.fullmatch(kid):
+        raise ValueError("key id must look like k1, k2, ...")
+    body = f"{','.join(principals)}|{int(time.time() if now is None else now)}|{kid}"
     return f"{body}|{hmac.new(key, body.encode(), hashlib.sha256).hexdigest()}"
 
 
@@ -352,19 +494,29 @@ class PgVectorRAG:
     audit_path = None  # interface compat with the JSONL backend
 
     def __init__(
-        self, dsn: str, ingest_dsn: str | None = None, *, principal_key: bytes, audit_checkpoint_path=None
+        self,
+        dsn: str,
+        ingest_dsn: str | None = None,
+        *,
+        principal_key: bytes,
+        principal_key_id: str = "k1",
+        audit_checkpoint_path=None,
     ):
         """dsn connects as the app role (retrieval); ingest_dsn as the ingest role.
-        principal_key signs principals for RLS (T18); it must match setup_schema's key.
+        principal_key signs principals for RLS (T18); it must be the key named by principal_key_id
+        (setup_schema's key is k1; rotate_principal_key returns the next).
         audit_checkpoint_path (T12): a file OUTSIDE the database holding "<id> <sha256>" of the newest
         audit row, rewritten after every audited call. verify_audit_chain() then fails if the tail was
         deleted or the file is missing. None = unanchored (tail deletion goes undetected).
-        Per-process anchor: several app processes each need one shared anchor (see ROADMAP B17),
-        else the chain head moves past a stale checkpoint and verify fails."""
-        self._principal_key = principal_key
+        Several app processes on one host may share the same path: every audited call and every
+        verification holds an exclusive flock on "<path>.lock" (POSIX only; ROADMAP B17), and the file
+        only ever moves forward. Several hosts need a shared anchor store instead."""
+        if not _KID.fullmatch(principal_key_id):
+            raise ValueError("principal_key_id must look like k1, k2, ...")
+        self._principal_key, self._principal_key_id = principal_key, principal_key_id
         self._checkpoint = pathlib.Path(audit_checkpoint_path) if audit_checkpoint_path else None
-        # kn: per-process audit anchor; add a shared anchor store when running more than one app process
-        # serialises call + read head + write file, so threads can't regress the file
+        # kn: one host only (flock on a sibling file); a shared anchor store once app processes span hosts
+        # serialises call + read head + write file across threads here and, via the flock, across processes
         self._anchor_lock = threading.Lock()
         # autocommit: single reads commit immediately (no idle-in-transaction locks);
         # multi-statement work still uses explicit conn.transaction() blocks, which
@@ -459,20 +611,73 @@ class PgVectorRAG:
         return ["*", f"user:{user['id']}"] + [f"group:{g}" for g in user.get("groups", ())]
 
     def sign_principals(self, principals: list[str], now: float | None = None) -> str:
-        return sign_principals(self._principal_key, principals, now)
+        return sign_principals(self._principal_key, principals, now, self._principal_key_id)
+
+    LOCK_TIMEOUT_S = 30.0  # a wedged lock holder must fail audited calls closed, not hang every worker
+
+    @contextlib.contextmanager
+    def _anchored(self) -> Iterator[None]:
+        """Exclusive section for "audited call + checkpoint write" and for verification.
+
+        The row is committed by the call and the checkpoint written after, so anything reading
+        between the two (another thread or process) would see a head that is not tampering. The
+        flock covers the whole span; it is a no-op without a checkpoint and on Windows, where
+        several processes sharing one checkpoint are unsupported.
+        """
+        with self._anchor_lock:
+            if self._checkpoint is None or sys.platform == "win32":
+                yield
+                return
+            deadline = time.monotonic() + self.LOCK_TIMEOUT_S
+            with open(f"{self._checkpoint}.lock", "a") as lock:
+                while True:
+                    try:
+                        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                        break
+                    except BlockingIOError:
+                        if time.monotonic() > deadline:
+                            raise TimeoutError(
+                                f"timed out waiting for the audit anchor lock {lock.name}"
+                            ) from None
+                        time.sleep(0.005)
+                try:
+                    yield
+                finally:
+                    fcntl.flock(lock, fcntl.LOCK_UN)
 
     def _anchor(self) -> None:
-        """Record the newest audit row in the external checkpoint (no-op if none configured)."""
-        if self._checkpoint:
-            row = self.conn.execute("SELECT id, line_sha256 FROM audit ORDER BY id DESC LIMIT 1").fetchone()
-            if row:
-                PermissionRAG.atomic_write(self._checkpoint, f"{row[0]} {row[1]}")
+        """Record the newest audit row in the external checkpoint (no-op if none configured).
+
+        Call inside _anchored(), so the row read here is the true newest one. The file only moves
+        forward, and only from a head that is still in the table: if it names a row that is
+        missing, replaced or at/past the newest, it is left alone. Rewriting it then would turn a
+        tail deletion or a replaced row into a chain that verifies.
+        """
+        if not self._checkpoint:
+            return
+        row = self.conn.execute("SELECT id, line_sha256 FROM audit ORDER BY id DESC LIMIT 1").fetchone()
+        if row and self._may_advance(row[0]):
+            PermissionRAG.atomic_write(self._checkpoint, f"{row[0]} {row[1]}")
+
+    def _may_advance(self, newest_id: int) -> bool:
+        assert self._checkpoint
+        try:
+            anchored_id, anchored_hash = self._checkpoint.read_text().split(" ", 1)
+            anchored = int(anchored_id)
+        except (OSError, ValueError):  # missing or garbled: write it; verification reports garbage
+            return True
+        if anchored >= newest_id:
+            return False
+        found = self.conn.execute(
+            "SELECT 1 FROM audit WHERE id = %s AND line_sha256 = %s", (anchored, anchored_hash)
+        ).fetchone()
+        return found is not None
 
     def retrieve(self, query: str, user: dict, k: int = 3) -> list[dict]:
         qvec = to_pgvector(embed(query))
         token = self.sign_principals(self.principals(user))
         # rag_search verifies the token, applies RLS and writes the audit row server-side (T19)
-        with self._anchor_lock:
+        with self._anchored():
             rows = self.conn.execute(
                 "SELECT id, doc_id, text, score FROM rag_search(%s, %s::vector, %s)", (token, qvec, k)
             ).fetchall()
@@ -491,7 +696,7 @@ class PgVectorRAG:
         "sqlstate": ...}. Every call is audited by the database (hashes, status, row count).
         """
         token = self.sign_principals(self.principals(user))
-        with self._anchor_lock:
+        with self._anchored():
             with self.conn.transaction():
                 # the timer arms when the rag_sql_run statement starts, so it must be set before it
                 self.conn.execute(f"SET LOCAL statement_timeout = {int(self.SQL_TIMEOUT_MS)}")
@@ -509,28 +714,61 @@ class PgVectorRAG:
         return [json.loads(r[0]) for r in reversed(rows)]
 
     def verify_audit_chain(self) -> bool:
-        prev, last_id = "", None
-        for row_id, line, recorded_hash in self.conn.execute(
-            "SELECT id, line, line_sha256 FROM audit ORDER BY id ASC"
-        ):
-            last_id = row_id
-            try:
-                entry = json.loads(line)
-                if not isinstance(entry, dict) or entry.get("prev_sha256") != prev:
-                    return False
-            except ValueError:
-                return False
-            prev = hashlib.sha256(line.encode()).hexdigest()
-            if prev != recorded_hash:
-                return False
-        return self._head_matches_checkpoint(last_id, prev)
+        return self.audit_failure() is None
 
-    def _head_matches_checkpoint(self, last_id: int | None, head: str) -> bool:
+    def audit_failure(self) -> str | None:
+        """Why the audit table or its external checkpoint does not verify, or None when both do.
+        Messages carry row ids only, never row contents (invariant 9).
+
+        Holds the anchor lock: retrieve() commits a row and then rewrites the checkpoint, and a
+        reader between the two would see a mismatch that is not tampering.
+        """
+        # kn: full scan under the anchor lock; verify incrementally from a saved (id, hash) if audit grows large
+        with self._anchored():
+            prev, last_id = "", None
+            for row_id, line, recorded_hash in self.conn.execute(
+                "SELECT id, line, line_sha256 FROM audit ORDER BY id ASC"
+            ):
+                last_id = row_id
+                try:
+                    entry = json.loads(line)
+                except ValueError:
+                    return f"audit row {row_id} is not valid JSON"
+                if not isinstance(entry, dict) or entry.get("prev_sha256") != prev:
+                    return (
+                        f"chain broken at audit row {row_id}: an earlier row was edited, deleted or reordered"
+                    )
+                prev = hashlib.sha256(line.encode()).hexdigest()
+                if prev != recorded_hash:
+                    return f"audit row {row_id} does not match its recorded hash: row edited"
+            return self._checkpoint_failure(last_id, prev)
+
+    def _checkpoint_failure(self, last_id: int | None, head: str) -> str | None:
         if not self._checkpoint:
-            return True
-        if last_id is None:  # empty audit table: fine only if nothing was ever anchored
-            return not self._checkpoint.exists()
+            return None
         try:
-            return self._checkpoint.read_text() == f"{last_id} {head}"
+            recorded = self._checkpoint.read_text()
+        except FileNotFoundError:
+            if last_id is None:  # empty table: fine only if nothing was ever anchored
+                return None
+            return f"checkpoint missing: {self._checkpoint} (tail deletion cannot be ruled out)"
         except (OSError, UnicodeError):
-            return False
+            return f"checkpoint unreadable: {self._checkpoint}"
+        if last_id is None:
+            return "audit table is empty but a checkpoint exists: all audit rows deleted"
+        if recorded == f"{last_id} {head}":
+            return None
+        try:
+            anchored = int(recorded.split(" ", 1)[0])
+        except ValueError:
+            return f"checkpoint malformed: {self._checkpoint}"
+        if anchored > last_id:
+            return (
+                f"checkpoint anchors audit row {anchored} but the newest row is {last_id}: tail rows deleted"
+            )
+        if anchored < last_id:
+            return (
+                f"newest audit row ({last_id}) is past the checkpoint (row {anchored}): "
+                "rows added outside this process, or the checkpoint is stale"
+            )
+        return f"newest audit row ({last_id}) does not match the checkpoint: tail row replaced"

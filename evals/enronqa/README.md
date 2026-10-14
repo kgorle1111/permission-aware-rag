@@ -84,3 +84,62 @@ cd app && python3 -m pytest -q test_enronqa_eval.py   # metric/ACL code on a tin
 - Leak counts cover returned chunks. Score side channels are covered by `app/run_evals.py` (isolation gate), not here.
 - `llm.ask` uses the repo's underwriting system prompt, unchanged; it is not tuned for email QA.
 - 24 mailboxes out of 150 and the test split only; the exact-content probes use one shingle per email.
+
+## Platform retrieval rungs on this data (2026-10-12)
+
+Does semantic retrieval help on real mail, without leaking? The platform's local-model rungs (hash baseline,
+fastembed dense, SPLADE hybrid, cross-encoder rerank) run through the platform's own ingest and `retrieve()` on
+an EnronQA subsample with the header-derived reader ACLs above. Table with CIs:
+[table.md](../results/2026-10-12-rungs-on-enronqa/table.md); every number in
+[report.json](../results/2026-10-12-rungs-on-enronqa/report.json). Harness: `platform/scripts/rung_enronqa.py`
+(reuses this directory's `run.py` for sampling, ACLs, Wilson and bootstrap code).
+
+**Subsample, and why.** 12 mailboxes with 100-400 emails each (seed 20261010): 2,678 emails, 22,952 platform
+chunks, 300 questions whose gold email is in the index, 3 non-reader users per question, 60 exact-content probes.
+The platform chunks per paragraph, so the 24-mailbox sample above would be 137,684 chunks there. Measured: bge-small
+6.6 ms/chunk, SPLADE 27 ms/chunk (62 min for SPLADE alone), and embedded Qdrant scans every chunk per query (150 ms
+at 21k chunks for dense, 0.7-1.0 s for hybrid). Full size would miss the 60 min/rung budget; this size took 4-90 min
+per rung (about 3.2 h in all). Capping mailbox size keeps 12 independent clusters for the bootstrap.
+
+```
+python3 -m venv .rungvenv && .rungvenv/bin/pip install -r platform/requirements-dev.txt -r platform/requirements-models.txt pyarrow
+python3 evals/enronqa/fetch.py                       # as above, if data/ is empty
+cd platform
+../.rungvenv/bin/python scripts/rung_enronqa.py --rungs baseline,dense,dense_floor_0.1,hybrid,hybrid_rerank,hybrid_rerank_no_floor \
+    --scratch /tmp/enron_rungs --output-dir ../evals/results/2026-10-12-rungs-on-enronqa     # no API key needed
+# the committed report also merged two cheaper re-runs on the same sample and scratch dir:
+../.rungvenv/bin/python scripts/rung_enronqa.py --phase invariance --rungs <same list> --scratch /tmp/enron_rungs --output-dir <same>
+../.rungvenv/bin/python scripts/rung_enronqa.py --phase ranks      --rungs <same list> --scratch /tmp/enron_rungs --output-dir <same>
+```
+
+**What it shows.**
+
+- Dense beats the hash baseline on this data: hit@1 +12.7 points (paired, mailbox-clustered CI +6.8 to +17.6),
+  hit@10 +10.0 (+4.2 to +16.5). The platform's default similarity floor (0.55) cost nothing here: it returned
+  nothing for 7 of 900 non-reader questions and for none of the owner queries, so `dense` and `dense_floor_0.1`
+  are identical on recall.
+- Hybrid over dense is small: hit@1 +2.3 (-0.7 to +5.8), hit@10 +2.0 (0.0 to +4.5). Rerank adds hit@1 over dense
+  (+7.3, +4.0 to +10.7) but nothing at hit@10 (+1.3, -1.2 to +3.5): it reorders the top, it does not find more.
+  Between adjacent rungs (hybrid vs rerank) the paired intervals include 0.
+- No leaks on any rung: 0/1,080 non-reader attempts (900 questions, 180 exact-content probes), Wilson 95% upper
+  bound 0.35%. The positive control works: with the ACL filter disabled (the NoFilter bug) the same oracle flags
+  100/100 non-reader queries on every rung, so a 0 elsewhere is a measurement, not a blind oracle.
+- Hidden-document invariance holds for the dense rungs (0/75 differing, ignoring order among exact-score ties).
+  It does NOT hold, as measured, for `hybrid` (34/75), `hybrid_rerank` (1/75) and `hybrid_rerank_no_floor` (3/75).
+  The control says why: re-ingesting the *same* corpus, nothing hidden, in reverse order changes hybrid on 14/25
+  queries and rerank on 1/25. Mail is full of identical quoted paragraphs, which tie exactly; tie order follows ingest
+  order (chunk ids; not traced inside Qdrant), and RRF turns a tie order into different fused scores. So this is ingest-order dependence, not a
+  measured dependence on hidden documents, but it is a real property of hybrid ranking and it shows up as a
+  score-identity failure. The synthetic-corpus table (no duplicate text) could not show it. Not diagnosed further.
+
+**What this does and does not show.** The questions were written by a model from each email, so they share
+vocabulary with it; this favours lexical matching, and the hash baseline's 75% hit@10 is probably high for
+human-written questions. Gold is one email, but many emails quote one another, so a hit on a near-duplicate
+counts as a miss (recall is understated, for every rung alike). It is one sample of 12 mailboxes (17% of the
+24-mailbox sample's chunks), the test split only, one seed, and 300 questions: single-rung CIs are about 11 points
+wide. Readers are header-derived and an under-approximation of who really received a mail. Rerank runs on the
+platform's default floor of -10, calibrated on synthetic data; `no_floor` is identical on recall. Latency is one
+run on a shared laptop (the last rung took 90 min against 33 for the one before it, for the same work) and includes
+the audit write and the denied-count search; read it as an order of magnitude, and note embedded Qdrant is not
+what production would use. Leak checks cover returned chunks, not score side channels. Nothing here evaluates
+answers or citations (no LLM was called).

@@ -24,7 +24,8 @@ def _get(base, path, headers=None):
         with urllib.request.urlopen(req) as r:
             return r.status, json.load(r)
     except urllib.error.HTTPError as e:
-        return e.code, json.loads(e.read() or b"{}")
+        with e:
+            return e.code, json.loads(e.read() or b"{}")
 
 
 def _post(base, path, body, headers=None):
@@ -34,7 +35,8 @@ def _post(base, path, body, headers=None):
         with urllib.request.urlopen(req) as r:
             return r.status, json.load(r)
     except urllib.error.HTTPError as e:
-        return e.code, json.loads(e.read() or b"{}")
+        with e:
+            return e.code, json.loads(e.read() or b"{}")
 
 
 def _jwt(secret, claims):
@@ -52,7 +54,8 @@ def _jwt(secret, claims):
 
 def test():
     server = ThreadingHTTPServer(("127.0.0.1", 0), srv.Handler)
-    threading.Thread(target=server.serve_forever, daemon=True).start()
+    t = threading.Thread(target=server.serve_forever, daemon=True)
+    t.start()
     base = f"http://127.0.0.1:{server.server_address[1]}"
     try:
         # 400s: missing params, unknown user, oversized q
@@ -142,6 +145,8 @@ def test():
         assert 429 in codes and codes[-1] == 429
     finally:
         server.shutdown()
+        server.server_close()
+        t.join()
     print("all http tests passed")
 
 
