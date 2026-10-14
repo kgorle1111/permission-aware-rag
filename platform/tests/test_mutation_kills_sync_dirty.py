@@ -6,6 +6,7 @@ section/paragraph-only drift is staged by editing the retained policy inputs in 
 flat effective ACL (ChunkACL.acl) is stale, which is exactly what reconciliation must repair.
 """
 import json
+from pathlib import Path
 
 from conftest import reingest
 
@@ -91,11 +92,11 @@ def test_null_section_policy_is_treated_as_empty_not_crashing(client):
         with SessionLocal() as s:
             s.get(ChunkACL, cid).acl = OWNER_ONLY  # what the null policy yields: consistent
             s.commit()
-        rows = [json.loads(l) for l in open(config.PERMISSIONS_SOURCE) if l.strip()]
+        rows = [json.loads(l) for l in Path(config.PERMISSIONS_SOURCE).read_text().splitlines() if l.strip()]
         for r in rows:
             if r["doc_id"] == "hr-salaries":
                 r["acl"] = ["user:cfo@company.com"]
-        open(config.PERMISSIONS_SOURCE, "w").write("\n".join(json.dumps(r) for r in rows) + "\n")
+        Path(config.PERMISSIONS_SOURCE).write_text("\n".join(json.dumps(r) for r in rows) + "\n")
         assert sync.sync_once() == ["hr-salaries"]
         assert _chunks("company-strategy")[cid][0] == OWNER_ONLY
     finally:
@@ -105,11 +106,11 @@ def test_null_section_policy_is_treated_as_empty_not_crashing(client):
 def test_only_drifted_documents_are_journaled_and_rewritten(client, monkeypatch):
     """Clean documents (incl. ones with restricted sections) must not be treated as dirty."""
     seen = _spy_updates(monkeypatch)
-    rows = [json.loads(l) for l in open(config.PERMISSIONS_SOURCE) if l.strip()]
+    rows = [json.loads(l) for l in Path(config.PERMISSIONS_SOURCE).read_text().splitlines() if l.strip()]
     for r in rows:
         if r["doc_id"] == "hr-salaries":
             r["acl"] = ["user:cfo@company.com"]
-    open(config.PERMISSIONS_SOURCE, "w").write("\n".join(json.dumps(r) for r in rows) + "\n")
+    Path(config.PERMISSIONS_SOURCE).write_text("\n".join(json.dumps(r) for r in rows) + "\n")
     try:
         assert sync.sync_once() == ["hr-salaries"]
         assert seen == [{"hr-salaries"}]
