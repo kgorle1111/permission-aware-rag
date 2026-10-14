@@ -6,8 +6,10 @@
 
 [![CI](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/ci.yml)
 [![platform](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/platform.yml/badge.svg)](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/platform.yml)
-![leaks 0 of 1,350](https://img.shields.io/badge/leaks-0%20of%201%2C350-brightgreen)
-![coverage 98.97%](https://img.shields.io/badge/platform%20coverage-98.97%25-brightgreen)
+![leaks 0 of 4,300 on real email](https://img.shields.io/badge/leaks%20on%20real%20email-0%20of%204%2C300-brightgreen)
+![BEIR matches MTEB](https://img.shields.io/badge/BEIR%20nDCG%4010-within%200.001%20of%20MTEB-brightgreen)
+![coverage 98.96%](https://img.shields.io/badge/platform%20coverage-98.96%25-brightgreen)
+![mutation gate](https://img.shields.io/badge/mutation%20gate-3%2C071%20mutants-brightgreen)
 ![python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776ab)
 ![license Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)
 
@@ -115,15 +117,15 @@ flowchart LR
 
 - **Security-minded AI engineering:** permission-aware retrieval, a prompt-injection boundary, citation verification and a written [threat model](docs/THREAT_MODEL.md) where each row names its test.
 - **Evals before opinions:** pre-registered claims, confidence intervals, and negative results published next to the positive ones.
-- **Production engineering:** a FastAPI service in [`platform/`](platform/README.md) with RS256/JWKS identity, Google Drive permission sync, a non-root Docker image and container smoke tests in CI.
+- **Production engineering:** a FastAPI service in [`platform/`](platform/README.md) with RS256/JWKS identity, Google Drive permission sync, a non-root Docker image and container smoke tests in CI. Load-tested on a laptop: about 370–400 req/s per process on unique queries, 0 leaks in 166,546 results ([load test](evals/results/2026-10-12-load-test/table.md)).
 - **Product judgment:** a [case file](CASE_FILE.md) with a risk register, an [integration map](INTEGRATION.md) for a real underwriting shop, and a [roadmap](ROADMAP.md) that lists what we chose *not* to build.
 
 ## 🛠️ How it's engineered
 
 - **Two layers.** A reference core in Python stdlib only (~600 readable lines, no dependencies), plus [`platform/`](platform/README.md), the same design as a deployable service on FastAPI, Qdrant, SQLAlchemy and PyJWT.
 - **Two search backends.** BM25 in memory, or pgvector on Postgres with row-level security. Both run the leak gates in CI.
-- **387 platform tests at 98.97% branch coverage**, with a 96% floor enforced in CI.
-- **A blocking mutation gate.** 3,054 mutants: every survivor is either killed by a test or pinned as a reviewed equivalent with a written reason.
+- **775 platform tests at 98.96% branch coverage**, with a 96% floor enforced in CI.
+- **A blocking mutation gate.** 3,071 mutants: every survivor is either killed by a test or pinned as a reviewed equivalent with a written reason.
 - **Fresh independent tests and review** caught audit privacy and prompt-boundary gaps;
   [repairs, preregistration and mutation limits](docs/INDEPENDENT_VERIFICATION.md) are documented.
   Four manual faults cover selected decorated code omitted by mutmut; coverage is finite.
@@ -151,17 +153,17 @@ on drafted answers; without it, the workbench runs retrieval-only.
 
 ## 🧭 Honest limits
 
-- **Synthetic data.** It hasn't been deployed at a real underwriting shop yet.
+- **Not deployed at a real underwriting shop.** Leak and recall numbers come from real public data (EnronQA, BEIR), with permissions derived from email headers or synthetic tenants rather than a customer's live ACLs.
 - **SQL injection on the app's database connection can't widen document access:** ingest is a separate role ([T13](docs/THREAT_MODEL.md)) and principals are HMAC-signed and verified inside Postgres ([T18](docs/THREAT_MODEL.md)). Every read goes through a database function that writes the audit row itself, so that connection can't skip or forge audit entries; it can still read audit metadata, which the app's audit view needs ([T19](docs/THREAT_MODEL.md)).
-- **Recall is measured on exact wording.** Semantic recall on real documents is unmeasured.
+- **Answer quality is unmeasured.** Retrieval is measured on BEIR and EnronQA; drafted-answer and citation validity on real data need a paid model run that hasn't happened yet.
 - **Cross-document reasoning isn't solved.** The AI could combine permitted files into a conclusion no single file supports. Citations and a human decision are the guard.
-- **The newest audit entries can be deleted without detection.** Edits anywhere are caught, but trimming the tail isn't ([T12](docs/THREAT_MODEL.md)).
+- **One host.** Audit tail deletion is caught by an external checkpoint on one host; several hosts need a shared anchor ([T12](docs/THREAT_MODEL.md)). The rate limiter and spend cap are per host too.
 
 ## 🗺️ What's next
 
-- Security fixes, each with a failing test first: document-tag escaping, spreadsheet-formula-safe CSV export, tamper-evident newest audit entry
-- Permissions that scale to 100,000 documents, with a benchmark to prove it
-- An eval on real documents this project didn't write
+- Drafted-answer and citation-validity eval on EnronQA (needs a paid model run)
+- Multi-host shared state: rate limiter, spend cap and audit anchor in Postgres
+- Health and metrics endpoints with a runbook
 - A leak-test kit you can point at your own retriever
 
 Everything else: [ROADMAP.md](ROADMAP.md).
