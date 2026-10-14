@@ -66,7 +66,8 @@ def api(monkeypatch):
     monkeypatch.setattr(srv.llm, "ask", _llm_ok)
     srv._hits.clear()
     server = ThreadingHTTPServer(("127.0.0.1", 0), srv.Handler)
-    threading.Thread(target=server.serve_forever, daemon=True).start()
+    t = threading.Thread(target=server.serve_forever, daemon=True)
+    t.start()
     base = f"http://127.0.0.1:{server.server_address[1]}"
 
     def call(method, path, body=None, headers=None):
@@ -79,11 +80,14 @@ def api(monkeypatch):
             with urllib.request.urlopen(req) as r:
                 return r.status, json.load(r), r.headers
         except urllib.error.HTTPError as e:
-            return e.code, json.loads(e.read() or b"{}"), e.headers
+            with e:
+                return e.code, json.loads(e.read() or b"{}"), e.headers
 
     call.clock = clock
     yield call
     server.shutdown()
+    server.server_close()
+    t.join()
 
 
 def request_lines(caplog):
