@@ -179,7 +179,7 @@ deployable service:
 | Shipping | Render one-click | Docker image (non-root), container smoke CI |
 
 The platform has its own CI in [`.github/workflows/platform.yml`](.github/workflows/platform.yml).
-Its mutation gate is blocking: of 1,708 mutants, every survivor was either killed by a test
+Its mutation gate is blocking: of 3,054 mutants, every survivor was either killed by a test
 or recorded as a reviewed equivalent in [`platform/mutation_equivalents.json`](platform/mutation_equivalents.json),
 pinned by source and mutant hash, so any new survivor fails the build.
 Mutmut skips decorated functions; [four separate manual faults](evals/DECORATED_MUTATIONS.md)

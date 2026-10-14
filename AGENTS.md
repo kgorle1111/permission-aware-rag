@@ -32,7 +32,7 @@ reproducible, or easier for a reviewer to verify?**
 # reference app (run from app/)
 python3 -m pytest -q                 # unit, HTTP, LLM-mock and ledger tests
 python3 run_evals.py                 # label gate + isolation gate: must report 0 leaks, 0 isolation diffs
-python3 run_evals.py --mutants       # every known-leaky retriever must be caught (gate recall 8/8)
+python3 run_evals.py --mutants       # every known-leaky retriever must be caught (gate recall 9/9)
 python3 eval_scale.py                # frozen 1,350-probe leak eval; refuses to run if the eval set changed
 DATABASE_URL=postgresql://... python3 -m pytest test_pgvector.py   # pgvector + RLS (needs Postgres)
 
