@@ -148,7 +148,7 @@
     },
     "app.retrieval.x__retrieve__mutmut_77": {
       "reason": "OrderedDict.popitem(last=None): None is falsy, so it pops in FIFO order exactly like last=False; eviction still drops the oldest entry.",
-      "source_sha256": "396941280a965211b219186ef0079906ea6a46777d6d359f6e5dd050a77a4d19",
+      "source_sha256": "a4c8d0eccf6b8161f419360be33dfe47e6cc471772920f5f2e75c2c02fa8ed02",
       "mutant_sha256": "e34c68994dff1d7178386825466750a126ee32ddac38f1c7f542db6735b705c5"
     },
     "app.store.x_init_db__mutmut_15": {

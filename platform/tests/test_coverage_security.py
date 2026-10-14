@@ -9,6 +9,7 @@ import pytest
 from fastapi import HTTPException
 
 from conftest import mint, reingest, reset_permission_source
+from failclosed_assert import assert_failed_closed
 from app import config, identity, ingest, retrieval, sync, main, store
 from app.identity import Principal
 from app.ingest import strictest
@@ -224,7 +225,7 @@ def test_malformed_sync_feed_blocks_reads_until_valid_retry(client):
         blocked = client.post(
             "/query", json={"query": "salary bands"},
             headers={"Authorization": f"Bearer {mint('bob@company.com', ['hr'])}"})
-        assert blocked.json() == retrieval.EMPTY_RESPONSE
+        assert_failed_closed(blocked)
 
         reset_permission_source()
         sync.sync_once()

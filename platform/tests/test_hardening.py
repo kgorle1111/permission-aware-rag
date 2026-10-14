@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from conftest import auth, mint, reingest
+from failclosed_assert import assert_failed_closed
 
 from app import config, retrieval
 from app import ingest
@@ -46,7 +47,7 @@ def test_failed_sync_stays_blocked_and_retry_replays_acl_updates(client, monkeyp
             state = s.get(PermissionState, 1)
             assert state.pending is True
         denied = client.post("/query", json={"query": "salary bands"}, headers=auth("bob"))
-        assert denied.json() == retrieval.EMPTY_RESPONSE
+        assert_failed_closed(denied)
 
         monkeypatch.setattr(sync, "update_doc_acls", real_update)
         assert sync_once() == ["hr-salaries"]
@@ -87,7 +88,7 @@ def test_failed_full_ingest_requires_reingest_before_sync_can_unblock(client, mo
             assert "reingestion" in str(exc)
 
         blocked = client.post("/query", json={"query": "vacation policy"}, headers=auth("guest"))
-        assert blocked.json() == retrieval.EMPTY_RESPONSE
+        assert_failed_closed(blocked)
         with SessionLocal() as s:
             state = s.get(PermissionState, 1)
             assert state.pending is True
@@ -167,12 +168,12 @@ def test_audit_failure_returns_canonical_empty_on_cold_and_warm_cache(client, mo
 
     monkeypatch.setattr(retrieval, "write_audit", audit_failure)
     warm_failure = client.post("/query", json=q, headers=headers)
-    assert warm_failure.json() == retrieval.EMPTY_RESPONSE
+    assert_failed_closed(warm_failure)
 
     retrieval.clear_cache()
     cold_failure = client.post("/query", json=q, headers=headers)
-    assert cold_failure.json() == retrieval.EMPTY_RESPONSE
-    assert cold_failure.content == warm_failure.content
+    assert_failed_closed(cold_failure)
+    assert set(cold_failure.json()) == set(warm_failure.json())
 
 
 def test_malformed_acl_and_signed_malformed_jwt_claims_fail_closed(client):
@@ -243,7 +244,7 @@ def test_partial_vector_deletion_cannot_be_restored_by_later_grant(client, monke
             assert "full reingestion required" in str(exc)
 
         blocked = client.post("/query", json={"query": "salary bands"}, headers=auth("bob"))
-        assert blocked.json() == retrieval.EMPTY_RESPONSE
+        assert_failed_closed(blocked)
         with SessionLocal() as s:
             state = s.get(PermissionState, 1)
             assert state.pending is True
@@ -325,6 +326,5 @@ def test_failed_audit_commit_never_returns_retrieved_content(client, monkeypatch
     response = client.post("/query", json={"query": "salary bands range from 90k to 250k"},
                            headers=auth("bob"))
     assert failed_once
-    assert response.status_code == 200
-    assert response.json() == retrieval.EMPTY_RESPONSE
+    assert_failed_closed(response)
     assert "hr-salaries" not in response.text

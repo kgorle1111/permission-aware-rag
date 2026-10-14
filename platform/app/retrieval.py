@@ -22,8 +22,9 @@ from .store import PermissionState, SessionLocal, fingerprint_problem, permissio
 from .vectorstore import search, search_unfiltered_count
 
 log = logging.getLogger("permrag")
-# Fail-closed and no-match responses are deliberately identical: a denied or broken
-# request must not be distinguishable from a query about nothing.
+# Denied and no-match responses are deliberately identical: a hidden document must not be
+# distinguishable from a nonexistent one. A failed-closed request is NOT a no-match: the HTTP route
+# answers it with a 503 (see retrieve_checked); this body is what library callers get.
 EMPTY_RESPONSE = {"results": [], "answer": "No results found.", "degraded": False, "source": "full_rag"}
 _cache = OrderedDict()
 _cache_lock = RLock()
@@ -142,6 +143,16 @@ def _outcome(response: dict) -> str:
 
 
 def retrieve(query: str, principal: Principal, k: int = None, request_id: str = None) -> dict:
+    """Library entry point: a failed-closed request returns EMPTY_RESPONSE."""
+    return retrieve_checked(query, principal, k, request_id)[0]
+
+
+def retrieve_checked(query: str, principal: Principal, k: int = None,
+                     request_id: str = None) -> tuple[dict, bool]:
+    """(response, failed_closed). The HTTP route turns the flag into a 503, so an outage is not
+    mistaken for "nothing matched". Every cause is global state (permission barrier, index
+    fingerprint, SQL, audit) or the caller's own request; none reads a document the caller cannot
+    see, so the flag reveals nothing about hidden content."""
     rec, started = obs.new_record(request_id), perf_counter()
     response, failed = _retrieve(query, principal, k, rec)
     rec.update(source=response["source"], degraded=response["degraded"],
@@ -153,7 +164,7 @@ def retrieve(query: str, principal: Principal, k: int = None, request_id: str = 
     rec["total_ms"] = _ms(started)
     obs.OPS.record(rec)
     obs.emit(rec)
-    return response
+    return response, failed or response["source"] == "unavailable"
 
 
 def _retrieve(query: str, principal: Principal, k: int, rec: dict):

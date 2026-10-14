@@ -3,6 +3,9 @@ branch = True
 source = app,scripts
 patch = subprocess
 parallel = True
+# data-bound eval harness: needs the EnronQA download (~160 MB) and local models, so CI can't run it;
+# its pure helpers are unit-tested in tests/test_rung_enronqa.py
+omit = scripts/rung_enronqa.py
 
 [report]
 show_missing = True

@@ -5,9 +5,11 @@ __pycache__/
 logs/
 app/audit_log.jsonl
 app/audit_log.jsonl.head
+app/ops.sqlite*
+app/audit_log.jsonl.lock
 app/pgvector_audit.head
+app/pgvector_audit.head.lock
 .pytest_cache/
-uv.lock
 PLAN.md
 HANDOFF.md
 WORK_LOG.md
@@ -22,3 +24,9 @@ evals/enronqa/data/
 
 # Real public-domain PDF corpus (fetched by evals/pdf_corpus/fetch.py)
 evals/pdf_corpus/data/
+.coverage
+.mypy_cache/
+
+# BEIR eval: downloaded datasets and scratch venv, never committed
+evals/beir/data/
+evals/beir/.venv/
