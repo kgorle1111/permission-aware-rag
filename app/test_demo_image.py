@@ -10,13 +10,13 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 DOCKERFILE = ROOT / "deploy" / "aws" / "Dockerfile"
 
 
-def copied_files():
+def copied_files() -> list[pathlib.Path]:
     copy = re.search(r"^COPY\s+(?:--\S+\s+)*(.+?)\s+\./\s*$", DOCKERFILE.read_text(), re.M)
     assert copy, "demo Dockerfile has no COPY ... ./ line"
     return [pathlib.Path(p) for p in copy.group(1).split()]
 
 
-def test_demo_image_file_list_is_enough_to_import_the_server(tmp_path):
+def test_demo_image_file_list_is_enough_to_import_the_server(tmp_path: pathlib.Path) -> None:
     for rel in copied_files():
         shutil.copy(ROOT / rel, tmp_path / rel.name)
     run = subprocess.run(
