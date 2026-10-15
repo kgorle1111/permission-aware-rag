@@ -8,6 +8,7 @@ import math
 import sqlite3
 
 import pytest
+from qdrant_client.models import FieldCondition, HasIdCondition
 
 from app import config, embeddings, rerank, retrieval, vectorstore
 from conftest import reingest
@@ -84,33 +85,32 @@ def test_hybrid_candidate_pool_is_exactly_twice_top_k(hybrid_store):
     assert score == pytest.approx(2 * single["score"])
 
 
-def _kw_of_hybrid_search(monkeypatch, principals):
+def _kws_of_hybrid_search(monkeypatch, principals):
     real = vectorstore.client()
     seen = []
     original = real.query_points
     monkeypatch.setattr(real, "query_points", lambda **kw: seen.append(kw) or original(**kw))
     vectorstore.search(QUERY, principals, 3, sparse=QSPARSE)
-    [kw] = seen
-    return kw
+    return seen
 
 
-def test_hybrid_nested_dense_prefetch_carries_the_acl_filter(hybrid_store, monkeypatch):
-    # The sparse branch re-scores the INNER dense prefetch. Its candidate pool must be built from
-    # readable rows only, whatever the engine propagates: otherwise hidden chunks that are
-    # dense-closer than the target fill the 2*top_k pool and a visible user's ranking depends on
-    # documents they cannot read. Pinned on the request because embedded Qdrant masks the omission.
+def test_every_hybrid_query_carries_the_acl_filter(hybrid_store, monkeypatch):
+    # Dense and sparse run as separate queries; each candidate list must be built from readable
+    # rows only, so every query sent (not just the outer one) carries the full per-level ACL filter.
+    # The sparse query is additionally restricted to the dense candidate ids.
     hybrid_store(VISIBLE + HIDDEN)
     principals = ["*", "user:guest@external.com"]
-    kw = _kw_of_hybrid_search(monkeypatch, principals)
-    sparse_branch = kw["prefetch"][1]
-    inner = sparse_branch.prefetch
-    assert inner.using == "dense" and inner.query == QUERY
-    assert inner.filter is not None
-    assert sorted((c.key, tuple(c.match.any)) for c in inner.filter.must) == sorted(
-        (lvl, tuple(principals)) for lvl in vectorstore.ACL_LEVELS)
-    assert inner.filter == sparse_branch.filter == kw["query_filter"]
-    assert inner.limit == 6 and sparse_branch.limit == 6 and kw["limit"] == 3
-    assert inner.score_threshold == config.MIN_SCORE
+    dense, sparse = _kws_of_hybrid_search(monkeypatch, principals)
+    expected = sorted((lvl, tuple(principals)) for lvl in vectorstore.ACL_LEVELS)
+    for kw in (dense, sparse):
+        assert "prefetch" not in kw
+        acl = [c for c in kw["query_filter"].must if isinstance(c, FieldCondition)]
+        assert sorted((c.key, tuple(c.match.any)) for c in acl) == expected
+    assert dense["using"] == "dense" and dense["query"] == QUERY
+    assert dense["score_threshold"] == config.MIN_SCORE and dense["limit"] == 2 * 3 + 1
+    [only_ids] = [c for c in sparse["query_filter"].must if isinstance(c, HasIdCondition)]
+    assert sorted(only_ids.has_id) == [1, 2, 3]
+    assert sparse["using"] == "sparse" and sparse["limit"] == 3
 
 
 # ---- exact error messages (a substring/regex match lets "XXmsgXX" survive) ----------------------

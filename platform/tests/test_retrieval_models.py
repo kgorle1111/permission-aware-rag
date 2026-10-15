@@ -13,7 +13,7 @@ from unittest.mock import Mock
 
 import numpy as np
 import pytest
-from qdrant_client.models import Filter, SparseVector
+from qdrant_client.models import Filter, HasIdCondition, SparseVector
 
 from app import config, embeddings, ingest, rerank, resilience, retrieval, vectorstore
 from app.identity import Principal
@@ -252,22 +252,24 @@ def _acl_filter_keys(flt):
     return sorted((c.key, tuple(c.match.any)) for c in flt.must)
 
 
-def test_hybrid_query_applies_acl_must_filter_to_both_prefetches_and_the_outer_query(hybrid_index, monkeypatch):
+def test_hybrid_queries_apply_acl_must_filter_to_every_query_sent(hybrid_index, monkeypatch):
     real = vectorstore.client()
     seen = []
     original = real.query_points
     monkeypatch.setattr(real, "query_points", lambda **kw: seen.append(kw) or original(**kw))
-    principals = ["*", "user:guest@external.com"]
-    vectorstore.search([0.1] * 384, principals, 4, sparse=([1, 2], [1.0, 1.0]))
-    [kw] = seen
+    principals = _principal("bob").principals
+    text = "salary bands range from 90k to 250k"
+    assert vectorstore.search(_vec(text), principals, 4, sparse=_sparse(text))  # both legs ran
+    seen.clear()
+    vectorstore.search(_vec(text), principals, 4, sparse=_sparse(text))
     expected = sorted((lvl, tuple(principals)) for lvl in vectorstore.ACL_LEVELS)
-    assert [p.using for p in kw["prefetch"]] == ["dense", "sparse"]
-    for branch in kw["prefetch"]:
-        assert _acl_filter_keys(branch.filter) == expected
-    assert _acl_filter_keys(kw["query_filter"]) == expected
-    assert kw["limit"] == 4 and all(p.limit == 8 for p in kw["prefetch"])
-    assert isinstance(kw["prefetch"][1].query, SparseVector)
-    assert kw["prefetch"][0].score_threshold == config.MIN_SCORE
+    assert [kw["using"] for kw in seen] == ["dense", "sparse"]
+    for kw in seen:
+        assert "prefetch" not in kw
+        acl = Filter(must=[c for c in kw["query_filter"].must if not isinstance(c, HasIdCondition)])
+        assert _acl_filter_keys(acl) == expected
+    assert seen[0]["limit"] == 9 and seen[0]["score_threshold"] == config.MIN_SCORE
+    assert isinstance(seen[1]["query"], SparseVector)
 
 
 def test_hybrid_never_returns_a_hidden_document_even_for_its_exact_text(hybrid_index):

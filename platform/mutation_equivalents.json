@@ -181,10 +181,30 @@
       "mutant_sha256": "0e96779915dfaa0806bee7222a0aca1fb11df212f38e9c3ca7a137dd9085b7ce",
       "reason": "Omitting pending uses Column(default=True); probed on SQLite: persisted row identical to pending=True."
     },
-    "app.vectorstore.x_search__mutmut_34": {
+    "app.vectorstore.x__dense_pool__mutmut_23": {
       "reason": "query_points defaults with_payload=True in both QdrantClient and the local engine, so dropping the explicit argument returns identical payloads.",
-      "source_sha256": "d0673c6ee9b47f928670daf215935caf9e6d6430420933a694ca14a98b7431cb",
-      "mutant_sha256": "2874f5829af2c8c26d9d6e471f239b0d3fefbc483e3a99fd9a241cc1bac033e2"
+      "source_sha256": "8f8ee2e157c5bcf0014f9aaa4495a36f3da929ed65f7e7f3f660e66ec4b84959",
+      "mutant_sha256": "5970cd39a77ddba80ec9098e70d09e086de51ac531ca00ef0df4e110372a1c5c"
+    },
+    "app.vectorstore.x__dense_pool__mutmut_42": {
+      "reason": "Growth factor x3 vs x2 changes only how many rows each widening fetch asks for: both clamp to MAX_TIE_FETCH and finish on a fetch at the cap, and every returned pool is hits[:pool] of a proven-complete tie group (deterministic in (-score, id)); a 200k-case fuzz of the loop found no mismatch.",
+      "source_sha256": "8f8ee2e157c5bcf0014f9aaa4495a36f3da929ed65f7e7f3f660e66ec4b84959",
+      "mutant_sha256": "c275ee9a9474fa59b7771c80fec0c2d84dfe808ba936d3a1b80a91db4db87b3b"
+    },
+    "app.vectorstore.x_search__mutmut_42": {
+      "reason": "The sparse leg's payload is never read: fused results take their payload from the dense hits, so the sparse query's with_payload value changes only response size.",
+      "source_sha256": "8f8ee2e157c5bcf0014f9aaa4495a36f3da929ed65f7e7f3f660e66ec4b84959",
+      "mutant_sha256": "52cc710a583200eb1753c1385d64746a4e7f66f5b8144f6894f221234e419539"
+    },
+    "app.vectorstore.x_search__mutmut_48": {
+      "reason": "The sparse leg's payload is never read: fused results take their payload from the dense hits, so the sparse query's with_payload value changes only response size.",
+      "source_sha256": "8f8ee2e157c5bcf0014f9aaa4495a36f3da929ed65f7e7f3f660e66ec4b84959",
+      "mutant_sha256": "62049007ee86cd1df4bd76929dfbcb6dc10ffa66a2fb0439544b8ccd368361f7"
+    },
+    "app.vectorstore.x_search__mutmut_57": {
+      "reason": "The sparse leg's payload is never read: fused results take their payload from the dense hits, so the sparse query's with_payload value changes only response size.",
+      "source_sha256": "8f8ee2e157c5bcf0014f9aaa4495a36f3da929ed65f7e7f3f660e66ec4b84959",
+      "mutant_sha256": "1499b7b14fb1daf0ca8eda856ca18e1eba5748dc38e457205841697f1bf83f51"
     }
   }
 }
