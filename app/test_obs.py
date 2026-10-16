@@ -113,8 +113,9 @@ def ask(call, user="junior", q="policy 10023 status", path="/ask"):
     return call("POST", path, {"user": user, "q": q})
 
 
-def test_ok_line_has_exact_fields_and_matches_response(api, caplog):
+def test_ok_line_has_exact_fields_and_matches_response(api, caplog, monkeypatch):
     caplog.set_level(logging.INFO)
+    monkeypatch.setattr(srv, "SHOW_DENIED", True)  # so the logged count can be checked against the response
     status, body, headers = ask(api)
     rec = one_line(caplog)
     assert status == 200
