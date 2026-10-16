@@ -14,7 +14,7 @@ There are three independent parts. You only need the one you're changing.
 ```bash
 cd app
 python3 run_evals.py                # leak gate: exits 1 on any ACL leak or recall miss
-python3 underwriter_server.py 8421  # UI at http://127.0.0.1:8421
+SHOW_DENIED=1 python3 underwriter_server.py 8421  # UI at http://127.0.0.1:8421
 ```
 
 `ANTHROPIC_API_KEY` in your environment enables drafted answers. Without it the app answers

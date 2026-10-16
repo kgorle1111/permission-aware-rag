@@ -51,7 +51,7 @@ if matches:
 PY
 tag="$(git rev-parse HEAD)"; image="permission-rag-demo:$tag"
 docker build --platform linux/amd64 -f deploy/aws/Dockerfile -t "$image" .
-container="$(docker run -d --platform linux/amd64 --memory 512m --cpus .25 -p 127.0.0.1::8080 "$image")"
+container="$(docker run -d --platform linux/amd64 --memory 512m --cpus .25 -e SHOW_DENIED=1 -p 127.0.0.1::8080 "$image")"
 port="$(docker port "$container" 8080/tcp | sed 's/.*://')"
 python3 deploy/aws/smoke.py "http://127.0.0.1:$port"
 docker rm -f "$container" >/dev/null; container=""

@@ -82,7 +82,7 @@ User question ──► ACL pre-filter ──► BM25 over visible set ──►
 ```bash
 git clone https://github.com/kgorle1111/permission-aware-rag && cd permission-aware-rag/app
 python3 run_evals.py                # the leak gate: 20 cases | recall@4: 14/14 | leaks: 0
-python3 underwriter_server.py 8421  # open http://127.0.0.1:8421
+SHOW_DENIED=1 python3 underwriter_server.py 8421  # open http://127.0.0.1:8421
 ```
 
 No install step for the reference app: it's stdlib only. Switch roles with keys `1–4` and re-ask the same question:
@@ -197,7 +197,7 @@ its generated catalog, which is not exhaustive security coverage.
 | Audit log tampering (edit/remove) | ✅ JSONL chain plus local head; pgvector checks stored line hashes |
 | Audit log truncation from the tail | ✅ JSONL-only truncation detected against local head; ⚠️ pgvector truncation or rewriting both JSONL files needs external anchoring |
 | Cross-doc aggregation (LLM synthesizes a conclusion no single doc supports) | ⚠️ Partly controlled (T15): every sentence without a citation to a retrieved document comes back as `uncited_claims` for the reviewer. This checks citation coverage, not truth; needs answer-level evals |
-| Denied-count side channel | ⚙️ Deliberate demo feature; `SHOW_DENIED=0` disables it |
+| Denied-count side channel | ✅ Off by default; demos opt in with `SHOW_DENIED=1` (T11) |
 
 ## API
 

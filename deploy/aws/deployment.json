@@ -3,7 +3,7 @@
   "containers": {
     "workbench": {
       "image": "REPLACED_WITH_PRIVATE_LIGHTSAIL_IMAGE",
-      "environment": {"HOST": "0.0.0.0", "PORT": "8080"},
+      "environment": {"HOST": "0.0.0.0", "PORT": "8080", "SHOW_DENIED": "1"},
       "ports": {"8080": "HTTP"}
     }
   },
