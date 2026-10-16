@@ -1,0 +1,270 @@
+{
+ "dataset": "0ff4169c80850ccce5fe7eb95efd24aa9516e8a2",
+ "seed": 20261016,
+ "times": [
+  0.0,
+  250.0,
+  500.0,
+  1000.0
+ ],
+ "k": 10,
+ "counts": {
+  "documents": 4000,
+  "chunks": 14067,
+  "principals": 600,
+  "access_events": 72,
+  "queries": 240,
+  "revocation_cases": 50,
+  "queries_used": 240
+ },
+ "index_build_s": 3.02,
+ "latency_ms": {
+  "median": 49.8,
+  "p95": 61.4
+ },
+ "direct": {
+  "normal/asker": {
+   "attempts": 632,
+   "leaks_by_id": {
+    "k": 0,
+    "n": 6320,
+    "rate": 0.0,
+    "wilson95": [
+     0.0,
+     0.000607456544613559
+    ]
+   },
+   "leaks_by_canary": 0,
+   "returned_any": {
+    "k": 632,
+    "n": 632,
+    "rate": 1.0,
+    "wilson95": [
+     0.993958464287537,
+     1.0
+    ]
+   }
+  },
+  "normal/cross": {
+   "attempts": 1896,
+   "leaks_by_id": {
+    "k": 0,
+    "n": 18960,
+    "rate": 0.0,
+    "wilson95": [
+     0.0,
+     0.00020256754886004057
+    ]
+   },
+   "leaks_by_canary": 0,
+   "returned_any": {
+    "k": 1896,
+    "n": 1896,
+    "rate": 1.0,
+    "wilson95": [
+     0.9979780108159353,
+     1.0
+    ]
+   }
+  },
+  "probe/asker": {
+   "attempts": 328,
+   "leaks_by_id": {
+    "k": 0,
+    "n": 3280,
+    "rate": 0.0,
+    "wilson95": [
+     1.0842021724855044e-19,
+     0.0011698064384035966
+    ]
+   },
+   "leaks_by_canary": 0,
+   "returned_any": {
+    "k": 328,
+    "n": 328,
+    "rate": 1.0,
+    "wilson95": [
+     0.9884238127018657,
+     1.0
+    ]
+   }
+  },
+  "probe/cross": {
+   "attempts": 984,
+   "leaks_by_id": {
+    "k": 0,
+    "n": 9840,
+    "rate": 0.0,
+    "wilson95": [
+     0.0,
+     0.0003902398161675151
+    ]
+   },
+   "leaks_by_canary": 0,
+   "returned_any": {
+    "k": 984,
+    "n": 984,
+    "rate": 1.0,
+    "wilson95": [
+     0.9961112597099879,
+     1.0
+    ]
+   }
+  }
+ },
+ "direct_total": {
+  "attempts": 3840,
+  "result_slots": 38400,
+  "leaks_by_id": {
+   "k": 0,
+   "n": 38400,
+   "rate": 0.0,
+   "wilson95": [
+    6.776263578034403e-21,
+    0.00010002798510167326
+   ]
+  },
+  "leaks_by_canary": 0
+ },
+ "oracle_vs_generator": {
+  "probe_target_unreadable_for_asker": {
+   "k": 326,
+   "n": 328,
+   "rate": 0.9939024390243902,
+   "wilson95": [
+    0.9780436306704501,
+    0.998326233096027
+   ]
+  },
+  "revocation_n_chunks_lost_exact": {
+   "k": 50,
+   "n": 50,
+   "rate": 1.0,
+   "wilson95": [
+    0.9286523998213857,
+    0.9999999999999999
+   ]
+  }
+ },
+ "probe_target_recall_by_a_legit_reader": {
+  "hit@1": {
+   "k": 57,
+   "n": 320,
+   "rate": 0.178125,
+   "wilson95": [
+    0.14009631042317508,
+    0.22378995444351932
+   ]
+  },
+  "hit@4": {
+   "k": 125,
+   "n": 320,
+   "rate": 0.390625,
+   "wilson95": [
+    0.3387687092728798,
+    0.4450761380119192
+   ]
+  },
+  "hit@10": {
+   "k": 191,
+   "n": 320,
+   "rate": 0.596875,
+   "wilson95": [
+    0.5422886312064576,
+    0.6491630754841489
+   ]
+  }
+ },
+ "probe_target_doc_recall_by_a_legit_reader": {
+  "hit@1": {
+   "k": 212,
+   "n": 320,
+   "rate": 0.6625,
+   "wilson95": [
+    0.6090358076686444,
+    0.7121089906510827
+   ]
+  },
+  "hit@4": {
+   "k": 280,
+   "n": 320,
+   "rate": 0.875,
+   "wilson95": [
+    0.8342582873736947,
+    0.9068450933641371
+   ]
+  },
+  "hit@10": {
+   "k": 312,
+   "n": 320,
+   "rate": 0.975,
+   "wilson95": [
+    0.9514521273763896,
+    0.9872788215581971
+   ]
+  }
+ },
+ "existence_score_identity": {
+  "samples": 20,
+  "diffs": 0
+ },
+ "revocation": {
+  "cases": 50,
+  "precondition_unmet": 0,
+  "target_hit_before": 37,
+  "target_after": 0,
+  "leaks_after": 0
+ },
+ "controls": {
+  "no_filter_probe_queries_leaking": {
+   "k": 328,
+   "n": 328,
+   "rate": 1.0,
+   "wilson95": [
+    0.9884238127018657,
+    1.0
+   ]
+  },
+  "read_up": {
+   "mutant_leaking": {
+    "k": 400,
+    "n": 400,
+    "rate": 1.0,
+    "wilson95": [
+     0.9904877055170676,
+     1.0
+    ]
+   },
+   "real_engine_leaking": {
+    "k": 0,
+    "n": 400,
+    "rate": 0.0,
+    "wilson95": [
+     0.0,
+     0.009512294482932589
+    ]
+   }
+  },
+  "embargo": {
+   "mutant_leaking": {
+    "k": 400,
+    "n": 400,
+    "rate": 1.0,
+    "wilson95": [
+     0.9904877055170676,
+     1.0
+    ]
+   },
+   "real_engine_leaking": {
+    "k": 0,
+    "n": 400,
+    "rate": 0.0,
+    "wilson95": [
+     0.0,
+     0.009512294482932589
+    ]
+   }
+  }
+ },
+ "wall_s": 347.1
+}

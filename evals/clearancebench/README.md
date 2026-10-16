@@ -10,6 +10,23 @@ python3 evals/clearancebench/fetch.py      # pinned revision, sha256-checked, in
 python3 evals/clearancebench/run.py        # prints the table; --write saves it under evals/results/
 ```
 
+## Results (2026-10-16)
+
+[table.md](../results/2026-10-16-clearancebench/table.md), every number in
+[report.json](../results/2026-10-16-clearancebench/report.json).
+
+- **Direct leaks:** 0 of 38,400 result slots (3,840 queries x top 10; Wilson 95% upper 0.01%), 0 canary hits.
+- **Existence:** 0 of 20 score-identity samples differ.
+- **Revocation:** 50 of 50 cases clean after removing the token.
+- **Controls:** NoFilter leaks on 328/328 probe queries. Read-up and embargo bugs each leak on 400/400 targeted
+  probes, against 0/400 for the real engine on the same probes.
+- **Oracle vs the generator:** the oracle reproduces `n_chunks_lost` on 50/50 revocation cases. It agrees that
+  the probe target is unreadable for its asker on 326/328 (probe, time) pairs. The 2 exceptions are one target
+  (`D03003#0`) whose embargo window [100, 800) is open at t = 250 and 500, where its asker holds a matching
+  token and enough clearance. The read is legitimate at those times, so it is correctly not a leak.
+- **Recall, the weak number:** exact-chunk probe recall by a legitimate reader is hit@10 59.7%. Same-document
+  recall is hit@10 97.5%. Templated text makes sibling chunks near-duplicates for BM25.
+
 ## Source and licence (verified 2026-10-16)
 
 Revision `0ff4169c80850ccce5fe7eb95efd24aa9516e8a2`, Apache-2.0 per the dataset card, fully synthetic: no real
