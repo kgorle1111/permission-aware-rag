@@ -1,0 +1,45 @@
+{
+ "dataset": "NagaYu/clearance-bench",
+ "source_url": "https://huggingface.co/datasets/NagaYu/clearance-bench",
+ "generator": "https://github.com/NagaYu/clearance (clearance.synth, seed 7)",
+ "revision": "0ff4169c80850ccce5fe7eb95efd24aa9516e8a2",
+ "license": "Apache-2.0 (dataset card, verified 2026-10-16). Fully synthetic: no real documents, ACLs or identities.",
+ "files": [
+  {
+   "path": "access_events/train-00000-of-00001.parquet",
+   "file": "access_events.parquet",
+   "bytes": 3738,
+   "sha256": "3264a762e4c2a5444ae561d2d342e1901c4be1581a93a1c78c897fbedf5be1dd"
+  },
+  {
+   "path": "chunks/train-00000-of-00001.parquet",
+   "file": "chunks.parquet",
+   "bytes": 1546333,
+   "sha256": "906482d2fa79ab6162548c95c1a8545529caf73eb38be6af1f6695284e926acf"
+  },
+  {
+   "path": "documents/train-00000-of-00001.parquet",
+   "file": "documents.parquet",
+   "bytes": 1202298,
+   "sha256": "b599842e0e2980a250970921ec25b1ade2943fdc8833dc30ab78d1bb048082e4"
+  },
+  {
+   "path": "principals/train-00000-of-00001.parquet",
+   "file": "principals.parquet",
+   "bytes": 76132,
+   "sha256": "dabd3d8b09bb94418d20988d3b97644cc2cf1472303a7aa876718285e217d82a"
+  },
+  {
+   "path": "queries/train-00000-of-00001.parquet",
+   "file": "queries.parquet",
+   "bytes": 9624,
+   "sha256": "4953e59218a6bfe39caf4d0c37e7c34419bbda3ca95c77e0f48b614294a2b213"
+  },
+  {
+   "path": "revocation_cases/train-00000-of-00001.parquet",
+   "file": "revocation_cases.parquet",
+   "bytes": 5064,
+   "sha256": "88703e0cf55ff241a5efe429e9d2d6771b395277b7ccf4c6d852e566a8a4ace3"
+  }
+ ]
+}

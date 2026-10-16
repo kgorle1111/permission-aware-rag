@@ -21,6 +21,7 @@ docs/COMPETITOR_SCAN-*.md
 platform/embed_cache.sqlite
 AGENTS.local.md
 evals/enronqa/data/
+evals/clearancebench/data/
 
 # Real public-domain PDF corpus (fetched by evals/pdf_corpus/fetch.py)
 evals/pdf_corpus/data/
