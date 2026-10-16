@@ -112,9 +112,8 @@ PRESETS = pathlib.Path(__file__).with_name("presets.json")
 MAX_Q_LEN = 1000
 MAX_BODY = 16 * 1024
 
-# The "N hidden" count is a deliberate demo side channel (it sells the feature).
-# Default off outside the demo: SHOW_DENIED=0 removes it from responses.
-SHOW_DENIED = os.environ.get("SHOW_DENIED", "1") == "1"
+# The "N hidden" count is a corpus-size side channel (T11). Off unless a demo opts in with SHOW_DENIED=1.
+SHOW_DENIED = os.environ.get("SHOW_DENIED", "0") == "1"
 
 # SSO seam: set UNDERWRITER_JWT_SECRET and identity comes from a signed HS256
 # JWT (sub + groups claims) instead of the demo dropdown. can_read() unchanged.

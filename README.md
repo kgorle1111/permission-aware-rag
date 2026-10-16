@@ -145,7 +145,7 @@ real-user authentication. Audit history is ephemeral across container replacemen
 ```bash
 git clone https://github.com/kgorle1111/permission-aware-rag && cd permission-aware-rag/app
 python3 run_evals.py                # the leak gate: 20 cases | recall@4: 14/14 | leaks: 0
-python3 underwriter_server.py 8421  # open http://127.0.0.1:8421
+SHOW_DENIED=1 python3 underwriter_server.py 8421  # open http://127.0.0.1:8421
 ```
 
 Switch roles with keys `1`–`4` and re-ask the same question. Set `ANTHROPIC_API_KEY` to turn

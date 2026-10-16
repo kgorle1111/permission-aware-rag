@@ -65,7 +65,7 @@ def test():
 
         # /query shape
         code, d = _get(base, "/query?user=junior&q=claims+history+policy+10023")
-        assert code == 200 and {"results", "denied_chunks"} <= set(d)
+        assert code == 200 and "results" in d
         assert d["results"][0]["doc_id"] == "claims-10023"
 
         # /ask without a key: retrieval + note, no answer
@@ -92,12 +92,15 @@ def test():
         code, d = _get(base, "/presets")
         assert code == 200 and isinstance(d, list) and len(d[0]) == 2
 
-        # SHOW_DENIED off: denied count absent from responses
-        srv.SHOW_DENIED = False
+        # SHOW_DENIED off: denied count absent from responses; on: present
+        shown = srv.SHOW_DENIED
         try:
+            srv.SHOW_DENIED = False
             assert "denied_chunks" not in _get(base, "/query?user=junior&q=policy")[1]
-        finally:
             srv.SHOW_DENIED = True
+            assert "denied_chunks" in _get(base, "/query?user=junior&q=policy")[1]
+        finally:
+            srv.SHOW_DENIED = shown
 
         # JWT seam: valid token resolves claims; bad/missing token is 401
         srv.JWT_SECRET = "test-secret"
