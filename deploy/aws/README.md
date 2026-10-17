@@ -1,10 +1,12 @@
 # AWS demo deployment
 
-[Open the live demo](https://permission-rag-demo.b9hphyfz7skjm.us-east-2.cs.amazonlightsail.com/). Verified 2026-10-10 on
-Lightsail deployment **version 2**, from merged commit
-`b65e0c420d464bc248bbb35f8669cf085fa0d7cc`. PRs #6–#12 are merged. HTTPS UI,
-retrieval-only operation, 20 permission probes, unknown-role denial and all four
-roles' JSON/CSV audit privacy checks passed. [Release evidence](../../evals/results/2026-10-10-aws-release/table.md)
+[Open the live demo](https://permission-rag-demo.b9hphyfz7skjm.us-east-2.cs.amazonlightsail.com/). Verified 2026-10-16 on
+Lightsail deployment **version 3**, from merged commit
+`e3f663c6e02b20fd7d134db7795000123c4ef0cf` (PR #69): local Nano-limit smoke, live HTTPS smoke (UI,
+allowed retrieval, forbidden-document check, no LLM, audit redaction), `/healthz` 200, and the
+hidden-chunk count present because the deployment sets `SHOW_DENIED=1` (T11). Version 2
+(`b65e0c4`, 2026-10-10) remains in private image storage for rollback.
+Version 2 [release evidence](../../evals/results/2026-10-10-aws-release/table.md)
 records the image, source tree, CI results and limits. The user chose to keep the
 portfolio service running; capacity remains one Nano node. Version 1's private
 image and deployment specification were retained for rollback.
