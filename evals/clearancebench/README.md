@@ -1,7 +1,7 @@
 # ClearanceBench eval: direct and existence leaks on a public benchmark we did not write
 
 [ClearanceBench](https://huggingface.co/datasets/NagaYu/clearance-bench) is a public, synthetic leak
-benchmark from an independent author ([generator](https://github.com/NagaYu/clearance)). It has 4,000 documents,
+benchmark we did not write, by a separate Hugging Face author ([generator](https://github.com/NagaYu/clearance)). It has 4,000 documents,
 14,067 chunks and 600 principals, with overlapping ACLs, clearance levels, embargo windows and grants on a
 timeline. As of 2026-10-16 no named system had published results on it.
 
