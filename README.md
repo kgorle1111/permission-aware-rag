@@ -114,6 +114,24 @@ flowchart LR
 | 🧪 **Tests that are proven to fail** | Planted leak bugs, a 3,054-mutant mutation gate, and docs that break the build when they drift from the code. |
 | 🧾 **Receipts on every answer** | Latency and estimated cost per answer (about $0.002 on Claude Haiku 4.5), plus an audit log that detects edits. |
 
+## 🆚 How this compares (sources checked 2026-10-19)
+
+Permission-aware retrieval is a standard feature, not a new idea. What this project adds is **published,
+reproducible leak measurements** and a check that is shown to catch planted bugs.
+
+| | How permissions are enforced | Published leak measurement |
+|---|---|---|
+| [Microsoft 365 Copilot](https://learn.microsoft.com/microsoft-365-copilot/microsoft-365-copilot-privacy) | Surfaces only data the user has "at least view permissions" to | None we could find |
+| [Glean](https://docs.glean.com/connectors/about) | Uses a permission snapshot mirrored during crawling; some connectors rely on scheduled crawls | None we could find |
+| [Gemini Enterprise](https://docs.cloud.google.com/gemini/enterprise/docs/introduction-to-connectors-and-data-stores) | Connector ACLs; incremental sync "does not sync identity data", which needs a separate identity sync | None we could find |
+| [Onyx](https://docs.onyx.app/security/architecture/access_controls) (open source, ~33k stars) | Per-document access is "only available in the Enterprise Edition" (source-available `ee/` licence) | None we could find |
+| [OpenFGA](https://openfga.dev/docs/modeling/agents/rag-authorization) / [SpiceDB](https://github.com/authzed/langchain-spicedb) recipes | Pre-filter (look up accessible ids first) or post-filter after retrieval; you build the rest | None we could find |
+| **This project** | Pre-filter before ranking, statistics over the visible set only, Postgres RLS, fail closed on permission drift | **0/4,300** on real email (EnronQA), **0/38,400** on [ClearanceBench](evals/clearancebench/README.md), with planted bugs that leak on 100% of targeted probes |
+
+Where they win: connectors. They sync dozens of real sources; this project imports ACLs from a file, a Google
+Drive connector (not yet run against a real tenant) or the API. "None we could find" means a search on 2026-10-19 turned up no published
+leak-rate numbers; it does not mean none exist.
+
 ## 🧑‍💼 What this shows, if you're hiring
 
 - **Security-minded AI engineering:** permission-aware retrieval, a prompt-injection boundary, citation verification and a written [threat model](docs/THREAT_MODEL.md) where each row names its test.
