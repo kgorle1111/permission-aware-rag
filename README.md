@@ -152,6 +152,18 @@ SHOW_DENIED=1 python3 underwriter_server.py 8421  # open http://127.0.0.1:8421
 Switch roles with keys `1`–`4` and re-ask the same question. Set `ANTHROPIC_API_KEY` to turn
 on drafted answers; without it, the workbench runs retrieval-only.
 
+**The full platform** (FastAPI + Qdrant + signed JWTs + permission sync) in one command, with Docker:
+
+```bash
+git clone https://github.com/kgorle1111/permission-aware-rag && cd permission-aware-rag/platform
+DEMO_MODE=1 docker compose up --build   # healthy ~15 s after the build; open http://127.0.0.1:8090
+```
+
+Pick an identity button in the UI and ask "what are the salary bands?". HR gets the salary bands, the
+board gets executive compensation, engineering and guests get nothing. `DEMO_MODE=1` mints development
+tokens and is for local evaluation only; without it the API accepts only tokens from your own IdP
+(`JWKS_URL`). Data and keys live in the `rag-data` volume (`docker compose down -v` deletes them).
+
 ## 🧭 Honest limits
 
 - **Not deployed at a real underwriting shop.** Leak and recall numbers come from real public data (EnronQA, BEIR), with permissions derived from email headers or synthetic tenants rather than a customer's live ACLs.
