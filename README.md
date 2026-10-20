@@ -2,7 +2,7 @@
 
 # Permission-aware RAG: AI answers that only see what you're cleared to see
 
-<img src="docs/assets/hero.svg" alt="One shared document archive flows through a permission check that runs before ranking. A junior underwriter sees 3 of 6 files, a senior 5, compliance 4. Measured: 0 leaks in 1,350 probes." width="100%">
+<img src="docs/assets/hero.svg" alt="One shared document archive flows through a permission check that runs before ranking. A junior underwriter sees 3 of 6 files, a senior 5, compliance 4. Measured: 0 leaks in 4,300 probes on real email." width="100%">
 
 [![CI](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/ci.yml)
 [![platform](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/platform.yml/badge.svg)](https://github.com/kgorle1111/permission-aware-rag/actions/workflows/platform.yml)
@@ -74,7 +74,7 @@ So we built evidence that can fail:
 | Expanded gate, including OR-across-levels, flat-intersection and unscoped-cache faults | **9 of 9** |
 | Real documents we didn't write: 600 EnronQA questions over 14,542 Enron emails, readers from sender/recipient headers | **0 of 4,300** unreadable chunks returned |
 | Public benchmark (BEIR SciFact, NFCorpus, FiQA): retrieval matches published numbers; synthetic 4-tenant permission filter | bge-small within **0.001** of MTEB nDCG@10; **0 of 113,573** out-of-tenant results |
-| Public leak benchmark by an independent author ([ClearanceBench](evals/clearancebench/README.md)): overlapping ACLs, clearance levels, embargo windows, 600 principals; planted read-up and embargo bugs leak on 400/400 targeted probes | **0 of 38,400** result slots unreadable; revocation 50/50 clean; score identity 0/20 diffs |
+| Public leak benchmark we did not write ([ClearanceBench](evals/clearancebench/README.md)): overlapping ACLs, clearance levels, embargo windows, 600 principals; planted read-up and embargo bugs leak on 400/400 targeted probes | **0 of 38,400** result slots unreadable; revocation 50/50 clean; score identity 0/20 diffs |
 
 In plain numbers: **0/1,350 leaks (95% upper bound 0.28%)**, and the hand-labeled gate
 still holds at recall@4: 14/14 with zero leaks. The isolation check needs no labels. For
@@ -111,7 +111,7 @@ flowchart LR
 |---|---|
 | 🔒 **Permission first, not filter after** | Forbidden text never enters ranking, so it can't shape the answer, the order or the citations. |
 | 🐘 **The database enforces it too** | In the Postgres backend, row-level security returns only permitted rows, even if a query forgets its filter. |
-| 🧪 **Tests that are proven to fail** | Planted leak bugs, a 3,054-mutant mutation gate, and docs that break the build when they drift from the code. |
+| 🧪 **Tests that are proven to fail** | Planted leak bugs, a 3,071-mutant mutation gate, and docs that break the build when they drift from the code. |
 | 🧾 **Receipts on every answer** | Latency and estimated cost per answer (about $0.002 on Claude Haiku 4.5), plus an audit log that detects edits. |
 
 ## 🆚 How this compares (sources checked 2026-10-19)
@@ -164,7 +164,7 @@ real-user authentication. Audit history is ephemeral across container replacemen
 ```bash
 git clone https://github.com/kgorle1111/permission-aware-rag && cd permission-aware-rag/app
 python3 run_evals.py                # the leak gate: 20 cases | recall@4: 14/14 | leaks: 0
-SHOW_DENIED=1 python3 underwriter_server.py 8421  # open http://127.0.0.1:8421
+SHOW_DENIED=1 python3 underwriter_server.py 8421  # open http://127.0.0.1:8421 (SHOW_DENIED=1: show the hidden-chunk count)
 ```
 
 Switch roles with keys `1`–`4` and re-ask the same question. Set `ANTHROPIC_API_KEY` to turn
@@ -180,7 +180,14 @@ DEMO_MODE=1 docker compose up --build   # healthy ~15 s after the build; open ht
 Pick an identity button in the UI and ask "what are the salary bands?". HR gets the salary bands, the
 board gets executive compensation, engineering and guests get nothing. `DEMO_MODE=1` mints development
 tokens and is for local evaluation only; without it the API accepts only tokens from your own IdP
-(`JWKS_URL`). Data and keys live in the `rag-data` volume (`docker compose down -v` deletes them).
+(`JWKS_URL`). One container: the API with Qdrant in embedded (local) mode and SQLite; data and keys live in
+the `rag-data` volume (`docker compose down -v` deletes them). The same thing from the command line:
+
+```bash
+TOKEN=$(curl -s http://127.0.0.1:8090/demo/tokens | python3 -c 'import json,sys; print(json.load(sys.stdin)["bob (hr)"])')
+curl -s http://127.0.0.1:8090/query -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"query": "what are the salary bands?"}'
+```
 
 ## 🧭 Honest limits
 
@@ -203,6 +210,7 @@ Everything else: [ROADMAP.md](ROADMAP.md).
 
 Apache License 2.0. See [LICENSE](LICENSE).
 
-Latest hierarchy and scale-prerequisite verification: [2026-10-07 results](evals/results/2026-10-07-hierarchy/table.md). The first scale measurement is linked below; broader performance targets remain open.
-
-New evidence: [100k documents / 1.5M chunks](evals/results/2026-10-08-scale/table.md) — local filtered search p95 4.15–8.00 ms; baseline folder reconciliation **104.92 s**, missing the 60 s goal. [Durable reconciliation](evals/results/2026-10-08-sync-optimized/table.md) reduced it to **13.31 s** and single-document revocation to **0.63 s**; global SQL integrity checks remain. [Public-text fixture](evals/results/2026-10-08-public-kit/table.md) uses fictional ACLs and reports 0/2,088 isolation/visibility failures. The [actual promptfoo CLI](evals/results/2026-10-08-promptfoo/table.md) exercised the provider and positive/negative controls. Try the [retriever adapter kit](evals/kit/README.md), review the [publication checklist](docs/PUBLICATION_CHECKLIST.md), or follow the [interview walkthrough](docs/WALKTHROUGH.md).
+More measured results: [hierarchy](evals/results/2026-10-07-hierarchy/table.md) ·
+[100k documents / 1.5M chunks](evals/results/2026-10-08-scale/table.md) ·
+[permission sync](evals/results/2026-10-08-sync-optimized/table.md) · [load test](evals/results/2026-10-12-load-test/table.md) ·
+[retriever adapter kit](evals/kit/README.md) · [interview walkthrough](docs/WALKTHROUGH.md)
