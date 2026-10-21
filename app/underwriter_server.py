@@ -6,6 +6,7 @@ without it, /ask returns retrieval-only results with a note.
 """
 
 import base64
+import binascii
 import csv
 import hashlib
 import hmac
@@ -15,17 +16,23 @@ import logging
 import os
 import pathlib
 import re
+import signal
+import socket
 import sys
 import threading
 import time
 from collections import defaultdict, deque
+from collections.abc import Iterable
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 import audit_verify
 import llm
 import obs
 from permission_rag import PermissionRAG
+
+log = logging.getLogger("underwriter")
 
 # Roles: junior underwriters see policy/claims; banking group sees financials;
 # compliance sees the watchlist; senior sees credit memos on top of everything.
@@ -95,13 +102,30 @@ else:
     # checked first: the constructor would also refuse, but with a bare ValueError
     audit_verify.require_clean_start(lambda: audit_verify.jsonl_failure(audit_verify.jsonl_path()))
     rag = PermissionRAG(audit_path=audit_verify.jsonl_path())
-for _doc_id, _text, _acl in CORPUS:
+
+
+def existing_doc_ids(store: Any) -> set[str]:
+    """Doc ids already in the store; PermissionError on a read-only pgvector deployment."""
+    if isinstance(store, PermissionRAG):
+        return {c["doc_id"] for c in store.chunks}
+    if store.ingest_conn is None:
+        raise PermissionError("read-only PgVectorRAG")
+    return {row[0] for row in store.ingest_conn.execute("SELECT DISTINCT doc_id FROM chunks").fetchall()}
+
+
+def ingest_corpus(store: Any, corpus: Iterable[tuple[str, str, set[str]]]) -> None:
+    """Skip only documents already present (persistent backend restart); any other ingest error,
+    such as a bad ACL, must stop startup rather than leave the document silently missing."""
     try:
-        rag.add_document(_doc_id, _text, _acl)
-    except ValueError:
-        pass  # already ingested (persistent backend restart)
+        existing = existing_doc_ids(store)
     except PermissionError:
-        break  # read-only pgvector deployment: the corpus is ingested out of band
+        return  # read-only pgvector deployment: the corpus is ingested out of band
+    for doc_id, text, acl in corpus:
+        if doc_id not in existing:
+            store.add_document(doc_id, text, acl)
+
+
+ingest_corpus(rag, CORPUS)
 
 # Background chain verification (F5.2); started in __main__ so importing the module spawns no thread.
 AUDIT_MONITOR: audit_verify.AuditMonitor | None = None
@@ -124,27 +148,49 @@ def _b64url(s):
     return base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
 
 
-def user_from_jwt(auth_header):
+def user_from_jwt(auth_header: str) -> dict[str, Any] | None:
     """Validate 'Bearer <hs256 jwt>' -> {"id", "groups"} or None."""
+    user, reason = _check_jwt(auth_header)
+    if reason:
+        log.warning("jwt rejected: %s", reason)  # the reason only: the token is a credential
+    return user
+
+
+def _check_jwt(auth_header: str) -> tuple[dict[str, Any] | None, str | None]:
+    parts = auth_header.split()
+    if not parts:
+        return None, "missing"
     try:
-        h, p, sig = auth_header.split()[1].split(".")
+        h, p, sig = parts[1].split(".")
+        sig_bytes = _b64url(sig)
+    except (IndexError, ValueError, binascii.Error):
+        return None, "malformed"
+    try:
         expected = hmac.new(JWT_SECRET.encode(), f"{h}.{p}".encode(), hashlib.sha256).digest()
-        if not hmac.compare_digest(_b64url(sig), expected):
-            return None
+        if not hmac.compare_digest(sig_bytes, expected):
+            return None, "bad signature"
         claims = json.loads(_b64url(p))
-        if claims.get("exp", 0) < time.time():
-            return None
+        if not isinstance(claims, dict) or not isinstance(exp := claims.get("exp", 0), (int, float)):
+            return None, "malformed"
+        if exp < time.time():
+            return None, "expired"
         sub, groups = claims.get("sub"), claims.get("groups", [])
         # T14: signed != well-formed; a comma would forge an RLS principal, a str would iterate
         if not _principal_name(sub) or not isinstance(groups, list) or not all(map(_principal_name, groups)):
-            return None
-        return {"id": sub, "groups": list(groups)}
-    except Exception:
-        return None
+            return None, "malformed"
+        return {"id": sub, "groups": list(groups)}, None
+    except Exception:  # fail closed on anything unforeseen
+        return None, "malformed"
 
 
 def _principal_name(name) -> bool:
     return isinstance(name, str) and re.fullmatch(r"[^,\s]+", name) is not None
+
+
+def named_user(qs, body) -> bool:
+    """A demo role was supplied (it may still be unknown); never true in JWT mode."""
+    uid = (body or {}).get("user") or qs.get("user", [""])[0]
+    return not JWT_SECRET and isinstance(uid, str) and bool(uid)
 
 
 def resolve_user(handler, qs, body):
@@ -215,6 +261,9 @@ def csv_cell(value):
 
 
 class Handler(BaseHTTPRequestHandler):
+    # an idle or slowloris connection otherwise holds its thread forever
+    timeout = 10
+
     def _json(self, code, obj, headers=None):
         body = json.dumps(obj).encode()
         self.send_response(code)
@@ -240,13 +289,16 @@ class Handler(BaseHTTPRequestHandler):
     def _bad(self, code, message):
         self._reply(code, {"error": message}, "bad_request")
 
-    def _qa(self, path, user, query):
+    def _qa(self, path, user, query, named=False):
         """Shared /query and /ask logic; caller has already resolved identity."""
         rec = self._rec
         if not user:
-            self._bad(
-                401 if JWT_SECRET else 400, "valid bearer token required" if JWT_SECRET else "need user and q"
-            )
+            if JWT_SECRET:
+                self._bad(401, "valid bearer token required")
+            elif named and isinstance(query, str) and query:
+                self._bad(400, "unknown role")
+            else:
+                self._bad(400, "need user and q")
             return
         if not isinstance(query, str) or not query:
             self._bad(400, "need user and q")
@@ -332,7 +384,7 @@ class Handler(BaseHTTPRequestHandler):
         if not isinstance(body, dict):
             self._bad(400, "JSON body must be an object")
             return
-        self._qa(url.path, resolve_user(self, {}, body), body.get("q", ""))
+        self._qa(url.path, resolve_user(self, {}, body), body.get("q", ""), named_user({}, body))
 
     def do_GET(self):
         url = urlparse(self.path)
@@ -347,7 +399,7 @@ class Handler(BaseHTTPRequestHandler):
         elif url.path in ("/query", "/ask"):
             self._begin(url.path)
             qs = parse_qs(url.query)
-            self._qa(url.path, resolve_user(self, qs, None), qs.get("q", [""])[0])
+            self._qa(url.path, resolve_user(self, qs, None), qs.get("q", [""])[0], named_user(qs, None))
         elif url.path == "/presets":
             self._json(200, json.loads(PRESETS.read_text()))
         elif url.path == "/audit":
@@ -403,6 +455,73 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
 
+MAX_INFLIGHT = 32  # one thread each; sized for a 512 MB Lightsail Nano node
+_BUSY_BODY = json.dumps({"error": "server busy"}).encode()
+_BUSY = (
+    b"HTTP/1.0 503 Service Unavailable\r\nContent-Type: application/json\r\n"
+    b"Content-Length: %d\r\nConnection: close\r\n\r\n" % len(_BUSY_BODY) + _BUSY_BODY
+)
+
+
+class BoundedServer(ThreadingHTTPServer):
+    """At most max_inflight connections hold a thread; the rest get an immediate 503."""
+
+    # non-daemon request threads so server_close() waits for in-flight requests (and their audit appends)
+    daemon_threads = False
+
+    def __init__(
+        self, addr: tuple[str, int], handler: type[BaseHTTPRequestHandler], max_inflight: int = MAX_INFLIGHT
+    ) -> None:
+        self._slots = threading.BoundedSemaphore(max_inflight)
+        super().__init__(addr, handler)
+
+    def process_request(self, request: Any, client_address: Any) -> None:
+        if not self._slots.acquire(blocking=False):
+            self._reject_busy(request)
+            return
+        try:
+            super().process_request(request, client_address)
+        except BaseException:
+            self._slots.release()
+            raise
+
+    def process_request_thread(self, request: Any, client_address: Any) -> None:
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self._slots.release()
+
+    def _reject_busy(self, request: socket.socket) -> None:
+        # runs on the accept thread: never block on the client
+        # kn: drains only request bytes already received; a client still sending may see a reset instead of the 503
+        try:
+            request.setblocking(False)
+            try:
+                request.recv(65536)
+            except BlockingIOError:
+                pass
+            request.settimeout(1)
+            request.sendall(_BUSY)
+        except OSError:
+            pass
+        finally:
+            self.shutdown_request(request)
+
+
+def serve(server: BoundedServer) -> None:
+    """Serve until SIGTERM, then let in-flight requests finish before returning."""
+
+    def on_term(signum: int, frame: Any) -> None:
+        # shutdown() blocks until serve_forever exits, which runs on this (main) thread
+        threading.Thread(target=server.shutdown, daemon=True).start()
+
+    signal.signal(signal.SIGTERM, on_term)
+    try:
+        server.serve_forever()
+    finally:
+        server.server_close()  # joins the non-daemon request threads
+
+
 if __name__ == "__main__":
     # local default stays loopback-only; hosts (Render, Docker) set HOST=0.0.0.0 + PORT
     port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", 8421))
@@ -411,5 +530,8 @@ if __name__ == "__main__":
     if (_interval := audit_verify.interval_seconds()) > 0:
         AUDIT_MONITOR = audit_verify.AuditMonitor(rag, _interval)
         AUDIT_MONITOR.start()
-    print(f"http://{host}:{port}")
-    ThreadingHTTPServer((host, port), Handler).serve_forever()
+    server = BoundedServer((host, port), Handler)
+    print(f"listening on http://{host}:{server.server_address[1]}", flush=True)
+    serve(server)
+    if AUDIT_MONITOR:
+        AUDIT_MONITOR.stop()

@@ -20,6 +20,10 @@ def smoke(base):
         time.sleep(1)
     else:
         raise RuntimeError("demo UI did not become healthy")
+    # the Lightsail health check path (deployment.json); 503 here means the audit-tamper latch tripped
+    with urllib.request.urlopen(base + "/healthz", timeout=5) as response:
+        if response.status != 200 or json.load(response).get("status") != "ok":
+            raise RuntimeError("/healthz is not ok")
 
     def post(path, body):
         request = urllib.request.Request(
@@ -42,7 +46,9 @@ def smoke(base):
         entries = json.load(response)["entries"]
     if not entries or any(e["query"] != "[redacted]" for e in entries if e["user"] != "auditor"):
         raise RuntimeError("audit query redaction failed")
-    print("Demo smoke passed: UI, allowed retrieval, forbidden-document check, no LLM, audit redaction.")
+    print(
+        "Demo smoke passed: UI, /healthz, allowed retrieval, forbidden-document check, no LLM, audit redaction."
+    )
 
 
 if __name__ == "__main__":
