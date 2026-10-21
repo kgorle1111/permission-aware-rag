@@ -93,9 +93,9 @@ def test_ops_day_is_utc_not_local(monkeypatch):
         time.tzset()
 
 
-def test_ops_record_rounds_spend_to_6dp():
+def test_ops_settle_rounds_spend_to_6dp():
     ops = obs.Ops(10.0, clock=lambda: _utc())
-    ops.record(_rec(cost=1.23456789))
+    ops.settle(ops.reserve(2.0), 1.23456789)
     assert ops.spent_today() == 1.234568
 
 

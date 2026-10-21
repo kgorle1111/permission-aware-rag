@@ -13,10 +13,24 @@ import re
 import threading
 import uuid
 from collections import deque
+from contextvars import ContextVar
 
 from . import config
 
 log = logging.getLogger("permrag")
+# Set by the HTTP middleware for the life of one request; "-" outside a request.
+REQUEST_ID: ContextVar[str] = ContextVar("request_id", default="-")
+
+
+class RequestIdFilter(logging.Filter):
+    """Stamps the current request id on every record it sees, tracebacks included."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.request_id = REQUEST_ID.get()
+        return True
+
+
+log.addFilter(RequestIdFilter())
 
 
 # Haiku 4.5 $/MTok (2026-07): input 1.00, output 5.00, cache read 0.10, cache write 1.25
@@ -93,6 +107,8 @@ class Ops:
         self.budget_usd, self.clock = budget_usd, clock
         self._recent: deque[dict] = deque(maxlen=keep)
         self._spend: dict[str, float] = {}
+        # kn: per-process and resets on restart; persist in SQL when multi-worker
+        self._held: dict[object, tuple[str, float]] = {}
         self._lock = threading.Lock()
 
     def _day(self) -> str:
@@ -102,15 +118,30 @@ class Ops:
         with self._lock:
             return self._spend.get(self._day(), 0.0)
 
-    def would_exceed(self, projected_usd: float) -> bool:
-        """True when one more call projected at `projected_usd` would pass today's cap."""
-        return self.spent_today() + projected_usd > self.budget_usd
+    def reserve(self, projected_usd: float) -> object | None:
+        """Hold `projected_usd` against today's cap; None when spent + held + projected would pass it.
+        Check and hold happen under one lock, so concurrent callers cannot all pass the same check."""
+        day = self._day()
+        with self._lock:
+            held = sum(usd for d, usd in self._held.values() if d == day)
+            if self._spend.get(day, 0.0) + held + projected_usd > self.budget_usd:
+                return None
+            token = object()  # opaque: only identity matters
+            self._held[token] = (day, projected_usd)
+            return token
+
+    def settle(self, token: object, actual_usd: float) -> None:
+        """Swap the hold for the cost actually incurred, booked on the hold's day. 0 releases it."""
+        with self._lock:
+            day, _ = self._held.pop(token)
+            self._spend[day] = round(self._spend.get(day, 0.0) + actual_usd, 6)
 
     def record(self, rec: dict) -> None:
+        """Stats only; spend is booked by settle() so the cap and the books cannot drift apart."""
         day = self._day()
         with self._lock:
             self._recent.append({"outcome": rec["outcome"], "total_ms": rec["total_ms"]})
-            self._spend[day] = round(self._spend.get(day, 0.0) + rec["est_cost_usd"], 6)
+            self._spend.setdefault(day, 0.0)  # a day with traffic shows in the summary, even at $0
 
     def summary(self) -> dict:
         with self._lock:

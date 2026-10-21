@@ -108,7 +108,8 @@ def _call(payload: dict, sleep, rng, clock) -> httpx.Response:
         if (e.response.status_code != 404 or "not_found_error" not in e.response.text
                 or payload["model"] == fallback):
             raise
-        log.warning("model %s not found; retrying with %s", payload["model"], fallback)
+        log.warning("model %s not found; retrying with %s; pin a current dated id in GENERATION_MODEL",
+                    payload["model"], fallback)
         return _send({**payload, "model": fallback}, sleep, rng, clock, deadline)
 
 

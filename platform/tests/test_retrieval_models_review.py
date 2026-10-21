@@ -54,7 +54,7 @@ def test_one_shared_term_plus_nonsense_matches_dense_only_behaviour(hybrid_index
     guest = _principal("guest")
     dense_only = {h["text"] for h in vectorstore.search(embeddings.embed_one(query), guest.principals, 20)}
     out = retrieval.retrieve(query, guest, k=20)
-    assert out["source"] == "full_rag"
+    assert out["source"] == "retrieval_only"  # keyless; not degraded
     assert {r["text"] for r in out["results"]} <= dense_only  # sparse never adds a sub-floor chunk
 
 # ---- 2. cache pruning ------------------------------------------------------------

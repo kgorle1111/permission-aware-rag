@@ -86,3 +86,7 @@ EMBED_CACHE_PATH = os.getenv("EMBED_CACHE_PATH", str(ROOT / "embed_cache.sqlite"
 MODEL_CACHE_DIR = os.getenv("MODEL_CACHE_DIR", "")
 # UTC-day estimated LLM spend cap; once reached, answers fall back to retrieval-only (0 disables the LLM)
 DAILY_BUDGET_USD = float(os.getenv("DAILY_BUDGET_USD", "5.0"))
+# Outbound call timeouts (seconds): Qdrant server mode, Postgres connect, Google Drive HTTP
+QDRANT_TIMEOUT_S = int(os.getenv("QDRANT_TIMEOUT_S", "5"))
+DB_CONNECT_TIMEOUT_S = int(os.getenv("DB_CONNECT_TIMEOUT_S", "5"))
+DRIVE_TIMEOUT_S = float(os.getenv("DRIVE_TIMEOUT_S", "10"))

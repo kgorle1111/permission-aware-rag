@@ -52,10 +52,15 @@ def client() -> QdrantClient:
     global _client
     if _client is None:
         if config.QDRANT_URL:
-            _client = QdrantClient(url=config.QDRANT_URL)
+            _client = QdrantClient(url=config.QDRANT_URL, timeout=config.QDRANT_TIMEOUT_S)
         else:
             _client = QdrantClient(path=config.QDRANT_PATH)
     return _client
+
+
+def ready() -> bool:
+    """Readiness probe: the collection is reachable and exists (bounded by QDRANT_TIMEOUT_S)."""
+    return client().collection_exists(config.COLLECTION)
 
 
 def reset_collection():

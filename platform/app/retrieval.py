@@ -101,10 +101,15 @@ def _compute(session, query: str, principal: Principal, k: int, rec: dict):
     rec["retrieve_ms"] = _ms(started)
     results = [{"doc_id": h["doc_id"], "text": redact(h["text"]),
                 "score": round(h["score"], 4)} for h in hits]
+    hold = None
     if source == "keyword_fallback":
         text = _extractive(results)
-    elif (results and config.ANTHROPIC_API_KEY
-          and obs.OPS.would_exceed(generation.projected_cost(query, results))):
+    elif results and not (config.ANTHROPIC_API_KEY and obs.OPS.budget_usd):
+        # LLM off by configuration (no key, or a 0 budget): a choice, not a fault. A degraded
+        # source (vector_order) keeps its own label.
+        source = "retrieval_only" if source == "full_rag" else source
+        text = _extractive(results)
+    elif results and (hold := obs.OPS.reserve(generation.projected_cost(query, results))) is None:
         degraded, source, note = True, "retrieval_only", BUDGET_NOTE
         text = _extractive(results)
     else:
@@ -121,6 +126,9 @@ def _compute(session, query: str, principal: Principal, k: int, rec: dict):
         except Exception as exc:
             log.warning("generation unavailable (%s); retrieval-only answer", type(exc).__name__)
             degraded, source, text = True, "retrieval_only", _extractive(results)
+        finally:
+            if hold is not None:  # a failed call booked no cost, so this releases the hold
+                obs.OPS.settle(hold, rec["est_cost_usd"])
         rec["llm_ms"] = _ms(started)
     response = {"results": results, "answer": redact(text), "degraded": degraded, "source": source}
     if note:
@@ -137,6 +145,8 @@ async def aretrieve(query: str, principal: Principal, k: int = None) -> dict:
 
 
 def _outcome(response: dict) -> str:
+    if response["source"] == "retrieval_only" and not response["degraded"]:
+        return "ok"  # LLM disabled by configuration; not a fallback
     return {"unavailable": "failed_closed", "keyword_fallback": "degraded", "vector_order": "degraded",
             "retrieval_only": "llm_fallback"}.get(
         response["source"], "ok" if response["results"] else "no_results")

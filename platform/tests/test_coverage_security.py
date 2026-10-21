@@ -103,6 +103,7 @@ def test_expired_cache_entry_recomputes_instead_of_serving_stale_result(
     monkeypatch.setattr(retrieval, "embed_one", lambda _query: [0.0])
     monkeypatch.setattr(retrieval, "search", fake_search)
     monkeypatch.setattr(retrieval, "search_unfiltered_count", lambda *_a, **_kw: 0)
+    monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "fake")
     monkeypatch.setattr(retrieval, "answer", lambda _query, rows: rows[0]["text"])
     monkeypatch.setattr(retrieval, "write_audit", lambda *_a, **_kw: None)
     principal = Principal("reader@example.test")
@@ -381,6 +382,8 @@ def test_store_engine_options_and_missing_permission_state_are_fail_closed(
     assert store.make_engine("sqlite:///local.db") == "fake-engine"
     assert engine_calls[-1][1]["connect_args"] == {"check_same_thread": False}
     assert store.make_engine("postgresql://db.example.test/app") == "fake-engine"
+    assert engine_calls[-1][1]["connect_args"] == {"connect_timeout": config.DB_CONNECT_TIMEOUT_S}
+    assert store.make_engine("mysql://db.example.test/app") == "fake-engine"
     assert "connect_args" not in engine_calls[-1][1]
     assert engine_calls[-1][1]["pool_pre_ping"] is True
 

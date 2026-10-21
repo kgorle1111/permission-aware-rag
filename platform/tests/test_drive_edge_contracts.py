@@ -144,12 +144,18 @@ def _install_google_stubs(monkeypatch):
     oauth2.service_account = service_account
     google.oauth2 = oauth2
     googleapiclient.discovery = discovery
+    httplib2 = ModuleType("httplib2")
+    httplib2.Http = Mock(name="Http")
+    auth_httplib2 = ModuleType("google_auth_httplib2")
+    auth_httplib2.AuthorizedHttp = Mock(name="AuthorizedHttp")
     for name, module in {
         "google": google,
         "google.oauth2": oauth2,
         "google.oauth2.service_account": service_account,
         "googleapiclient": googleapiclient,
         "googleapiclient.discovery": discovery,
+        "httplib2": httplib2,
+        "google_auth_httplib2": auth_httplib2,
     }.items():
         monkeypatch.setitem(__import__("sys").modules, name, module)
     return credentials, service_account, discovery
@@ -162,7 +168,9 @@ def test_build_client_without_delegation_keeps_service_account_credentials(monke
 
     assert result == "drive-client"
     credentials.with_subject.assert_not_called()
-    assert discovery.build.call_args.kwargs["credentials"] is credentials
+    authorized = __import__("sys").modules["google_auth_httplib2"].AuthorizedHttp
+    assert authorized.call_args.args == (credentials,)
+    assert discovery.build.call_args.kwargs["http"] is authorized.return_value
 
 
 @pytest.mark.parametrize("subject", [" ", 123])

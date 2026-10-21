@@ -203,6 +203,12 @@ def test_build_client_uses_readonly_scope_and_optional_delegation(monkeypatch):
     monkeypatch.setitem(__import__("sys").modules, "google.oauth2.service_account", service_account)
     monkeypatch.setitem(__import__("sys").modules, "googleapiclient", googleapiclient)
     monkeypatch.setitem(__import__("sys").modules, "googleapiclient.discovery", discovery)
+    httplib2 = ModuleType("httplib2")
+    httplib2.Http = Mock()
+    auth_httplib2 = ModuleType("google_auth_httplib2")
+    auth_httplib2.AuthorizedHttp = Mock()
+    monkeypatch.setitem(__import__("sys").modules, "httplib2", httplib2)
+    monkeypatch.setitem(__import__("sys").modules, "google_auth_httplib2", auth_httplib2)
 
     result = build_drive_client("credentials.json", "admin@example.com")
 
@@ -210,7 +216,12 @@ def test_build_client_uses_readonly_scope_and_optional_delegation(monkeypatch):
         "credentials.json", scopes=[DRIVE_READONLY_SCOPE]
     )
     credentials.with_subject.assert_called_once_with("admin@example.com")
+    # every Drive HTTP call goes through a transport with an explicit timeout
+    httplib2.Http.assert_called_once_with(timeout=10.0)
+    auth_httplib2.AuthorizedHttp.assert_called_once_with(
+        delegated_credentials, http=httplib2.Http.return_value
+    )
     built.assert_called_once_with(
-        "drive", "v3", credentials=delegated_credentials, cache_discovery=False
+        "drive", "v3", http=auth_httplib2.AuthorizedHttp.return_value, cache_discovery=False
     )
     assert result is built.return_value

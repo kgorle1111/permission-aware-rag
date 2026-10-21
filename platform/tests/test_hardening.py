@@ -272,7 +272,9 @@ def test_revoke_during_generation_fails_the_query_closed_and_leaves_no_warm_answ
             entered_answer.set()
             if not release_answer.wait(timeout=8):
                 raise TimeoutError("test did not release blocked generation")
-        return original_answer(query, results)
+        return "generated answer [hr-salaries]"  # no provider call: the key below is fake
+
+    monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "fake")  # LLM on, so generation is reached
 
     def revoke():
         sync_started.set()
