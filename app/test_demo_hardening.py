@@ -189,11 +189,14 @@ def _jwt(secret: str, claims: dict[str, object]) -> str:
         ("", "missing"),
         ("Bearer not-a-jwt", "malformed"),
         (
-            f"Bearer {_jwt('other-secret', {'sub': 'u', 'groups': [], 'exp': time.time() + 60})}",
+            f"Bearer {_jwt('other-secret', {'sub': 'u', 'groups': [], 'exp': time.time() + 365 * 86400})}",
             "bad signature",
         ),
         (f"Bearer {_jwt('s3cret', {'sub': 'u', 'groups': [], 'exp': time.time() - 5})}", "expired"),
-        (f"Bearer {_jwt('s3cret', {'sub': 'a,b', 'groups': [], 'exp': time.time() + 60})}", "malformed"),
+        (
+            f"Bearer {_jwt('s3cret', {'sub': 'a,b', 'groups': [], 'exp': time.time() + 365 * 86400})}",
+            "malformed",
+        ),
     ],
     ids=["missing", "malformed", "bad-signature", "expired", "bad-claims"],
 )
