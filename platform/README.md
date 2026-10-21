@@ -17,7 +17,9 @@ DEMO_MODE=1 uvicorn app.main:app --port 8090
 
 The demo UI is at <http://localhost:8090>. In another terminal, `python scripts/demo.py` runs the scripted example against the running API. `DEMO_MODE=1` enables development token minting and must not be used for a real deployment.
 
-For a containerized local run, use `docker compose up --build`. The container initializes the corpus and signing keypair on first start and stores SQL, Qdrant data, and runtime keys in the persistent `rag-data` volume mounted at `/data`. Demo token minting remains off unless you explicitly set `DEMO_MODE=1`. `docker compose down` keeps the volume; `docker compose down -v` deletes the data and runtime keys.
+For a containerized local demo, use `DEMO_MODE=1 docker compose up --build`. With `DEMO_MODE=1` the container generates a local signing keypair on first start, ingests the corpus, and stores SQL, Qdrant data, and runtime keys in the persistent `rag-data` volume mounted at `/data`. Without `DEMO_MODE=1` (compose defaults it to `0`) the container never mints its own keys: it needs `JWKS_URL` set to your IdP's JWKS endpoint, or an IdP public key mounted at `JWT_PUBLIC_KEY_PATH`, and otherwise exits with `no identity provider configured: set JWKS_URL to your IdP's JWKS endpoint, or DEMO_MODE=1 for a local demo`. `docker compose down` keeps the volume; `docker compose down -v` deletes the data and runtime keys.
+
+Startup fails loudly on a bad identity setup, whichever way the app is launched (Docker, `uvicorn`, or the test client): an unparsable public key file, a `JWKS_URL` that cannot be fetched within 5 seconds, or `DEMO_MODE=1` combined with `JWKS_URL` stops the process with an error naming the variable to fix. Request bodies over 64 KB get `413` before they are buffered (declared `Content-Length` or chunked), and the container runs uvicorn with `--limit-concurrency 64`, which answers `503` past 64 in-flight connections.
 
 ## Test
 

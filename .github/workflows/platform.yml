@@ -87,11 +87,27 @@ jobs:
         run: >-
           docker run --rm --entrypoint sh permission-aware-rag:ci
           -c 'test ! -e /app/config/idp_private.pem && test ! -e /app/config/idp_public.pem'
+      - name: Refuse to start without an identity provider
+        # production mode must never self-mint keys: no JWKS_URL and no mounted key is a hard stop
+        run: |
+          set -uo pipefail
+          status=0
+          output=$(docker run --rm --env DEMO_MODE=0 permission-aware-rag:ci 2>&1) || status=$?
+          echo "$output"
+          test "$status" -ne 0
+          grep -F "no identity provider configured: set JWKS_URL to your IdP's JWKS endpoint, or DEMO_MODE=1 for a local demo" <<<"$output"
+          status=0
+          output=$(docker run --rm --env DEMO_MODE=1 --env JWKS_URL=https://idp.invalid/jwks \
+            permission-aware-rag:ci 2>&1) || status=$?
+          echo "$output"
+          test "$status" -ne 0
+          grep -F "DEMO_MODE=1 cannot be combined with JWKS_URL" <<<"$output"
       - name: Start persistent container
         run: |
           docker run --detach --name permission-rag-smoke \
             --publish 127.0.0.1:18090:8090 \
             --volume permission-rag-ci-data:/data \
+            --env DEMO_MODE=1 \
             permission-aware-rag:ci
       - name: Verify readiness, authentication, retrieval, and persistence
         run: |
@@ -157,7 +173,12 @@ jobs:
           python -c 'import json,sys; body=json.loads(sys.argv[1]); assert all(item["doc_id"] != "hr-salaries" for item in body["results"])' "$guest"
           demo_status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
             http://127.0.0.1:18090/demo/tokens)
-          test "$demo_status" = 404
+          test "$demo_status" = 200  # DEMO_MODE=1 here; the public-key-only container below asserts 404
+          oversized=$(head -c 1048576 /dev/zero | tr '\0' 'x' | curl --silent --output /dev/null \
+            --write-out '%{http_code}' --header "Authorization: Bearer $token" \
+            --header 'Content-Type: application/json' --data-binary @- \
+            http://127.0.0.1:18090/query)
+          test "$oversized" = 413
           docker cp permission-rag-smoke:/data/idp_public.pem "$RUNNER_TEMP/idp_public.pem"
           docker create --name permission-rag-public-key-seed --user 0:0 \
             --volume permission-rag-public-only-data:/data \
