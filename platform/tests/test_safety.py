@@ -36,7 +36,7 @@ def _fingerprint_row():
 def test_matching_fingerprint_retrieves(client):
     assert _fingerprint_row() == ("hash", "hash-ngram-v1", 384)
     out = retrieval.retrieve("vacation policy", _principal("alice"))
-    assert out["source"] == "full_rag" and out["results"]
+    assert out["source"] == "retrieval_only" and out["results"]  # keyless: LLM off by config
 
 
 @pytest.mark.parametrize("attr,value", [
@@ -143,6 +143,7 @@ def test_output_is_redacted_even_if_index_or_generator_leak_pii(client, monkeypa
     monkeypatch.setattr(retrieval, "search", lambda *a, **k: [
         {"chunk_id": 1, "doc_id": "handbook", "text": "legacy a@b.co row", "score": 0.9}])
     monkeypatch.setattr(retrieval, "search_unfiltered_count", lambda *a, **k: 0)
+    monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "fake")  # LLM on, so the patched generator runs
     monkeypatch.setattr(retrieval, "answer", lambda q, r: "call 123-45-6789 now")
     out = retrieval.retrieve("pii output probe", _principal("alice"))
     assert out["results"][0]["text"] == "legacy [REDACTED:EMAIL] row"
@@ -205,12 +206,22 @@ def test_half_open_failure_reopens_and_success_resets_count():
 
 # ---- 8.3 degradation levels -----------------------------------------------------
 
-def test_full_rag_marks_not_degraded(client):
+def test_full_rag_marks_not_degraded(client, monkeypatch):
+    monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "fake")
+    monkeypatch.setattr(retrieval, "answer", lambda q, r: "Twenty days [handbook]")
     out = retrieval.retrieve("vacation policy", _principal("guest"))
     assert out["degraded"] is False and out["source"] == "full_rag"
 
 
+def test_keyless_is_retrieval_only_but_not_degraded(client):
+    """No LLM by configuration is a choice, not a fault: say retrieval_only, never claim full_rag."""
+    out = retrieval.retrieve("vacation policy", _principal("guest"))
+    assert (out["source"], out["degraded"]) == ("retrieval_only", False) and "note" not in out
+    assert out["answer"] == f"{out['results'][0]['text']} [{out['results'][0]['doc_id']}]"
+
+
 def test_llm_down_gives_retrieval_only(client, monkeypatch):
+    monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "fake")  # LLM on, so the patched generator runs
     monkeypatch.setattr(retrieval, "answer", Mock(side_effect=RuntimeError("llm down")))
     out = retrieval.retrieve("vacation policy", _principal("guest"))
     assert out["degraded"] is True and out["source"] == "retrieval_only"
@@ -241,7 +252,8 @@ def test_degraded_responses_are_not_cached(client, monkeypatch):
     assert retrieval.retrieve("vacation policy", _principal("guest"))["degraded"] is True
     monkeypatch.undo()
     resilience.reset_breakers()
-    assert retrieval.retrieve("vacation policy", _principal("guest"))["source"] == "full_rag"
+    out = retrieval.retrieve("vacation policy", _principal("guest"))
+    assert (out["source"], out["degraded"]) == ("retrieval_only", False)
 
 
 def test_keyword_fallback_failure_is_honest_unavailable(client, monkeypatch):
@@ -277,6 +289,7 @@ def test_no_forbidden_document_at_any_degradation_level(client, monkeypatch, fau
     elif fault == "vectorstore":
         monkeypatch.setattr(retrieval, "search", Mock(side_effect=RuntimeError("x")))
     else:
+        monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "fake")
         monkeypatch.setattr(retrieval, "answer", Mock(side_effect=RuntimeError("x")))
     seen = ""
     for q in ("on-call rotation pager", "compensation bands salary", "executive compensation CEO package",

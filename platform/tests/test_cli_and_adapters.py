@@ -121,7 +121,8 @@ def test_remote_vector_factory_and_explicit_close(monkeypatch):
     monkeypatch.setattr(config, "QDRANT_URL", "http://vector.example.test:6333")
     assert vectorstore.client() is fake
     assert vectorstore.client() is fake
-    factory.assert_called_once_with(url=config.QDRANT_URL)
+    factory.assert_called_once_with(url=config.QDRANT_URL, timeout=config.QDRANT_TIMEOUT_S)
+    assert config.QDRANT_TIMEOUT_S == 5
     vectorstore.close_client()
     fake.close.assert_called_once()
     assert vectorstore._client is None

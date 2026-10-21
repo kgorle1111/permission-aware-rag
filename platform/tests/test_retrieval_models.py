@@ -149,7 +149,7 @@ def test_fastembed_index_fingerprint_is_persisted_and_mismatch_with_hash_fails_c
         with retrieval.permission_transaction() as (s, _state):
             assert retrieval.fingerprint_problem(s) is None
         out = retrieval.retrieve("vacation policy days", _principal("alice"))
-        assert out["source"] == "full_rag" and out["results"]
+        assert out["source"] == "retrieval_only" and out["results"]  # keyless
         monkeypatch.setattr(config, "EMBED_BACKEND", "hash")
         retrieval.clear_cache()
         assert retrieval.retrieve("vacation policy days", _principal("alice")) == retrieval.EMPTY_RESPONSE
@@ -292,7 +292,7 @@ def test_hybrid_never_returns_a_hidden_document_even_for_its_exact_text(hybrid_i
 
 def test_authorized_user_finds_the_document_through_hybrid(hybrid_index):
     out = retrieval.retrieve("salary bands range from 90k to 250k", _principal("bob"))
-    assert out["source"] == "full_rag"
+    assert out["source"] == "retrieval_only"  # keyless
     assert "hr-salaries" in [r["doc_id"] for r in out["results"]]
 
 

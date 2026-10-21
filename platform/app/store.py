@@ -25,7 +25,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-from .config import DATABASE_URL
+from .config import DATABASE_URL, DB_CONNECT_TIMEOUT_S
 from .embeddings import fingerprint
 
 Base = declarative_base()
@@ -59,6 +59,8 @@ def make_engine(url: str = DATABASE_URL):
     kwargs = {}
     if url.startswith("sqlite"):
         kwargs["connect_args"] = {"check_same_thread": False}
+    elif url.startswith("postgres"):
+        kwargs["connect_args"] = {"connect_timeout": DB_CONNECT_TIMEOUT_S}
     return create_engine(url, pool_pre_ping=True, **kwargs)
 
 

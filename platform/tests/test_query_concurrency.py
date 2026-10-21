@@ -54,7 +54,7 @@ def test_queries_run_concurrently_while_one_is_in_flight(client, monkeypatch):
         assert entered.wait(5), "first query never reached the vector search"
         fast = other.submit(retrieval.retrieve, "expense reports", Principal("g@x.com"))
         done = fast.result(timeout=3)  # before the fix this blocks on the held lock
-        assert done["source"] == "full_rag"
+        assert done["source"] == "retrieval_only"  # keyless
         with SessionLocal() as s:
             assert s.query(AuditLog).filter_by(fail_closed=True).count() == 0
         assert not slow.done()
@@ -62,7 +62,7 @@ def test_queries_run_concurrently_while_one_is_in_flight(client, monkeypatch):
         release.set()
         parked.shutdown(wait=True)
         other.shutdown(wait=True)
-    assert slow.result(timeout=5)["source"] == "full_rag"
+    assert slow.result(timeout=5)["source"] == "retrieval_only"
 
 
 def test_revocation_committing_mid_query_never_returns_revoked_content(client, monkeypatch):

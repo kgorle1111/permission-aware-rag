@@ -93,7 +93,7 @@ def test_ok_extractive_line_and_header(client, ops, caplog):
     assert r.status_code == 200
     assert r.headers["X-Request-ID"] == rec["request_id"]
     assert "request_id" not in r.json()  # bodies stay byte-identical across fail-closed / no-match
-    assert (rec["outcome"], rec["source"], rec["degraded"]) == ("ok", "full_rag", False)
+    assert (rec["outcome"], rec["source"], rec["degraded"]) == ("ok", "retrieval_only", False)
     assert rec["returned"] == len(r.json()["results"]) > 0
     assert (rec["tokens_in"], rec["tokens_out"], rec["tokens_cached"], rec["est_cost_usd"]) == (0, 0, 0, 0.0)
     assert rec["total_ms"] >= rec["retrieve_ms"] > 0
@@ -231,6 +231,7 @@ def test_ops_summary_exact_values_from_seeded_records():
     def add(outcome, ms, cost):
         rec = observability.new_record("a" * 32)
         rec.update(outcome=outcome, total_ms=ms, est_cost_usd=cost)
+        ops.settle(ops.reserve(cost), cost)
         ops.record(rec)
 
     for ms, cost in [(100, 0.001), (200, 0.002), (300, 0.003), (400, 0.004)]:
@@ -335,7 +336,20 @@ def test_budget_not_consulted_without_api_key(client, ops, monkeypatch, caplog):
     caplog.set_level(logging.INFO)
     _set_budget(monkeypatch, ops, 0.0)
     r = query(client)
-    assert "note" not in r.json() and r.json()["source"] == "full_rag"
+    assert "note" not in r.json()
+    assert (r.json()["source"], r.json()["degraded"]) == ("retrieval_only", False)
+    assert one_line(caplog)["outcome"] == "ok"
+
+
+def test_zero_budget_disables_the_llm_without_claiming_a_fault(client, ops, model, monkeypatch, caplog):
+    """DAILY_BUDGET_USD=0 is configuration, not an exhausted budget: no call, no note, not degraded."""
+    caplog.set_level(logging.INFO)
+    _set_budget(monkeypatch, ops, 0.0)
+    body = query(client).json()
+    assert model[0] == []
+    assert (body["source"], body["degraded"]) == ("retrieval_only", False) and "note" not in body
+    assert body["answer"] == f"{body['results'][0]['text']} [{body['results'][0]['doc_id']}]"
+    assert one_line(caplog)["outcome"] == "ok"
 
 
 def test_spend_accumulates_blocks_then_resets_at_utc_midnight(client, ops, model, monkeypatch):

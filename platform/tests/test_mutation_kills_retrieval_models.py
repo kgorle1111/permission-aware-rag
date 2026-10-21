@@ -224,7 +224,7 @@ def test_retrieve_hands_the_query_sparse_vector_to_the_search(hybrid_index, monk
     monkeypatch.setattr(retrieval, "search", lambda *a, **kw: seen.append(kw) or real(*a, **kw))
     retrieval.clear_cache()
     out = retrieval.retrieve("vacation policy days", _principal("guest"))
-    assert out["source"] == "full_rag" and out["results"]
+    assert out["source"] == "retrieval_only" and out["results"]  # keyless
     assert seen == [{"top_k": config.TOP_K, "sparse": embeddings.sparse_embed_one("vacation policy days")}]
 
 
@@ -263,4 +263,9 @@ def test_reranker_outage_logs_the_exact_warning_and_reports_degraded_outcome(rer
     ("full_rag", [], "no_results"),
 ])
 def test_outcome_maps_every_source(source, results, expected):
-    assert retrieval._outcome({"source": source, "results": results}) == expected
+    assert retrieval._outcome({"source": source, "results": results, "degraded": True}) == expected
+
+
+def test_outcome_of_llm_off_by_configuration_is_ok_not_a_fallback():
+    assert retrieval._outcome(
+        {"source": "retrieval_only", "results": [{"doc_id": "x"}], "degraded": False}) == "ok"

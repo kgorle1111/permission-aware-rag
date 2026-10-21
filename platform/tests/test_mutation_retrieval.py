@@ -15,6 +15,7 @@ def test_retrieval_preserves_query_vector_result_schema_and_success_audit(client
     search = Mock(return_value=[{"chunk_id": 7, "doc_id": "permitted", "text": "content", "score": 0.123456}])
     denied = Mock(return_value=2)
     answer = Mock(return_value="answer")
+    monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "fake")
     monkeypatch.setattr(retrieval, "search", search)
     monkeypatch.setattr(retrieval, "search_unfiltered_count", denied)
     monkeypatch.setattr(retrieval, "answer", answer)

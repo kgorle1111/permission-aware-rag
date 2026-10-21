@@ -59,8 +59,9 @@ def test_404_not_found_retries_once_with_fallback_and_logs_only_model_ids(transp
     with caplog.at_level(logging.WARNING, logger="permrag"):
         assert generation.answer("secret question", DOCS) == "grounded [d]"
     assert [c["model"] for c in calls] == ["claude-haiku-4-5-20251001", "claude-haiku-4-5"]
-    assert [r.getMessage() for r in caplog.records] == [
-        "model claude-haiku-4-5-20251001 not found; retrying with claude-haiku-4-5"]
+    assert [(r.levelname, r.getMessage()) for r in caplog.records] == [
+        ("WARNING", "model claude-haiku-4-5-20251001 not found; retrying with claude-haiku-4-5; "
+                    "pin a current dated id in GENERATION_MODEL")]
 
 
 @pytest.mark.parametrize("resp", [_r(400, {"error": {"type": "invalid_request_error"}}),

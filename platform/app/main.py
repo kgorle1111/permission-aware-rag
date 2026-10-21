@@ -23,13 +23,17 @@ from pydantic import BaseModel, Field, field_validator
 
 from . import audit as audit_mod
 from . import config
-from . import observability
+from . import observability, vectorstore
 from .identity import Principal, principal_from_request
 from .retrieval import retrieve_checked
 from .store import init_db, SessionLocal, PermissionState, fingerprint_problem
 from .sync import sync_once
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s %(name)s %(levelname)s [%(request_id)s] %(message)s")
+# on the handlers, so dependency records reaching them carry the field the format names
+for _handler in logging.getLogger().handlers:
+    _handler.addFilter(observability.RequestIdFilter())
 log = logging.getLogger("permrag")
 
 
@@ -92,6 +96,8 @@ async def request_id_and_rejections(request: Request, call_next):
     here; retrieve() logs the ones that do (200, or 503 when failed closed)."""
     request_id, started = uuid.uuid4().hex, time.perf_counter()
     request.state.request_id = request_id
+    # each request runs in its own task, so this cannot outlive it or reach another request
+    observability.REQUEST_ID.set(request_id)
     response = await call_next(request)
     response.headers["X-Request-ID"] = request_id
     if request.url.path == "/query" and response.status_code not in (200, 503):
@@ -162,6 +168,8 @@ def readyz():
             state = session.get(PermissionState, 1)
             if state and not state.pending and not state.rebuild_required:
                 problem = fingerprint_problem(session)
+                if problem is None and not vectorstore.ready():
+                    problem = f"vector collection {config.COLLECTION!r} missing"
                 if problem is None:
                     return {"ready": True}
                 log.error("not ready: %s", problem)

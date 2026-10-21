@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from .. import config
+
 DRIVE_READONLY_SCOPE = "https://www.googleapis.com/auth/drive.metadata.readonly"
 
 
@@ -179,7 +181,9 @@ def sync_changes(drive, saved_page_token: str | None, apply_acl, remove_doc,
 def build_drive_client(credentials_file: str, delegated_subject: str | None = None):
     """Build a Drive v3 client using a service account and read-only scope."""
     try:
+        import httplib2
         from google.oauth2 import service_account
+        from google_auth_httplib2 import AuthorizedHttp
         from googleapiclient.discovery import build
     except ImportError as exc:
         raise RuntimeError(
@@ -193,4 +197,6 @@ def build_drive_client(credentials_file: str, delegated_subject: str | None = No
         if not isinstance(delegated_subject, str) or not delegated_subject.strip():
             raise ValueError("delegated_subject must be a nonempty email address")
         credentials = credentials.with_subject(delegated_subject)
-    return build("drive", "v3", credentials=credentials, cache_discovery=False)
+    # googleapiclient's own default is 60 s; pass an authorized transport with ours instead
+    http = AuthorizedHttp(credentials, http=httplib2.Http(timeout=config.DRIVE_TIMEOUT_S))
+    return build("drive", "v3", http=http, cache_discovery=False)
