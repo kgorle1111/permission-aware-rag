@@ -17,7 +17,7 @@ DEMO_MODE=1 uvicorn app.main:app --port 8090
 
 The demo UI is at <http://localhost:8090>. In another terminal, `python scripts/demo.py` runs the scripted example against the running API. `DEMO_MODE=1` enables development token minting and must not be used for a real deployment.
 
-For a containerized local run, use `docker compose up --build`. The container initializes the corpus and signing keypair on first start and stores SQL, Qdrant data, and runtime keys in the persistent `rag-data` volume mounted at `/data`. Demo token minting remains off unless you explicitly set `DEMO_MODE=1`. `docker compose down` keeps the volume; `docker compose down -v` deletes the data and runtime keys.
+For a containerized local run, use `docker compose up --build`. The container initializes the corpus and signing keypair on first start and stores SQL, Qdrant data, and runtime keys in the persistent `rag-data` volume mounted at `/data`. Demo token minting remains off unless you explicitly set `DEMO_MODE=1`. `docker compose down` keeps the volume; `docker compose down -v` deletes the data and runtime keys. Back it up and restore it with `scripts/backup.sh` and `scripts/restore.sh`, and back up before upgrading the image: see [docs/BACKUP_RESTORE.md](../docs/BACKUP_RESTORE.md) for coverage, the restore drill and migration rollback. Compose runs the container with a read-only root filesystem; only `/data` (the volume) and `/tmp` (a tmpfs) are writable.
 
 ## Test
 
@@ -34,6 +34,16 @@ equivalent in `mutation_equivalents.json`. CI runs all three on every push
 (`.github/workflows/platform.yml` at the repo root).
 
 `app/pdf_ingest.py` is excluded from the mutation gate (`do_not_mutate` in `pyproject.toml`): it is extraction heuristics (layout, font and OCR thresholds), where most mutants are equivalent boundary changes. Its security property, that every extracted chunk receives the document ACL and redaction, is enforced in `ingest.chunk_document`, which remains mutated, and `pdf_ingest.py` keeps 100% line and branch coverage.
+
+## Updating dependencies
+
+`requirements.txt` holds the version ranges; the Docker image installs `requirements.lock`, which pins exact versions with hashes (`pip install --require-hashes`), so two builds of one commit install the same packages. After editing `requirements.txt`, regenerate the lock from the repo root and commit both files:
+
+```sh
+uv pip compile platform/requirements.txt --generate-hashes --python-version 3.12 --python-platform x86_64-manylinux_2_28 -o platform/requirements.lock
+```
+
+The lock is resolved for linux/amd64 on Python 3.12, the production image's platform. The base image is pinned by digest to the same `python:3.12-slim` digest as `deploy/aws/Dockerfile`; bump both together.
 
 ## Current behavior and boundaries
 
