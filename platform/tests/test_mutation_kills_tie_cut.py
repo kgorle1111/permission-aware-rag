@@ -29,6 +29,32 @@ def _assert_stable(load, points, pool, expected):
         assert _pool(load, pts, pool) == expected, name
 
 
+def cap_fetches(monkeypatch, cap, max_calls=30):
+    """Shrink MAX_TIE_FETCH and fail fast if widening stops terminating (_dense_pool 34: `>=` -> `>`).
+
+    Any test that lowers the cap can reach the cap branch; without a bound, a loop that never
+    returns hangs the suite, and mutmut reports a timeout instead of a kill depending on test order.
+    """
+    monkeypatch.setattr(vectorstore, "MAX_TIE_FETCH", cap)
+    real, calls = vectorstore.client, []
+
+    class Bounded:
+        def __init__(self, inner):
+            self._inner = inner
+
+        def query_points(self, *args, **kwargs):
+            calls.append(kwargs.get("limit"))
+            if len(calls) > max_calls:
+                raise AssertionError(f"tie widening did not terminate: limits {calls[-8:]}")
+            return self._inner.query_points(*args, **kwargs)
+
+        def __getattr__(self, name):
+            return getattr(self._inner, name)
+
+    monkeypatch.setattr(vectorstore, "client", lambda: Bounded(real()))
+    return calls
+
+
 def _pts(spec):
     """spec: list of (id, cos)."""
     return [_pt(i, f"D{i}", cos, ([1], [1.0]), ["*"]) for i, cos in spec]
@@ -58,19 +84,19 @@ def test_unambiguous_boundary_under_a_tight_cap_keeps_the_full_pool(hybrid_store
     # The strictly lower score at position `pool` proves the boundary on the first fetch (limit ==
     # cap == pool+1). Failing to stop there (mutmut_31: hits[1]; mutmut_32: hits[-2]) falls through to
     # the cap branch, which drops the boundary score even though no tie exists.
-    monkeypatch.setattr(vectorstore, "MAX_TIE_FETCH", 5)
+    cap_fetches(monkeypatch, 5)
     spec = [(1, 0.95), (2, 0.90), (3, 0.85), (4, 0.80), (5, 0.60), (6, 0.50), (7, 0.40)]
     _assert_stable(hybrid_store, _pts(spec), 4, [1, 2, 3, 4])
 
 
 def test_unambiguous_boundary_stops_widening_before_a_larger_cap(hybrid_store, monkeypatch):
-    monkeypatch.setattr(vectorstore, "MAX_TIE_FETCH", 8)
+    cap_fetches(monkeypatch, 8)
     spec = [(n, 0.95 - 0.05 * n) for n in range(1, 11)]  # ten distinct scores > cap
     _assert_stable(hybrid_store, _pts(spec), 4, [1, 2, 3, 4])
 
 
 def test_all_tied_set_over_the_cap_is_dropped_whole_for_every_ingest_order(hybrid_store, monkeypatch):
-    monkeypatch.setattr(vectorstore, "MAX_TIE_FETCH", 8)
+    cap_fetches(monkeypatch, 8)
     spec = [(1, 0.95)] + [(100 + n, 0.70) for n in range(14)]
     _assert_stable(hybrid_store, _pts(spec), 4, [1])
 
