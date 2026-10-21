@@ -64,12 +64,27 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv export --locked --group dev --extra pg --no-hashes > root-requirements.txt
+      # Everything we ship or test with, no exceptions; this is also the SBOM.
       - run: >-
           uvx pip-audit==2.10.1
           -r root-requirements.txt
           -r platform/requirements.txt -r platform/requirements-dev.txt
-          -r platform/requirements-models.txt -r platform/requirements-pdf.txt
+          -r platform/requirements-pdf.txt
           --format cyclonedx-json -o sbom.cdx.json
+      # The optional local-models extra resolves on its own; upstream pins there may need a dated exception
+      # (.github/pip-audit-exceptions.json). An expired exception fails the build.
+      - name: Audit the optional models extra
+        run: |
+          args=$(python3 - <<'PY'
+          import datetime, json, sys
+          exc = json.load(open(".github/pip-audit-exceptions.json"))["exceptions"]
+          expired = [e["id"] for e in exc if datetime.date.fromisoformat(e["expires"]) < datetime.date.today()]
+          if expired:
+              sys.exit(f"pip-audit exceptions expired, re-check upstream and renew or remove: {expired}")
+          print(" ".join(f"--ignore-vuln {e['id']}" for e in exc))
+          PY
+          )
+          uvx pip-audit==2.10.1 -r platform/requirements-models.txt $args
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
