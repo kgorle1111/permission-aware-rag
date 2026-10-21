@@ -17,7 +17,7 @@ DEMO_MODE=1 uvicorn app.main:app --port 8090
 
 The demo UI is at <http://localhost:8090>. In another terminal, `python scripts/demo.py` runs the scripted example against the running API. `DEMO_MODE=1` enables development token minting and must not be used for a real deployment.
 
-For a containerized local run, use `docker compose up --build`. The container initializes the corpus and signing keypair on first start and stores SQL, Qdrant data, and runtime keys in the persistent `rag-data` volume mounted at `/data`. Demo token minting remains off unless you explicitly set `DEMO_MODE=1`. `docker compose down` keeps the volume; `docker compose down -v` deletes the data and runtime keys.
+For a containerized local run, use `docker compose up --build`. The container initializes the corpus and signing keypair on first start and stores SQL, Qdrant data, and runtime keys in the persistent `rag-data` volume mounted at `/data`. Demo token minting remains off unless you explicitly set `DEMO_MODE=1`. `docker compose down` keeps the volume; `docker compose down -v` deletes the data and runtime keys. Back it up and restore it with `scripts/backup.sh` and `scripts/restore.sh`, and back up before upgrading the image: see [docs/BACKUP_RESTORE.md](../docs/BACKUP_RESTORE.md) for coverage, the restore drill and migration rollback.
 
 ## Test
 
