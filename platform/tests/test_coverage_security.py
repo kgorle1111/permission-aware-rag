@@ -27,7 +27,7 @@ def test_jwks_verification_uses_cached_client_without_network(monkeypatch):
             return SimpleNamespace(key=Path(config.JWT_PUBLIC_KEY_PATH).read_text())
 
     fake_client = FakeJwksClient()
-    monkeypatch.setattr(identity.jwt, "PyJWKClient", lambda url: fake_client)
+    monkeypatch.setattr(identity.jwt, "PyJWKClient", lambda url, timeout: fake_client)
     monkeypatch.setattr(config, "JWKS_URL", "https://idp.invalid/jwks")
     monkeypatch.setattr(identity, "_jwks_client", None)
     principal = identity.verify_token(mint("staff@example.test", ["eng"]))
