@@ -11,6 +11,7 @@ import random
 import pytest
 
 from app import vectorstore
+from test_mutation_kills_tie_cut import cap_fetches
 from test_mutation_kills_retrieval_models import QSPARSE, QUERY, _pt, hybrid_store  # noqa: F401
 
 
@@ -83,7 +84,7 @@ def test_hybrid_results_and_scores_are_identical_across_ingest_orders_and_hidden
 def test_tie_group_larger_than_the_fetch_cap_is_dropped_whole_not_cut_by_insertion_order(hybrid_store, monkeypatch):
     # 14 ties + A with a pool of 6: the cap stops the widening before a strictly lower score
     # appears, so the boundary tie group is dropped whole instead of cut by insertion order.
-    monkeypatch.setattr(vectorstore, "MAX_TIE_FETCH", 8)
+    cap_fetches(monkeypatch, 8)
     visible = DISTINCT + TIED
     forward = _search(hybrid_store, visible, 3)
     backward = _search(hybrid_store, visible[::-1], 3)
