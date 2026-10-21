@@ -189,6 +189,37 @@ curl -s http://127.0.0.1:8090/query -H "Authorization: Bearer $TOKEN" -H 'Conten
   -d '{"query": "what are the salary bands?"}'
 ```
 
+## 📏 Where it breaks (measured 2026-10-19)
+
+The **platform** (FastAPI + Qdrant + SQLite) on one process, closed-loop load with unique queries, so every request
+misses the cache. Each row is 60 s (30 s from 100 users up).
+
+| Concurrent users | req/s | p50 | p95 | p99 | Errors / fail-closed | Leaks |
+|---|---|---|---|---|---|---|
+| 1 | 436 | 2 ms | 3 ms | 3 ms | 0 / 0 | 0 / 15,592 |
+| 10 | 455 | 8 ms | 69 ms | 258 ms | 0 / 0 | 0 / 18,164 |
+| 50 | 458 | 72 ms | 259 ms | 788 ms | 0 / 0 | 0 / 18,151 |
+| 100 | 445 | 186 ms | 380 ms | 918 ms | 0 / 0 | 0 / 8,729 |
+| 200 | 425 | 438 ms | 615 ms | 1.2 s | 0 / 0 | 0 / 8,376 |
+| **500** | **399** | **1.2 s** | **1.5 s** | **2.0 s** | 0 / 0 | 0 / 7,826 |
+
+- **Break point:** p95 crosses 1 s between 200 and 500 concurrent users.
+- **Why:** throughput is flat at about 400–450 req/s because one Python process saturates one core. Past that,
+  requests queue: nothing errors, nothing fails closed, nothing leaks. The server process used about 180 MB.
+- **Next step when needed:** a second worker plus shared state in Postgres. Add it when real p95 at peak passes 1 s.
+
+The **live demo** image under Lightsail Nano limits (0.25 vCPU, 512 MB) holds about 150–250 req/s, with p95 409 ms at
+50 users and 42 MB of memory. A viral day is a few concurrent users, well inside both.
+
+How measured:
+- Laptop (Apple M3 Max, load average 5–9), so treat every cell as noisy (about 2x).
+- Keyless config: hash embedder, no LLM call, 12-chunk corpus. Retrieval cost grows with corpus size; LLM latency
+  and cost are not in these numbers.
+- Every returned result was checked against an independent ACL oracle.
+- [Platform results](evals/results/2026-10-19-load-ceiling/table.md) ·
+  [demo results](evals/results/2026-10-19-load-ceiling/workbench-nano.md) ·
+  [how to reproduce](evals/load/README.md)
+
 ## 🧭 Honest limits
 
 - **Not deployed at a real underwriting shop.** Leak and recall numbers come from real public data (EnronQA, BEIR), with permissions derived from email headers or synthetic tenants rather than a customer's live ACLs.
