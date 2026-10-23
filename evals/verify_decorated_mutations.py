@@ -25,7 +25,7 @@ CASES = [
     {
         "id": "principal-universal-hr",
         "path": "app/identity.py",
-        "source_sha256": "9d7f2496c79c76f93ac76ef70a111669f2fd5b0215f0a1ac04d7486d59be83f6",
+        "source_sha256": "69bab7ed6ee78435f1b5f3aafa35878aef8e75714da7c01de840c958e874463a",
         "old": 'return [f"user:{self.user_id}", *[f"group:{g}" for g in self.groups], "*"]',
         "new": 'return [f"user:{self.user_id}", *[f"group:{g}" for g in self.groups], "group:hr", "*"]',
         "tests": [
@@ -38,7 +38,7 @@ CASES = [
     {
         "id": "scope-universal-cache",
         "path": "app/identity.py",
-        "source_sha256": "9d7f2496c79c76f93ac76ef70a111669f2fd5b0215f0a1ac04d7486d59be83f6",
+        "source_sha256": "69bab7ed6ee78435f1b5f3aafa35878aef8e75714da7c01de840c958e874463a",
         "old": 'return json.dumps(sorted(set(self.principals)), separators=(",", ":"))',
         "new": 'return "shared-principal-scope"',
         "tests": ["tests/test_side_channels.py::test_cache_is_permission_scoped"],
@@ -48,7 +48,7 @@ CASES = [
     {
         "id": "query-forged-hr-principal",
         "path": "app/main.py",
-        "source_sha256": "2ebc5503b318d058b42f5f505f20899047f12b33589d77797fbf48ff16cfad35",
+        "source_sha256": "2c1757eb188350365e0fd8fef84349a09c7e071069f7f6da0a13d30468fc2ba7",
         "old": "        body.query, principal, k=body.k or None, request_id=request.state.request_id)",
         "new": '        body.query, Principal(user_id="forged-hr@independent.test", groups=("hr",)), k=body.k or None, request_id=request.state.request_id)',
         "tests": ["tests/test_failclosed.py::test_client_cannot_self_assert_groups_via_request"],
@@ -58,7 +58,7 @@ CASES = [
     {
         "id": "audit-no-security-guard",
         "path": "app/main.py",
-        "source_sha256": "2ebc5503b318d058b42f5f505f20899047f12b33589d77797fbf48ff16cfad35",
+        "source_sha256": "2c1757eb188350365e0fd8fef84349a09c7e071069f7f6da0a13d30468fc2ba7",
         "old": '    if "security" not in principal.groups:\n        raise HTTPException(403, "audit access requires group:security")\n',
         "new": "",
         "tests": ["tests/test_failclosed.py::test_audit_endpoint_requires_security_group"],

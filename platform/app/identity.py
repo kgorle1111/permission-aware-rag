@@ -16,6 +16,8 @@ from pathlib import Path
 import json
 
 import jwt
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi import HTTPException, Request
 
 from . import config
@@ -39,13 +41,60 @@ class Principal:
 
 _public_key_cache: str | None = None
 _jwks_client = None
+# bounds both the boot fetch and request-time key refreshes; PyJWT's default is 30 s
+JWKS_TIMEOUT_S = 5
+
+NO_IDP_MESSAGE = ("no identity provider configured: set JWKS_URL to your IdP's JWKS endpoint, "
+                  "or DEMO_MODE=1 for a local demo")
+
+
+def validate_identity_config() -> None:
+    """Fail loud at boot: a garbage key or an unreachable JWKS must stop startup, not 401 every
+    request. Raises RuntimeError naming the env var and the fix; on success the verified key
+    (or JWKS client) is cached for verify_token."""
+    global _public_key_cache, _jwks_client
+    if config.JWKS_URL:
+        if config.DEMO_MODE:
+            raise RuntimeError(
+                "DEMO_MODE=1 cannot be combined with JWKS_URL: demo mode mints its own tokens. "
+                "Set DEMO_MODE=0 for a real IdP, or unset JWKS_URL for a local demo")
+        client = jwt.PyJWKClient(config.JWKS_URL, timeout=JWKS_TIMEOUT_S)
+        try:
+            client.get_signing_keys()
+        except Exception as e:
+            raise RuntimeError(
+                f"JWKS_URL={config.JWKS_URL} could not be loaded ({type(e).__name__}: {e}): "
+                "set JWKS_URL to your IdP's reachable JWKS endpoint serving an RS256 signing key"
+            ) from e
+        _jwks_client = client
+        return
+    path = Path(config.JWT_PUBLIC_KEY_PATH)
+    if not path.exists():
+        if config.DEMO_MODE:
+            raise RuntimeError(f"DEMO_MODE=1 but JWT_PUBLIC_KEY_PATH={path} does not exist: "
+                               "run python scripts/gen_keys.py to create a local demo keypair")
+        raise RuntimeError(NO_IDP_MESSAGE)
+    try:
+        pem = path.read_text()
+        if not isinstance(serialization.load_pem_public_key(pem.encode()), rsa.RSAPublicKey):
+            raise ValueError("not an RSA key")
+    except Exception as e:
+        raise RuntimeError(
+            f"JWT_PUBLIC_KEY_PATH={path} is not a usable RSA public key PEM "
+            f"({type(e).__name__}: {e}): mount your IdP's RS256 public key there, "
+            "or set JWKS_URL instead") from e
+    if config.DEMO_MODE and not Path(config.JWT_PRIVATE_KEY_PATH).is_file():
+        raise RuntimeError(f"DEMO_MODE=1 needs the local private key at JWT_PRIVATE_KEY_PATH="
+                           f"{config.JWT_PRIVATE_KEY_PATH} to mint demo tokens: run python "
+                           "scripts/gen_keys.py with fresh key paths, or set DEMO_MODE=0")
+    _public_key_cache = pem
 
 
 def _public_key():
     global _public_key_cache, _jwks_client
     if config.JWKS_URL:
         if _jwks_client is None:
-            _jwks_client = jwt.PyJWKClient(config.JWKS_URL)
+            _jwks_client = jwt.PyJWKClient(config.JWKS_URL, timeout=JWKS_TIMEOUT_S)
         return _jwks_client
     if _public_key_cache is None:
         _public_key_cache = Path(config.JWT_PUBLIC_KEY_PATH).read_text()
