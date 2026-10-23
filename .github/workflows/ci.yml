@@ -8,8 +8,8 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v10.2.0   # exact tag: setup-uv has no moving major tags since v8
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0 (setup-uv has no moving major tags since v8)
         with:
           python-version: "3.12"
       - run: uv sync --locked --group dev --extra pg   # psycopg only so mypy can resolve pgvector_rag imports
@@ -41,8 +41,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.12"
       - run: pip install pytest "psycopg[binary]"
@@ -59,18 +59,25 @@ jobs:
     # known-vulnerability gate over every dependency set we ship or test with, plus a CycloneDX SBOM
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v10.2.0   # exact tag: setup-uv has no moving major tags since v8
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0 (setup-uv has no moving major tags since v8)
         with:
           python-version: "3.12"
       - run: uv export --locked --group dev --extra pg --no-hashes > root-requirements.txt
+      # Everything we ship or test with, no exceptions; this is also the SBOM.
       - run: >-
           uvx pip-audit==2.10.1
           -r root-requirements.txt
           -r platform/requirements.txt -r platform/requirements-dev.txt
-          -r platform/requirements-models.txt -r platform/requirements-pdf.txt
+          -r platform/requirements-pdf.txt
           --format cyclonedx-json -o sbom.cdx.json
-      - uses: actions/upload-artifact@v4
+      # The optional local-models extra resolves on its own; an upstream pin there may need a dated package
+      # exception (.github/pip-audit-exceptions.json). Anything uncovered, or an expired exception, fails.
+      - name: Audit the optional models extra
+        run: |
+          uvx pip-audit==2.10.1 -r platform/requirements-models.txt -f json -o models-audit.json || true
+          python3 .github/scripts/audit_with_exceptions.py models-audit.json .github/pip-audit-exceptions.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: sbom

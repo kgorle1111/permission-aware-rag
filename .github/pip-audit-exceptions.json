@@ -1,0 +1,12 @@
+{
+ "_why": "Exceptions for the optional local-models install only (platform/requirements-models.txt). Each needs a reason and an expiry; CI fails once one expires. Any vulnerability not matched here fails the build.",
+ "package_exceptions": [
+  {
+   "package": "pillow",
+   "below_version": "13",
+   "reason": "fastembed 0.9.0 (latest, checked 2026-10-23) requires pillow<13, so the models extra cannot take Pillow 13.0.0, which fixes a stream of CVEs published 2026-10-21 (17 IDs so far). Pillow is used by fastembed only for image models, which this project never loads (text embeddings, SPLADE, text reranker). Shipped images and the default, dev and PDF sets resolve to Pillow 13 and are audited with no exceptions.",
+   "approved": "2026-10-21 by repo owner: per-ID for the first 15, package-scoped for the stream",
+   "expires": "2026-11-20"
+  }
+ ]
+}

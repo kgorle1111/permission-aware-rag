@@ -7,6 +7,9 @@ services:
         published: "${PORT:-8090}"
         host_ip: 127.0.0.1
         protocol: tcp
+    read_only: true
+    tmpfs:
+      - /tmp
     volumes:
       - rag-data:/data
     environment:

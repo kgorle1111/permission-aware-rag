@@ -15,7 +15,7 @@
       "unhealthyThreshold": 3,
       "timeoutSeconds": 5,
       "intervalSeconds": 10,
-      "path": "/",
+      "path": "/healthz",
       "successCodes": "200"
     }
   }
