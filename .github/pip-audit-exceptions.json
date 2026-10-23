@@ -1,76 +1,11 @@
 {
- "_why": "Exceptions for the optional local-models install only (platform/requirements-models.txt). Each needs a reason and an expiry; CI fails once one expires.",
- "exceptions": [
+ "_why": "Exceptions for the optional local-models install only (platform/requirements-models.txt). Each needs a reason and an expiry; CI fails once one expires. Any vulnerability not matched here fails the build.",
+ "package_exceptions": [
   {
-   "id": "CVE-2026-112895",
    "package": "pillow",
-   "installed": "12.3.0",
-   "fixed_in": "13.0.0",
-   "reason": "fastembed 0.9.0 (latest, 2026-10-21) requires pillow<13, so the models extra cannot take the fix. Pillow is used by fastembed only for image models, which this project never loads (text embeddings, SPLADE, text reranker). Shipped images and the default, dev and PDF sets resolve to the fixed pillow 13.0.0 and are audited with no exceptions.",
-   "approved": "2026-10-21 by repo owner",
-   "expires": "2026-11-20"
-  },
-  {
-   "id": "CVE-2026-112400",
-   "package": "pillow",
-   "installed": "12.3.0",
-   "fixed_in": "13.0.0",
-   "reason": "fastembed 0.9.0 (latest, 2026-10-21) requires pillow<13, so the models extra cannot take the fix. Pillow is used by fastembed only for image models, which this project never loads (text embeddings, SPLADE, text reranker). Shipped images and the default, dev and PDF sets resolve to the fixed pillow 13.0.0 and are audited with no exceptions.",
-   "approved": "2026-10-21 by repo owner",
-   "expires": "2026-11-20"
-  },
-  {
-   "id": "CVE-2026-112397",
-   "package": "pillow",
-   "installed": "12.3.0",
-   "fixed_in": "13.0.0",
-   "reason": "fastembed 0.9.0 (latest, 2026-10-21) requires pillow<13, so the models extra cannot take the fix. Pillow is used by fastembed only for image models, which this project never loads (text embeddings, SPLADE, text reranker). Shipped images and the default, dev and PDF sets resolve to the fixed pillow 13.0.0 and are audited with no exceptions.",
-   "approved": "2026-10-21 by repo owner",
-   "expires": "2026-11-20"
-  },
-  {
-   "id": "CVE-2026-112896",
-   "package": "pillow",
-   "installed": "12.3.0",
-   "fixed_in": "13.0.0",
-   "reason": "fastembed 0.9.0 (latest, 2026-10-21) requires pillow<13, so the models extra cannot take the fix. Pillow is used by fastembed only for image models, which this project never loads (text embeddings, SPLADE, text reranker). Shipped images and the default, dev and PDF sets resolve to the fixed pillow 13.0.0 and are audited with no exceptions.",
-   "approved": "2026-10-21 by repo owner",
-   "expires": "2026-11-20"
-  },
-  {
-   "id": "CVE-2026-112897",
-   "package": "pillow",
-   "installed": "12.3.0",
-   "fixed_in": "13.0.0",
-   "reason": "fastembed 0.9.0 (latest, 2026-10-21) requires pillow<13, so the models extra cannot take the fix. Pillow is used by fastembed only for image models, which this project never loads (text embeddings, SPLADE, text reranker). Shipped images and the default, dev and PDF sets resolve to the fixed pillow 13.0.0 and are audited with no exceptions.",
-   "approved": "2026-10-21 by repo owner",
-   "expires": "2026-11-20"
-  },
-  {
-   "id": "CVE-2026-112395",
-   "package": "pillow",
-   "installed": "12.3.0",
-   "fixed_in": "13.0.0",
-   "reason": "fastembed 0.9.0 (latest, 2026-10-21) requires pillow<13, so the models extra cannot take the fix. Pillow is used by fastembed only for image models, which this project never loads (text embeddings, SPLADE, text reranker). Shipped images and the default, dev and PDF sets resolve to the fixed pillow 13.0.0 and are audited with no exceptions.",
-   "approved": "2026-10-21 by repo owner",
-   "expires": "2026-11-20"
-  },
-  {
-   "id": "CVE-2026-112404",
-   "package": "pillow",
-   "installed": "12.3.0",
-   "fixed_in": "13.0.0",
-   "reason": "fastembed 0.9.0 (latest, 2026-10-21) requires pillow<13, so the models extra cannot take the fix. Pillow is used by fastembed only for image models, which this project never loads (text embeddings, SPLADE, text reranker). Shipped images and the default, dev and PDF sets resolve to the fixed pillow 13.0.0 and are audited with no exceptions.",
-   "approved": "2026-10-21 by repo owner",
-   "expires": "2026-11-20"
-  },
-  {
-   "id": "CVE-2026-112899",
-   "package": "pillow",
-   "installed": "12.3.0",
-   "fixed_in": "13.0.0",
-   "reason": "fastembed 0.9.0 (latest, 2026-10-21) requires pillow<13, so the models extra cannot take the fix. Pillow is used by fastembed only for image models, which this project never loads (text embeddings, SPLADE, text reranker). Shipped images and the default, dev and PDF sets resolve to the fixed pillow 13.0.0 and are audited with no exceptions.",
-   "approved": "2026-10-21 by repo owner",
+   "below_version": "13",
+   "reason": "fastembed 0.9.0 (latest, checked 2026-10-23) requires pillow<13, so the models extra cannot take Pillow 13.0.0, which fixes a stream of CVEs published 2026-10-21 (17 IDs so far). Pillow is used by fastembed only for image models, which this project never loads (text embeddings, SPLADE, text reranker). Shipped images and the default, dev and PDF sets resolve to Pillow 13 and are audited with no exceptions.",
+   "approved": "2026-10-21 by repo owner: per-ID for the first 15, package-scoped for the stream",
    "expires": "2026-11-20"
   }
  ]
