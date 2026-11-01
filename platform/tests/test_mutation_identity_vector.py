@@ -30,8 +30,8 @@ def test_jwks_client_is_constructed_for_configured_url(monkeypatch):
     calls = []
 
     class FakeJwksClient:
-        def __init__(self, url):
-            calls.append(url)
+        def __init__(self, url, timeout):
+            calls.append((url, timeout))
 
         def get_signing_key_from_jwt(self, _token):
             return SimpleNamespace(key=Path(config.JWT_PUBLIC_KEY_PATH).read_text())
@@ -43,7 +43,7 @@ def test_jwks_client_is_constructed_for_configured_url(monkeypatch):
     assert identity.verify_token(mint("jwks@example.test", [])) == Principal(
         "jwks@example.test", ()
     )
-    assert calls == [expected_url]
+    assert calls == [(expected_url, 5)]
 
 
 def test_signed_token_without_optional_groups_claim_defaults_to_no_groups(monkeypatch):

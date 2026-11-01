@@ -35,4 +35,8 @@ USER app
 HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=12 \
     CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/readyz', timeout=2)"]
 
-CMD ["sh", "-c", "set -eu; umask 077; if [ -n \"$JWKS_URL\" ]; then if [ \"$DEMO_MODE\" = 1 ]; then echo 'DEMO_MODE cannot mint tokens when JWKS_URL is configured' >&2; exit 1; fi; elif [ -s \"$JWT_PUBLIC_KEY_PATH\" ]; then if [ \"$DEMO_MODE\" = 1 ] && [ ! -s \"$JWT_PRIVATE_KEY_PATH\" ]; then echo 'DEMO_MODE requires a local private key' >&2; exit 1; fi; elif [ -e \"$JWT_PRIVATE_KEY_PATH\" ] || [ -e \"$JWT_PUBLIC_KEY_PATH\" ]; then echo 'local public key is missing or empty' >&2; exit 1; else python scripts/gen_keys.py; fi; if [ ! -f /data/.corpus-ingested ]; then python scripts/ingest.py; touch /data/.corpus-ingested; fi; exec uvicorn app.main:app --host 0.0.0.0 --port 8090"]
+# Only DEMO_MODE=1 mints a local keypair; production must bring JWKS_URL or a mounted public key.
+# validate_identity_config (also run by the app's lifespan) refuses a bad identity setup before ingest
+# writes to /data. --limit-concurrency 64 bounds memory: past 64 in-flight connections uvicorn
+# answers 503 instead of queueing.
+CMD ["sh", "-c", "set -eu; umask 077; if [ \"$DEMO_MODE\" = 1 ] && [ -z \"$JWKS_URL\" ] && [ ! -e \"$JWT_PRIVATE_KEY_PATH\" ] && [ ! -e \"$JWT_PUBLIC_KEY_PATH\" ]; then python scripts/gen_keys.py; fi; python -c 'from app.identity import validate_identity_config as v; v()'; if [ ! -f /data/.corpus-ingested ]; then python scripts/ingest.py; touch /data/.corpus-ingested; fi; exec uvicorn app.main:app --host 0.0.0.0 --port 8090 --limit-concurrency 64"]

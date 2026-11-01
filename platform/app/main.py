@@ -24,7 +24,7 @@ from pydantic import BaseModel, Field, field_validator
 from . import audit as audit_mod
 from . import config
 from . import observability
-from .identity import Principal, principal_from_request
+from .identity import Principal, principal_from_request, validate_identity_config
 from .retrieval import retrieve_checked
 from .store import init_db, SessionLocal, PermissionState, fingerprint_problem
 from .sync import sync_once
@@ -35,6 +35,7 @@ log = logging.getLogger("permrag")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    validate_identity_config()  # first: refuse to boot rather than 401 every request
     init_db()
     stop = asyncio.Event()
     async def poll():
@@ -63,6 +64,56 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Permission-Aware RAG", lifespan=lifespan)
+
+# The largest legitimate body is a QueryIn (2000-char query): 64 KB leaves headroom for 4-byte UTF-8
+# and JSON escapes. Pydantic's max_length only runs after the whole body is buffered.
+MAX_BODY_BYTES = 64 * 1024
+
+
+class BodySizeLimit:
+    """413 for a body over MAX_BODY_BYTES before the app buffers it: a declared Content-Length is
+    checked up front, and a chunked body is counted as it streams and cut off at the cap."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        declared = dict(scope["headers"]).get(b"content-length")
+        if declared is not None and (not declared.isdigit() or int(declared) > MAX_BODY_BYTES):
+            return await self._respond(413, "request body too large", scope, receive, send)
+        # kn: holds up to 64 KB per in-flight request (x --limit-concurrency 64 = 4 MB); stream
+        # through instead if a route ever needs bodies larger than that
+        body, more = b"", True
+        while more:
+            message = await receive()
+            if message["type"] != "http.request":
+                # client left mid-body: answer anyway (the server drops it) so the request-id
+                # middleware gets a response instead of raising "No response returned"
+                return await self._respond(400, "client disconnected", scope, receive, send)
+            body += message.get("body", b"")
+            more = message.get("more_body", False)
+            if len(body) > MAX_BODY_BYTES:
+                return await self._respond(413, "request body too large", scope, receive, send)
+        replayed = False
+
+        async def replay():
+            nonlocal replayed
+            if replayed:
+                return await receive()
+            replayed = True
+            return {"type": "http.request", "body": body, "more_body": False}
+
+        await self.app(scope, replay, send)
+
+    @staticmethod
+    async def _respond(status, detail, scope, receive, send):
+        await JSONResponse(status_code=status, content={"detail": detail})(scope, receive, send)
+
+
+# registered before request_id_and_rejections so it runs inside it: a 413 still gets X-Request-ID
+app.add_middleware(BodySizeLimit)
 
 
 @app.exception_handler(RequestValidationError)
