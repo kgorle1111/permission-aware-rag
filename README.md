@@ -139,6 +139,20 @@ leak-rate numbers; it does not mean none exist.
 - **Production engineering:** a FastAPI service in [`platform/`](platform/README.md) with RS256/JWKS identity, Google Drive permission sync, a non-root Docker image and container smoke tests in CI. Load-tested on a laptop: about 370–400 req/s per process on unique queries, 0 leaks in 166,546 results ([load test](evals/results/2026-10-12-load-test/table.md)).
 - **Product judgment:** a [case file](CASE_FILE.md) with a risk register, an [integration map](INTEGRATION.md) for a real underwriting shop, and a [roadmap](ROADMAP.md) that lists what we chose *not* to build.
 
+## 🧰 Tech stack
+
+| Layer | Reference app ([`app/`](app/)) | Platform ([`platform/`](platform/README.md)) |
+|---|---|---|
+| **Language and server** | Python 3.12 standard library, `http.server` | Python 3.12, FastAPI, Uvicorn, Pydantic |
+| **Retrieval** | BM25 in memory, or pgvector | Qdrant (embedded by default); optional fastembed: bge-small embeddings, SPLADE hybrid, cross-encoder reranker |
+| **Permissions and data** | Postgres 16 with row-level security (optional), JSONL audit log | SQLAlchemy over SQLite by default, RS256 JWTs and JWKS via PyJWT |
+| **Answer drafting (optional)** | Claude Haiku 4.5, needs an API key; off in the live demo | Same |
+| **Interface** | Vanilla HTML and JavaScript | Vanilla HTML and JavaScript |
+| **Ingestion** | Built-in demo corpus | JSONL or Google Drive permission feeds; pdfplumber and Tesseract for PDFs |
+
+**Delivery and testing:** Docker, AWS Lightsail (live demo), GitHub Actions, uv, pytest, mutmut, ruff, strict mypy,
+pip-audit, and a CycloneDX SBOM.
+
 ## 🛠️ How it's engineered
 
 - **Two layers.** A reference core in Python stdlib only (~600 readable lines, no dependencies), plus [`platform/`](platform/README.md), the same design as a deployable service on FastAPI, Qdrant, SQLAlchemy and PyJWT.
